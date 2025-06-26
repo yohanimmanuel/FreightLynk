@@ -1,0 +1,306 @@
+.login-container {
+  display: flex;
+  min-height: 100vh;
+  animation: fadeIn 0.8s ease-in;
+}
+
+.left-section {
+  flex: 1;
+  background-color: #007bff;
+  color: white;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  animation: slideInLeft 1s ease-out;
+  text-align: center;
+}
+
+.left-section h1 {
+  font-size: 2em;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.description {
+  font-size: 1.1em;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.right-section {
+  flex: 1;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo {
+  margin-bottom: 0px;
+}
+
+.login-form {
+  width: 100%;
+  max-width: 400px; /* Reduced size */
+}
+
+.login-form h2 {
+  font-size: 1.8em;
+  margin-bottom: 0px;
+  animation: slideUp 0.6s ease-out;
+  text-align: center;
+}
+
+.subtitle {
+  font-size: 1em;
+  color: #666;
+  margin-bottom: 15px;
+  animation: slideUp 0.6s ease-out 0.2s backwards;
+  text-align: center;
+}
+
+.social-login {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin-bottom: 0px;
+  animation: slideUp 0.6s ease-out 0.4s backwards;
+}
+
+.social-btn {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  border: 1px solid #ddd;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.social-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.social-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.social-btn img {
+  width: 24px; /* Adjusted for consistent icon size */
+  height: 24px; /* Adjusted for consistent icon size */
+  object-fit: contain; /* Added to maintain aspect ratio */
+}
+
+.divider {
+  text-align: center;
+  margin: 15px 0;
+  color: #666;
+  position: relative;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 45%;
+  height: 1px;
+  background-color: #ddd;
+}
+
+.divider::before {
+  left: 0;
+}
+
+.divider::after {
+  right: 0;
+}
+
+input[type="email"],
+input[type="password"] {
+  width: 100%;
+  padding: 10px;
+  margin: 4px 0;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.85em;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  box-sizing: border-box;
+}
+
+input[type="email"]:focus,
+input[type="password"]:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 102, 255, 0.2);
+  outline: none;
+}
+
+.form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 12px 0;
+  font-size: 0.8em;
+}
+
+/* Added checkbox animation styles */
+.form-options label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.form-options input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid #ddd;
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.form-options input[type="checkbox"]:checked {
+  background-color: #007bff;
+  border-color: #007bff;
+}
+
+.form-options input[type="checkbox"]:checked::before {
+  content: '✓';
+  position: absolute;
+  color: white;
+  font-size: 12px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: checkmark 0.2s ease-in-out;
+}
+
+@keyframes checkmark {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+
+.form-options input[type="checkbox"]:hover {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+}
+
+.form-options a {
+  color: #007bff;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.sign-in-btn {
+  width: 100%;
+  padding: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85em;
+  cursor: pointer;
+  margin: 8px 0;
+  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+}
+
+.sign-in-btn:hover {
+  background-color: #0056b3;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+}
+
+.sign-in-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0, 123, 255, 0.2);
+}
+
+.register-link {
+  text-align: center;
+  font-size: 0.9em;
+  margin-top: 10px;
+}
+
+.register-link a {
+  color: #007bff;
+  text-decoration: none;
+  font-weight: bold;
+  transition: color 0.3s ease;
+}
+
+.register-link a:hover,
+.form-options a:hover {
+  color: #0056b3;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.dashboard-preview {
+  margin: 1.3rem 0;
+  max-width: 100%;
+  height: auto;
+  animation: float 5s ease-in-out infinite;
+  filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.3));
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+.dashboard-preview img {
+  width: 100%;
+  max-width: 500px;
+  height: auto;
+  border-radius: 0.625rem;
+  object-fit: contain;
+}
