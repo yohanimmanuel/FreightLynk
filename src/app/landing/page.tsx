@@ -25,7 +25,7 @@ export default function LandingPage() {
               height={40}
               className="animate-fade-in-up"
             />
-            <span className="hidden lg:block font-bold text-[#007bff] text-2xl ml-1 menu-text animate-fade-in-up">Hello</span>
+            <span className="hidden lg:block font-bold text-[#007bff] text-2xl ml-1 menu-text animate-fade-in-up">FreightLynk.</span>
           </div>        
         <div className="flex-1 flex justify-center">
           <div className="hidden md:flex gap-15">
