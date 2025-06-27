@@ -31,8 +31,8 @@ export interface PODetail {
 
 interface POSelection {
   poId: string;
-  selectedItems: Set<number>;
-  bookedQuantities: Record<number, number>;
+  selectedItems: Set<number>; // Only explicitly checked items
+  bookedQuantities: Record<number, number>; // All quantities (selected or not)
 }
 
 export interface POManagementTableProps {
@@ -205,6 +205,16 @@ const POManagement = ({ onCreateOrder, onEditOrder, onCreateBooking, view = 'ful
   const statusDropdownRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookingType, setBookingType] = useState<'new' | 'existing'>('new');
+
+  useEffect(() => {
+    // Update active POs and bulk actions based on selections
+    const activePOs = selectedPOs
+      .filter(po => po.selectedItems.size > 0)
+      .map(po => po.poId);
+    
+    setActiveBulkPOs(activePOs);
+    setShowBulkActions(activePOs.length > 0);
+  }, [selectedPOs]);
 
   const renderBookingModal = () => {
     if (!showBookingModal) return null;
@@ -582,76 +592,36 @@ const POManagement = ({ onCreateOrder, onEditOrder, onCreateBooking, view = 'ful
   }, []); 
 
   const handlePOItemSelect = (poId: string, itemId: number) => {
-    const item = poDetails.find(item => item.id === itemId);
-    if (!item) return;
-
     setSelectedPOs(prev => {
       const existingPO = prev.find(po => po.poId === poId);
       
       if (existingPO) {
         const newSelected = new Set(existingPO.selectedItems);
-        const newQuantities = {...existingPO.bookedQuantities};
         
         if (newSelected.has(itemId)) {
-          // Deselect the item
+          // Deselect
           newSelected.delete(itemId);
-          delete newQuantities[itemId];
-          
-          // Update the PO selection
-          const updatedPOSelections = prev.map(po => 
-            po.poId === poId 
-              ? { ...po, selectedItems: newSelected, bookedQuantities: newQuantities } 
-              : po
-          ).filter(po => po.selectedItems.size > 0); // Remove POs with no selections
-          
-          // Update bulk actions
-          if (newSelected.size === 0) {
-            setActiveBulkPOs(prevActive => {
-              const filtered = prevActive.filter(id => id !== poId);
-              if (filtered.length === 0) {
-                setShowBulkActions(false);
-              }
-              return filtered;
-            });
-          }
-          
-          return updatedPOSelections;
         } else {
-          // Select the item
+          // Select (quantity already exists in bookedQuantities)
           newSelected.add(itemId);
-          newQuantities[itemId] = item.requested; // Set to max requested
-          
-          // Add to bulk actions
-          setActiveBulkPOs(prevActive => {
-            if (!prevActive.includes(poId)) {
-              setShowBulkActions(true);
-              return [...prevActive, poId];
-            }
-            return prevActive;
-          });
-          
-          return prev.map(po => 
-            po.poId === poId 
-              ? { ...po, selectedItems: newSelected, bookedQuantities: newQuantities } 
-              : po
-          );
         }
-      } else {
-        // Create new PO selection
-        setActiveBulkPOs(prevActive => {
-          if (!prevActive.includes(poId)) {
-            setShowBulkActions(true);
-            return [...prevActive, poId];
-          }
-          return prevActive;
-        });
         
-        return [...prev, { 
-          poId, 
-          selectedItems: new Set([itemId]),
-          bookedQuantities: { [itemId]: item.requested } // Set to max requested
-        }];
+        return prev.map(po => 
+          po.poId === poId 
+            ? { ...po, selectedItems: newSelected } 
+            : po
+        );
       }
+      
+      // New selection with existing quantity or default to requested
+      const item = poDetails.find(item => item.id === itemId);
+      return [...prev, { 
+        poId, 
+        selectedItems: new Set([itemId]),
+        bookedQuantities: { 
+          [itemId]: item?.requested || 0 
+        }
+      }];
     });
   };
 
@@ -694,40 +664,34 @@ const POManagement = ({ onCreateOrder, onEditOrder, onCreateBooking, view = 'ful
   const handleQuantityChange = (poId: string, itemId: number, quantity: number) => {
     setSelectedPOs(prev => {
       const existingPO = prev.find(po => po.poId === poId);
+      const item = poDetails.find(item => item.id === itemId);
       
-      if (!existingPO) {
-        // If PO doesn't exist in selections, create it with this item
-        const item = poDetails.find(item => item.id === itemId);
-        if (!item) return prev;
-        
-        return [...prev, {
-          poId,
-          selectedItems: new Set([itemId]),
-          bookedQuantities: { [itemId]: quantity }
-        }];
+      if (!item) return prev;
+
+      // Always update quantity, regardless of selection state
+      if (existingPO) {
+        return prev.map(po => {
+          if (po.poId !== poId) return po;
+          
+          return {
+            ...po,
+            bookedQuantities: {
+              ...po.bookedQuantities,
+              [itemId]: quantity
+            }
+          };
+        });
       }
       
-      return prev.map(po => {
-        if (po.poId !== poId) return po;
-        
-        // Add the item to selected items if it's not already selected
-        const newSelectedItems = new Set(po.selectedItems);
-        if (!newSelectedItems.has(itemId)) {
-          newSelectedItems.add(itemId);
-        }
-        
-        return {
-          ...po,
-          selectedItems: newSelectedItems,
-          bookedQuantities: {
-            ...po.bookedQuantities,
-            [itemId]: quantity
-          }
-        };
-      });
+      // If PO not tracked yet, create entry with this quantity
+      return [...prev, { 
+        poId, 
+        selectedItems: new Set(), // Empty selection
+        bookedQuantities: { [itemId]: quantity }
+      }];
     });
   };
-
+  
   const clearSelectionsForPO = (poId: string) => {
     setSelectedPOs(prev => prev.filter(po => po.poId !== poId));
     setActiveBulkPOs(prev => prev.filter(id => id !== poId));
@@ -1147,31 +1111,31 @@ const POManagement = ({ onCreateOrder, onEditOrder, onCreateBooking, view = 'ful
                                                 min="0"
                                                 max={item.requested}
                                                 value={
-                                                  selectedPOs.find(selectedPO => selectedPO.poId === po.id)
-                                                    ?.bookedQuantities?.[item.id] ?? item.requested
+                                                  selectedPOs.find(po => po.poId === `PO${item.poOrderNumber}`)
+                                                    ?.bookedQuantities[item.id] ?? 0
                                                 }
                                                 onChange={(e) => {
                                                   const value = Math.max(0, Math.min(
                                                     Number(e.target.value) || 0,
                                                     item.requested
                                                   ));
-                                                  handleQuantityChange(po.id, item.id, value);
+                                                  handleQuantityChange(`PO${item.poOrderNumber}`, item.id, value);
                                                 }}
                                                 className="w-16 p-1 text-xs text-gray-900 border border-gray-300 rounded-sm"
                                                 onFocus={(e) => e.target.select()}
                                               />
                                               <button
-                                                onClick={() => handlePOItemSelect(po.id, item.id)}
-                                                className={`flex items-center justify-center w-6 h-6 text-xs rounded border transition-colors ${
-                                                  selectedPOs.some(selectedPO => 
-                                                    selectedPO.poId === po.id && 
-                                                    selectedPO.selectedItems.has(item.id)
-                                                  )
-                                                    ? 'bg-[#007bff] text-white border-[#007bff] hover:bg-blue-700'
-                                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-200'
-                                                }`}
-                                              >
-                                                <Check className="w-3 h-3" />
+                                                  onClick={() => handlePOItemSelect(`PO${item.poOrderNumber}`, item.id)}
+                                                  className={`flex items-center justify-center w-6 h-6 text-xs rounded border transition-colors ${
+                                                    selectedPOs.some(po => 
+                                                      po.poId === `PO${item.poOrderNumber}` && 
+                                                      po.selectedItems.has(item.id)
+                                                    )
+                                                      ? 'bg-[#007bff] text-white border-[#007bff] hover:bg-blue-700'
+                                                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-200'
+                                                  }`}
+                                                >
+                                                  <Check className="w-3 h-3" />
                                               </button>
                                             </div>
                                           </td>

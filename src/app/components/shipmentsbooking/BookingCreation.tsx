@@ -697,7 +697,7 @@ const BookingCreation = () => {
           <SectionHeader title="Special Instructions" icon={MessageSquare} section="instructions" />
           <FormSection section="instructions">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-2">Special Instructions</label>
+              <label className="block text-xs font-medium text-gray-700 mb-2">Any special instructions?</label>
               <textarea
                 value={formData.specialInstructions}
                 onChange={(e) => handleInputChange('specialInstructions', e.target.value)}

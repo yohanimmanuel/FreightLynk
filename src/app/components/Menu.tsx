@@ -56,6 +56,12 @@ const menuItems = [
             visible: ["admin", "client", "forwarder", "logisticsprovider"],
           },
           {
+            icon: NotebookText,
+            label: "Orders",
+            href: "/orders",
+            visible: ["admin", "client", "forwarder", "logisticsprovider"],
+          },
+          {
             icon: CalendarCheck,
             label: "Bookings",
             href: "/bookings",
@@ -65,12 +71,6 @@ const menuItems = [
             icon: Package,
             label: "Shipments",
             href: "/shipments",
-            visible: ["admin", "client", "forwarder", "logisticsprovider"],
-          },
-          {
-            icon: NotebookText,
-            label: "Orders",
-            href: "/orders",
             visible: ["admin", "client", "forwarder", "logisticsprovider"],
           },
           {
