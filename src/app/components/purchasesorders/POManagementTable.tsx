@@ -45,6 +45,7 @@ export interface POManagementTableProps {
   purchaseOrders?: PurchaseOrder[];
   poDetails?: PODetail[];
   view?: 'full' | 'summary';
+  mode?: 'standalone' | 'review';
 }
 
 export const purchaseOrdersData: PurchaseOrder[] = [
@@ -119,7 +120,7 @@ export const poDetailsData: PODetail[] = [
       unitCost: '$15.00',
       uom: 'PC',
       requested: 200,
-      booked: 15,
+      booked: 0,
     },
     {
       id: 2,
@@ -134,7 +135,7 @@ export const poDetailsData: PODetail[] = [
       unitCost: '$20.00',
       uom: 'PC',
       requested: 300,
-      booked: 200,
+      booked: 0,
     },
     {
       id: 3,
@@ -149,7 +150,7 @@ export const poDetailsData: PODetail[] = [
       unitCost: '$16.00',
       uom: 'PC',
       requested: 250,
-      booked: 100,
+      booked: 0,
     },
     {
       id: 4,
@@ -198,7 +199,7 @@ export const poDetailsData: PODetail[] = [
     }
 ];
 
-const POManagement = ({ onEditOrder, onCreateBooking, view = 'full' }: POManagementTableProps) => {
+const POManagement = ({ onEditOrder, onCreateBooking, view = 'full', mode ='review' }: POManagementTableProps) => {
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(purchaseOrdersData);
   const [poDetails] = useState<PODetail[]>(poDetailsData);
   const [selectedPOs, setSelectedPOs] = useState<POSelection[]>([]);
@@ -905,7 +906,7 @@ const POManagement = ({ onEditOrder, onCreateBooking, view = 'full' }: POManagem
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 flex-wrap">
                     {activeBulkPOs
-                      .filter(poId => { // Filter out POs with 0 selected items
+                      .filter(poId => {
                         const selectedCount = selectedPOs.find(po => po.poId === poId)?.selectedItems.size || 0;
                         return selectedCount > 0;
                       })
@@ -937,11 +938,36 @@ const POManagement = ({ onEditOrder, onCreateBooking, view = 'full' }: POManagem
                     >
                       Clear All
                     </button>
-                    <button 
-                      onClick={() => setShowBookingModal(true)}
-                      className="flex items-center gap-1 px-4 py-2 text-sm text-white bg-[#007bff] rounded-lg shadow-sm hover:bg-blue-700">
-                      Review & Book
-                    </button>
+                    {mode === 'standalone' ? (
+                      <button 
+                        onClick={() => {
+                          const bookingData = selectedPOs
+                            .filter(po => po.selectedItems.size > 0)
+                            .map(poSelection => ({
+                              poId: poSelection.poId,
+                              selectedItems: Array.from(poSelection.selectedItems),
+                              bookedQuantities: poSelection.bookedQuantities
+                            }));
+                          
+                          if (bookingData.length > 0 && onCreateBooking) {
+                            onCreateBooking(bookingData);
+                            setActiveBulkPOs([]);
+                            setSelectedPOs([]);
+                            setShowBulkActions(false);
+                          }
+                        }}
+                        className="flex items-center gap-1 px-4 py-2 text-sm text-white bg-[#007bff] rounded-lg shadow-sm hover:bg-blue-700"
+                      >
+                        Confirm Selection
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => setShowBookingModal(true)}
+                        className="flex items-center gap-1 px-4 py-2 text-sm text-white bg-[#007bff] rounded-lg shadow-sm hover:bg-blue-700"
+                      >
+                        Review & Book
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
