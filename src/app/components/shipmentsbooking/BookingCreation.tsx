@@ -19,6 +19,20 @@ const BookingCreation = () => {
     bookedQuantities: Record<number, number>;
   }[]>([]);
 
+  function formatDateForInput(displayDate: string): string {
+    if (!displayDate || displayDate === '--') return '';
+    const months: Record<string, string> = {
+      Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06',
+      Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12'
+    };
+    try {
+      const [month, day, year] = displayDate.replace(',', '').split(' ');
+      return `${year}-${months[month]}-${day.padStart(2, '0')}`;
+    } catch {
+      return '';
+    }
+  }
+
   useEffect(() => {
     const bookingData = sessionStorage.getItem('bookingData');
     if (bookingData) {
@@ -38,10 +52,11 @@ const BookingCreation = () => {
 
     // 2. Prepare the data to match EXACTLY what OrderDetails already expects
     const poData = {
-      ...selectedPO, // This spreads all existing PO properties
+      ...selectedPO,
+      cargoReadyBy: formatDateForInput(selectedPO.cargoReadyBy || poItems[0]?.cargoReadyDate),
+      mustArriveBy: formatDateForInput(selectedPO.mustArriveBy || poItems[0]?.mustArriveDate),
       items: poItems.map(item => ({
-        ...item, // Keep all original item properties
-        // Ensure these critical date fields exist exactly as-is
+        ...item,
         cargoReadyDate: item.cargoReadyDate, 
         mustArriveDate: item.mustArriveDate
       }))
