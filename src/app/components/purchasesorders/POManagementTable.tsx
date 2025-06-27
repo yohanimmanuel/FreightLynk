@@ -103,6 +103,17 @@ export const purchaseOrdersData: PurchaseOrder[] = [
       subjectedCarrier: 'DB Schenker',
       progress: '1/7 lines booked',
       status: 'Open'
+    },
+    {
+      id: 'PO2883',
+      exceptions: 'Booking approval required',
+      cargoReadyBy: 'Mar 12, 2021',
+      mustArriveBy: 'Apr 15, 2021',
+      buyer: 'Studio Apparel',
+      seller: 'Forward Supply Co',
+      subjectedCarrier: 'DB Schenker',
+      progress: '1/7 lines booked',
+      status: 'Open'
     }
 ];
 
@@ -112,8 +123,8 @@ export const poDetailsData: PODetail[] = [
       poOrderNumber: 3400,
       productCode: 'F-ACS-LTH-BELT-BLCK',
       productName: "Women's Leather Belt",
-      cargoReadyDate: '2/21',
-      mustArriveDate: '4/15',
+      cargoReadyDate: 'Aug 30, 2019',
+      mustArriveDate: 'Oct 1, 2019',
       transportMode: 'Sea',
       destination: 'Los Angeles Warehouse',
       currency: 'USD',
@@ -127,8 +138,8 @@ export const poDetailsData: PODetail[] = [
       poOrderNumber: 1000,
       productCode: 'F-BTDN-TOP-SILK',
       productName: "Women's Silk Shirt",
-      cargoReadyDate: '2/21',
-      mustArriveDate: '4/15',
+      cargoReadyDate: 'Jan 28, 2021',
+      mustArriveDate: 'Feb 12, 2021',
       transportMode: 'Sea',
       destination: 'Los Angeles Warehouse',
       currency: 'USD',
@@ -142,8 +153,8 @@ export const poDetailsData: PODetail[] = [
       poOrderNumber: 1057,
       productCode: 'F-BTM-DNM-BOYF-LTBLUE',
       productName: "Women's Boyfriend Jean - Lt Blue",
-      cargoReadyDate: '2/21',
-      mustArriveDate: '4/15',
+      cargoReadyDate: 'Feb 21, 2021',
+      mustArriveDate: 'Apr 15, 2021',
       transportMode: 'Sea',
       destination: 'Los Angeles Warehouse',
       currency: 'AUD',
@@ -157,8 +168,8 @@ export const poDetailsData: PODetail[] = [
       poOrderNumber: 1055,
       productCode: 'F-DRS-CTTN-MUSC-BLK',
       productName: "Women's Muscle Tank Dress",
-      cargoReadyDate: '2/21',
-      mustArriveDate: '4/15',
+      cargoReadyDate: 'Mar 12, 2021',
+      mustArriveDate: 'Apr 15, 2021',
       transportMode: 'Sea',
       destination: 'Los Angeles Warehouse',
       currency: 'SGD',
@@ -172,8 +183,8 @@ export const poDetailsData: PODetail[] = [
       poOrderNumber: 1003,
       productCode: 'F-SWTR-CSHM-KNIT',
       productName: "Women's Cashmere Knit Sweater",
-      cargoReadyDate: '2/21',
-      mustArriveDate: '4/15',
+      cargoReadyDate: 'Mar 12, 2021',
+      mustArriveDate: 'Apr 15, 2021',
       transportMode: 'Sea',
       destination: 'Los Angeles Warehouse',
       currency: 'SGD',
@@ -187,8 +198,23 @@ export const poDetailsData: PODetail[] = [
       poOrderNumber: 3400,
       productCode: 'F-TEE-CTTN-CREW',
       productName: "Women's Cotton Crew Tee",
-      cargoReadyDate: '2/21',
-      mustArriveDate: '4/15',
+      cargoReadyDate: 'Aug 30, 2019',
+      mustArriveDate: 'Oct 1, 2019',
+      transportMode: 'Sea',
+      destination: 'Los Angeles Warehouse',
+      currency: 'IDR',
+      unitCost: '$12.00',
+      uom: 'PC',
+      requested: 170,
+      booked: 0,
+    },
+    {
+      id: 7,
+      poOrderNumber: 2883,
+      productCode: 'F-TEE-CTTN-CREW',
+      productName: "Women's Cotton Crew Tee",
+      cargoReadyDate: 'Mar 12, 2021',
+      mustArriveDate: 'Apr 15, 2021',
       transportMode: 'Sea',
       destination: 'Los Angeles Warehouse',
       currency: 'IDR',
@@ -209,6 +235,16 @@ const POManagement = ({ onEditOrder, onCreateBooking, view = 'full', mode ='revi
   const statusDropdownRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookingType, setBookingType] = useState<'new' | 'existing'>('new');
+
+    // Helper function to format date
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
 
   useEffect(() => {
     // Update active POs and bulk actions based on selections
@@ -284,7 +320,7 @@ const POManagement = ({ onEditOrder, onCreateBooking, view = 'full', mode ='revi
                             <div className="text-xs font-medium text-gray-900">{item.productCode}</div>
                             <div className="text-xs text-gray-500">{item.productName}</div>
                           </td>
-                          <td className="px-4 py-3 text-xs text-gray-600">{item.cargoReadyDate}</td>
+                          <td className="px-4 py-3 text-xs text-gray-600">{formatDate(item.cargoReadyDate)}</td>
                           <td className="px-4 py-3 text-xs text-gray-900">{item.requested}</td>
                           <td className="px-4 py-3">
                             <div className="text-xs text-gray-900">
@@ -1024,8 +1060,8 @@ const POManagement = ({ onEditOrder, onCreateBooking, view = 'full', mode ='revi
                             '--'
                           )}
                         </td>
-                        <td className="px-4 py-3 text-xs text-gray-900">{po.cargoReadyBy}</td>
-                        <td className="px-4 py-3 text-xs text-gray-900">{po.mustArriveBy}</td>
+                        <td className="px-4 py-3 text-xs text-gray-900">{formatDate(po.cargoReadyBy)}</td>
+                        <td className="px-4 py-3 text-xs text-gray-900">{formatDate(po.mustArriveBy)}</td>
                         <td className="px-4 py-3 text-xs text-gray-900">{po.buyer}</td>
                         <td className="px-4 py-3 text-xs text-gray-900">{po.seller}</td>
                         <td className="px-4 py-3 text-xs text-gray-900">{po.subjectedCarrier}</td>
@@ -1092,8 +1128,8 @@ const POManagement = ({ onEditOrder, onCreateBooking, view = 'full', mode ='revi
                                             <div className="text-xs text-gray-500">{item.productName}</div>
                                           </div>
                                         </td>
-                                        <td className="px-4 py-3 text-xs text-gray-600">{item.cargoReadyDate}</td>
-                                        <td className="px-4 py-3 text-xs text-gray-600">{item.mustArriveDate}</td>
+                                        <td className="px-4 py-3 text-xs text-gray-600">{formatDate(item.cargoReadyDate)}</td>
+                                        <td className="px-4 py-3 text-xs text-gray-600">{formatDate(item.mustArriveDate)}</td>
                                         <td className="px-4 py-3">{getTransportModeIcon(item.transportMode)}</td>
                                         <td className="px-4 py-3 text-xs text-gray-600">{item.destination}</td>
                                         <td className="px-4 py-3 text-xs text-gray-600">{item.currency}</td>

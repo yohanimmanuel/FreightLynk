@@ -6,9 +6,10 @@ import POManagementTable, {
   purchaseOrdersData, 
   poDetailsData, 
 } from '../purchasesorders/POManagementTable';
-
+import { useRouter } from 'next/navigation';
 
 const BookingCreation = () => {
+  const router = useRouter(); 
   const [showPOSelection, setShowPOSelection] = useState(false);
   const [requireShipmentTags, setRequireShipmentTags] = useState(true);
   const [tradeRole, setTradeRole] = useState<'shipper' | 'consignee'>('shipper');
@@ -25,6 +26,43 @@ const BookingCreation = () => {
       sessionStorage.removeItem('bookingData'); // Clean up
     }
   }, []);
+
+  const handleEditOrder = (poId: string) => {
+    // 1. Find the PO and its items using your existing data sources
+    const selectedPO = purchaseOrdersData.find(po => po.id === poId);
+    if (!selectedPO) return;
+
+    const poItems = poDetailsData.filter(
+      item => item.poOrderNumber === parseInt(poId.replace('PO', ''))
+    );
+
+    // 2. Prepare the data to match EXACTLY what OrderDetails already expects
+    const poData = {
+      ...selectedPO, // This spreads all existing PO properties
+      items: poItems.map(item => ({
+        ...item, // Keep all original item properties
+        // Ensure these critical date fields exist exactly as-is
+        cargoReadyDate: item.cargoReadyDate, 
+        mustArriveDate: item.mustArriveDate
+      }))
+    };
+
+    // 3. Debug log to verify before storing
+    console.log('Storing PO data:', {
+      poNumber: poData.id,
+      crd: poData.cargoReadyBy || poData.items[0]?.cargoReadyDate,
+      mabd: poData.mustArriveBy || poData.items[0]?.mustArriveDate,
+      items: poData.items.map(i => ({
+        id: i.id,
+        crd: i.cargoReadyDate,
+        mabd: i.mustArriveDate
+      }))
+    });
+
+    // 4. Store and navigate (unchanged)
+    sessionStorage.setItem('currentPO', JSON.stringify(poData));
+    router.push('/orders/details');
+  };
 
   const getSelectedPODetails = () => {
     return selectedPOs
@@ -66,7 +104,7 @@ const BookingCreation = () => {
                 booked: selection.bookedQuantities[item.id] || item.booked || 0
               }))
             )}
-            onEditOrder={() => {}}
+            onEditOrder={handleEditOrder} // Pass the handler here
           />
         ) : (
           <div className="text-center py-6 text-gray-500">
@@ -724,14 +762,14 @@ const BookingCreation = () => {
         <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 flex gap-3 justify-end">
           <button
             type="button"
-            className="flex items-center gap-2 px-6 py-3 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-200 transition-colors"
+            className="flex items-center gap-2 px-5 py-3 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-200 transition-colors"
           >
             <Save className="w-4 h-4" />
             Save as Draft
           </button>
           <button
             type="submit"
-            className="flex items-center gap-2 px-6 py-3 text-sm bg-[#007bff] text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-5 py-3 text-sm bg-[#007bff] text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Send className="w-4 h-4" />
             Submit Booking
@@ -743,7 +781,7 @@ const BookingCreation = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-7xl max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="text-lg font-semibold">Select Purchase Orders</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Select Purchase Orders</h3>
               <button 
                 onClick={() => setShowPOSelection(false)}
                 className="text-gray-500 hover:text-gray-700"
@@ -758,7 +796,7 @@ const BookingCreation = () => {
                 view="full"  // Changed from 'full' to 'summary'
                 purchaseOrders={purchaseOrdersData}
                 poDetails={poDetailsData}
-                onEditOrder={() => {}}
+                onEditOrder={handleEditOrder}
                 onCreateBooking={(bookingData) => {
                   setSelectedPOs(bookingData);
                   setShowPOSelection(false);
