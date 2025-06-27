@@ -26,13 +26,21 @@ const ClientUI = () => {
 };
 
 const ForwarderUI = () => {
+  const router = useRouter();
+  
+  const handleCreateBooking = () => {
+    router.push('/bookings/create');
+  };
+ 
   return (
-    <div className="grid grid-cols-3 gap-3 px-4">
+    <div className="grid grid-cols-3 gap-4 px-4">
       <div className="col-span-2">
-
+        <BookingTable 
+         onCreateBooking={handleCreateBooking}
+        />
       </div>
-      <div className="col-span-1">
-
+      <div className="col-span-1 p-2">
+        <BookingCalendar />
       </div>
     </div>
   );
@@ -58,7 +66,7 @@ const AdminUI = () => {
 
 const BookingPage = ({ userType }: { userType: string }) => {
   // Manually set userType for testing - change this value to test different UIs
-  const testUserType: string = 'client'; // Change to: 'client', 'forwarder', 'logistics', 'admin'
+  const testUserType: string = 'forwarder'; // Change to: 'client', 'forwarder', 'logistics', 'admin'
   
   if (testUserType === 'client') return <ClientUI />;
   if (testUserType === 'forwarder') return <ForwarderUI />;

@@ -713,7 +713,7 @@ const BookingCreation = () => {
         <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 flex gap-3 justify-end">
           <button
             type="button"
-            className="flex items-center gap-2 px-6 py-3 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 px-6 py-3 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-200 transition-colors"
           >
             <Save className="w-4 h-4" />
             Save as Draft

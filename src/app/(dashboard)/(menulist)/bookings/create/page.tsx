@@ -13,7 +13,7 @@ const ClientUI = () => {
 const ForwarderUI = () => {
   return (
     <div>
-      
+       <BookingCreation />
     </div>
   );
 };
@@ -38,7 +38,7 @@ const AdminUI = () => {
 
 const Create = ({ userType }: { userType: string }) => {
   // Manually set userType for testing - change this value to test different UIs
-  const testUserType: string = 'client'; // Change to: 'client', 'forwarder', 'logistics', 'admin'
+  const testUserType: string = 'forwarder'; // Change to: 'client', 'forwarder', 'logistics', 'admin'
   
   if (testUserType === 'client') return <ClientUI />;
   if (testUserType === 'forwarder') return <ForwarderUI />;
