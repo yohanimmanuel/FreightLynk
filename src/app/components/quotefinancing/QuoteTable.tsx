@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, Filter, Plus, Edit, Send, Eye, MoreVertical, Truck, Ship, Plane, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Search, Filter, Plus, Edit, Send, Eye, MoreVertical, Truck, Ship, Plane, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 
 interface Quote {
   id: string;
@@ -17,7 +17,25 @@ const QuotesPage = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
+  const statusButtonRef = useRef<HTMLButtonElement>(null);
   const itemsPerPage = 5;
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node) &&
+          statusButtonRef.current && !statusButtonRef.current.contains(event.target as Node)) {
+        setShowStatusDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Simplified mock data with only essential customer-facing information
   const quotes: Quote[] = [
@@ -93,6 +111,14 @@ const QuotesPage = () => {
     }
   ];
 
+  const statusOptions = [
+    { value: 'all', label: 'All Status' },
+    { value: 'draft', label: 'Draft' },
+    { value: 'requested', label: 'Requested' },
+    { value: 'sent', label: 'Sent' },
+    { value: 'expired', label: 'Expired' }
+  ];
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'sent': return 'bg-green-100 text-green-600';
@@ -128,6 +154,44 @@ const QuotesPage = () => {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+  };
+
+  const handleStatusSelect = (value: string) => {
+    setStatusFilter(value);
+    setShowStatusDropdown(false);
+    setCurrentPage(1); // Reset to first page when filtering
+  };
+
+  const getSelectedStatusLabel = () => {
+    const selectedOption = statusOptions.find(option => option.value === statusFilter);
+    return selectedOption ? selectedOption.label : 'All Status';
+  };
+
+  const renderStatusDropdown = () => {
+    if (!showStatusDropdown) return null;
+
+    return (
+      <div 
+        ref={statusDropdownRef}
+        className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 w-40 max-h-80 overflow-hidden z-50"
+      >
+        <div className="p-2 max-h-64 overflow-y-auto">
+          <div className="space-y-1">
+            {statusOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => handleStatusSelect(option.value)}
+                className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-sm transition-colors ${
+                  statusFilter === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const renderPagination = () => {
@@ -171,17 +235,8 @@ const QuotesPage = () => {
 
   return (
     <div className="bg-white">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-2 py-2 mb-2">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Your Quotes</h1>
-            <p className="text-sm text-gray-600 mt-1">Review your freight quotes</p>
-          </div>
-        </div>
-      </div>
-
       <div className="flex">
+        
         {/* Main Content Area */}
         <div className="w-full p-2">
           {/* Search and Filters */}
@@ -197,17 +252,17 @@ const QuotesPage = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <select
-                className="px-4 py-2 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="all">All Status</option>
-                <option value="draft">Draft</option>
-                <option value="requested">Requested</option>
-                <option value="sent">Sent</option>
-                <option value="expired">Expired</option>
-              </select>
+              <div className="relative">
+                <button
+                  ref={statusButtonRef}
+                  onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-900 text-sm rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                >
+                  {getSelectedStatusLabel()}
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showStatusDropdown ? 'rotate-180' : ''}`} />
+                </button>
+                {renderStatusDropdown()}
+              </div>
             </div>
           </div>
 

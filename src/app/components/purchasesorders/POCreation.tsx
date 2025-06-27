@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { Plus, Trash2, Calendar, Package, Truck, DollarSign, MapPin } from 'lucide-react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { Plus, Trash2, Calendar, Package, Truck, DollarSign, MapPin, ChevronDown } from 'lucide-react';
 
 // Type definitions
 interface POItem {
@@ -33,6 +33,80 @@ interface POData {
 }
 
 const POCreation: React.FC = () => {
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);  
+  const [showModeDropdowns, setShowModeDropdowns] = useState<{[key: string]: boolean}>({});
+  const [showCurrencyDropdowns, setShowCurrencyDropdowns] = useState<{[key: string]: boolean}>({});
+  const [showUomDropdowns, setShowUomDropdowns] = useState<{[key: string]: boolean}>({});
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
+  const statusButtonRef = useRef<HTMLButtonElement>(null);
+  const modeDropdownRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
+  const currencyDropdownRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
+  const uomDropdownRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Handle status dropdown
+      if (
+        statusDropdownRef.current && 
+        !statusDropdownRef.current.contains(event.target as Node) &&
+        statusButtonRef.current && 
+        !statusButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowStatusDropdown(false);
+      }
+      
+      // Handle mode dropdowns
+      Object.keys(showModeDropdowns).forEach(itemId => {
+        const dropdownRef = modeDropdownRefs.current[itemId];
+        const buttonRef = document.querySelector(`button[data-mode-dropdown="${itemId}"]`);
+        if (
+          showModeDropdowns[itemId] &&
+          dropdownRef && 
+          !dropdownRef.contains(event.target as Node) &&
+          buttonRef &&
+          !buttonRef.contains(event.target as Node)
+        ) {
+          setShowModeDropdowns(prev => ({ ...prev, [itemId]: false }));
+        }
+      });
+
+      // Handle currency dropdowns
+      Object.keys(showCurrencyDropdowns).forEach(itemId => {
+        const dropdownRef = currencyDropdownRefs.current[itemId];
+        const buttonRef = document.querySelector(`button[data-currency-dropdown="${itemId}"]`);
+        if (
+          showCurrencyDropdowns[itemId] &&
+          dropdownRef && 
+          !dropdownRef.contains(event.target as Node) &&
+          buttonRef &&
+          !buttonRef.contains(event.target as Node)
+        ) {
+          setShowCurrencyDropdowns(prev => ({ ...prev, [itemId]: false }));
+        }
+      });
+
+      // Handle UoM dropdowns
+      Object.keys(showUomDropdowns).forEach(itemId => {
+        const dropdownRef = uomDropdownRefs.current[itemId];
+        const buttonRef = document.querySelector(`button[data-uom-dropdown="${itemId}"]`);
+        if (
+          showUomDropdowns[itemId] &&
+          dropdownRef && 
+          !dropdownRef.contains(event.target as Node) &&
+          buttonRef &&
+          !buttonRef.contains(event.target as Node)
+        ) {
+          setShowUomDropdowns(prev => ({ ...prev, [itemId]: false }));
+        }
+      });
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showModeDropdowns, showCurrencyDropdowns, showUomDropdowns]);
+
   // Generate unique PO number
   const generatePONumber = (): string => {
     const timestamp = Date.now().toString().slice(-6);
@@ -227,17 +301,42 @@ const POCreation: React.FC = () => {
               <h1 className="text-2xl font-semibold text-gray-900">Create Purchase Order</h1>
               <p className="text-sm text-gray-500 mt-1">PO #{formData.poNumber}</p>
             </div>
-            <div className="flex items-center space-x-3">
-              <span className="text-sm text-gray-500">Status:</span>
-              <select
-                value={formData.status}
-                onChange={(e) => handlePOFieldChange('status', e.target.value as 'Open' | 'Closed' | 'Pending')}
-                className="px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <div className="relative">
+              <button
+                ref={statusButtonRef}
+                type="button"
+                onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                className="flex items-center gap-2 px-3 py-2 border border-gray-300 text-gray-900 text-sm rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
               >
-                {statusOptions.map(status => (
-                  <option key={status} value={status}>{status}</option>
-                ))}
-              </select>
+                {formData.status}
+                <ChevronDown className={`w-4 h-4 transition-transform ${showStatusDropdown ? 'rotate-180' : ''}`} />
+              </button>
+              {showStatusDropdown && (
+                <div 
+                  ref={statusDropdownRef}
+                  className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 w-32 max-h-80 overflow-hidden z-50"
+                >
+                  <div className="p-2 max-h-64 overflow-y-auto">
+                    <div className="space-y-1">
+                      {statusOptions.map((status) => (
+                        <button
+                          key={status}
+                          type="button"
+                          onClick={() => {
+                            handlePOFieldChange('status', status);
+                            setShowStatusDropdown(false);
+                          }}
+                          className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-sm transition-colors ${
+                            formData.status === status ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                          }`}
+                        >
+                          {status}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -412,20 +511,48 @@ const POCreation: React.FC = () => {
                         />
                       </div>
 
-                      {/* Logistics */}
-                      <div>
+                      {/* Mode */}
+                      <div className="relative">
                         <label className="block text-xs font-medium text-gray-500 mb-1">Mode *</label>
-                        <select
-                          value={item.mode}
-                          onChange={(e) => handleItemChange(item.id, 'mode', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900"
-                          required
+                        <button
+                          type="button"
+                          data-mode-dropdown={item.id}
+                          onClick={() => setShowModeDropdowns(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                          className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                         >
-                          <option value="">Select mode</option>
-                          {modeOptions.map(mode => (
-                            <option key={mode} value={mode}>{mode}</option>
-                          ))}
-                        </select>
+                          {item.mode || 'Select mode'}
+                          <ChevronDown className={`w-4 h-4 transition-transform ${showModeDropdowns[item.id] ? 'rotate-180' : ''}`} />
+                        </button>
+                        {showModeDropdowns[item.id] && (
+                          <div 
+                            ref={el => {
+                              if (el) {
+                                modeDropdownRefs.current[item.id] = el;
+                              } else {
+                                delete modeDropdownRefs.current[item.id];
+                              }
+                            }}
+                            className="absolute right-0 mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 max-h-80 overflow-y-auto z-50"
+                          >
+                            <div className="p-2">
+                              {modeOptions.map((mode) => (
+                                <button
+                                  key={mode}
+                                  type="button"
+                                  onClick={() => {
+                                    handleItemChange(item.id, 'mode', mode);
+                                    setShowModeDropdowns(prev => ({ ...prev, [item.id]: false }));
+                                  }}
+                                  className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${
+                                    item.mode === mode ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                                  }`}
+                                >
+                                  {mode}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div>
@@ -444,22 +571,47 @@ const POCreation: React.FC = () => {
                       </div>
 
                       {/* Pricing */}
-                      <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">
-                          <DollarSign className="w-3 h-3 inline mr-1" />
-                          Currency *
-                        </label>
-                        <select
-                          value={item.currency}
-                          onChange={(e) => handleItemChange(item.id, 'currency', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900"
-                          required
+                      <div className="relative">
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Currency *</label>
+                        <button
+                          type="button"
+                          data-currency-dropdown={item.id}
+                          onClick={() => setShowCurrencyDropdowns(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                          className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                         >
-                          <option value="">Select currency</option>
-                          {currencyOptions.map(currency => (
-                            <option key={currency} value={currency}>{currency}</option>
-                          ))}
-                        </select>
+                          {item.currency || 'Select currency'}
+                          <ChevronDown className={`w-4 h-4 transition-transform ${showCurrencyDropdowns[item.id] ? 'rotate-180' : ''}`} />
+                        </button>
+                        {showCurrencyDropdowns[item.id] && (
+                          <div 
+                            ref={el => {
+                              if (el) {
+                                currencyDropdownRefs.current[item.id] = el;
+                              } else {
+                                delete currencyDropdownRefs.current[item.id];
+                              }
+                            }}
+                            className="absolute right-0 mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 max-h-80 overflow-y-auto z-50"
+                          >
+                            <div className="p-2">
+                              {currencyOptions.map((currency) => (
+                                <button
+                                  key={currency}
+                                  type="button"
+                                  onClick={() => {
+                                    handleItemChange(item.id, 'currency', currency);
+                                    setShowCurrencyDropdowns(prev => ({ ...prev, [item.id]: false }));
+                                  }}
+                                  className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${
+                                    item.currency === currency ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                                  }`}
+                                >
+                                  {currency}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div>
@@ -477,19 +629,47 @@ const POCreation: React.FC = () => {
                       </div>
 
                       {/* Quantities */}
-                      <div>
+                      <div className="relative">
                         <label className="block text-xs font-medium text-gray-500 mb-1">UoM *</label>
-                        <select
-                          value={item.uom}
-                          onChange={(e) => handleItemChange(item.id, 'uom', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900"
-                          required
+                        <button
+                          type="button"
+                          data-uom-dropdown={item.id}
+                          onClick={() => setShowUomDropdowns(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                          className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                         >
-                          <option value="">Select UoM</option>
-                          {uomOptions.map(uom => (
-                            <option key={uom} value={uom}>{uom}</option>
-                          ))}
-                        </select>
+                          {item.uom || 'Select UoM'}
+                          <ChevronDown className={`w-4 h-4 transition-transform ${showUomDropdowns[item.id] ? 'rotate-180' : ''}`} />
+                        </button>
+                        {showUomDropdowns[item.id] && (
+                          <div 
+                            ref={el => {
+                              if (el) {
+                                uomDropdownRefs.current[item.id] = el;
+                              } else {
+                                delete uomDropdownRefs.current[item.id];
+                              }
+                            }}
+                            className="absolute right-0 mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 max-h-80 overflow-y-auto z-50"
+                          >
+                            <div className="p-2">
+                              {uomOptions.map((uom) => (
+                                <button
+                                  key={uom}
+                                  type="button"
+                                  onClick={() => {
+                                    handleItemChange(item.id, 'uom', uom);
+                                    setShowUomDropdowns(prev => ({ ...prev, [item.id]: false }));
+                                  }}
+                                  className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${
+                                    item.uom === uom ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                                  }`}
+                                >
+                                  {uom}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div>

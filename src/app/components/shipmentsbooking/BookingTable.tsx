@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, Filter, Settings, Eye, EyeOff, Calendar, Package, MapPin, Ship, Clock, AlertTriangle, CheckCircle, XCircle, Minus, Download, Upload, Plus, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronDown } from 'lucide-react';
 
 interface RateTableProps {
@@ -182,7 +182,45 @@ const BookingTable: React.FC<RateTableProps> = ({ onCreateBooking = () => {} }) 
   const [visibleColumns, setVisibleColumns] = useState(defaultVisibleColumns);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [showColumnCustomizer, setShowColumnCustomizer] = useState(false);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showColumnDropdown, setShowColumnDropdown] = useState(false);
+
+  // Refs for dropdown management
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
+  const statusButtonRef = useRef<HTMLButtonElement>(null);
+  const columnDropdownRef = useRef<HTMLDivElement>(null);
+  const columnButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Status filter options
+  const statusOptions = [
+    { value: 'all', label: 'All Status' },
+    { value: 'pending', label: 'Pending' },
+    { value: 'booked', label: 'Booked' },
+    { value: 'in transit', label: 'In Transit' },
+    { value: 'delivered', label: 'Delivered' }
+  ];
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Close status dropdown
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node) &&
+          statusButtonRef.current && !statusButtonRef.current.contains(event.target as Node)) {
+        setShowStatusDropdown(false);
+      }
+      
+      // Close column dropdown
+      if (columnDropdownRef.current && !columnDropdownRef.current.contains(event.target as Node) &&
+          columnButtonRef.current && !columnButtonRef.current.contains(event.target as Node)) {
+        setShowColumnDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Get visible column configuration
   const displayColumns = useMemo(() => {
@@ -229,6 +267,19 @@ const BookingTable: React.FC<RateTableProps> = ({ onCreateBooking = () => {} }) 
         ? prev.filter(key => key !== columnKey)
         : [...prev, columnKey]
     );
+  };
+
+  // Handle status filter selection
+  const handleStatusSelect = (value: string) => {
+    setFilterStatus(value);
+    setShowStatusDropdown(false);
+    setCurrentPage(1);
+  };
+
+  // Get selected status label
+  const getSelectedStatusLabel = () => {
+    const selectedOption = statusOptions.find(option => option.value === filterStatus);
+    return selectedOption ? selectedOption.label : 'All Status';
   };
 
   // Status badge component
@@ -323,16 +374,65 @@ const BookingTable: React.FC<RateTableProps> = ({ onCreateBooking = () => {} }) 
     }
   };
 
-  // Handle CSV export
-  const handleExportCSV = () => {
-    // In a real app, this would generate and download a CSV file
-    console.log('Exporting CSV...');
+  // Render status dropdown
+  const renderStatusDropdown = () => {
+    if (!showStatusDropdown) return null;
+
+    return (
+      <div 
+        ref={statusDropdownRef}
+        className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 w-40 max-h-80 overflow-hidden z-50"
+      >
+        <div className="p-2 max-h-64 overflow-y-auto">
+          <div className="space-y-1">
+            {statusOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => handleStatusSelect(option.value)}
+                className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-sm transition-colors ${
+                  filterStatus === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   };
 
-  // Handle CSV import
-  const handleImportCSV = () => {
-    // In a real app, this would open a file dialog and process the CSV
-    console.log('Importing CSV...');
+  // Render column customizer dropdown
+  const renderColumnDropdown = () => {
+    if (!showColumnDropdown) return null;
+
+    return (
+      <div 
+        ref={columnDropdownRef}
+        className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 w-64 max-h-80 overflow-hidden z-50"
+      >
+        <div className="p-4">
+          <h3 className="text-sm font-medium text-gray-900 mb-3">Add/Remove Columns</h3>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {allColumns.map((column) => (
+              <label key={column.key} className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={visibleColumns.includes(column.key)}
+                  onChange={() => toggleColumn(column.key)}
+                  disabled={column.mandatory}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50"
+                />
+                <span className={`ml-2 text-sm ${column.mandatory ? 'text-gray-500' : 'text-gray-900'}`}>
+                  {column.label}
+                  {column.mandatory && <span className="text-xs text-gray-400 ml-1">(Required)</span>}
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const goToPreviousPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
@@ -340,196 +440,135 @@ const BookingTable: React.FC<RateTableProps> = ({ onCreateBooking = () => {} }) 
 
   return (
     <div className="flex flex-col h-full bg-white">
-        {/* Header Controls */}
-        <div className="">
-        <div className="flex items-center justify-between mb-6 mt-3 pb-3 border-b border-gray-200">
-            <h1 className="text-2xl font-semibold text-gray-900">Bookings</h1>
-            <div className="flex items-center space-x-2">
-            <button
-                onClick={handleImportCSV}
-                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-200"
-            >
-                <Upload className="w-4 h-4" />
-                Import CSV
-            </button>
-            <button
-                onClick={handleExportCSV}
-                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-200"
-            >
-                <Download className="w-4 h-4" />
-                Export CSV
-            </button>
-            <button
-                onClick={onCreateBooking}
-                className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-[#007bff] rounded-lg hover:bg-blue-700"
-            >
-                <Plus className="w-4 h-4" />
-                Create Booking
-            </button>
-            </div>
-        </div>
-
+      <div className="">
         {/* Search and Filter Controls */}
         <div className="flex items-center space-x-4 mb-2">
-            {/* Search Bar */}
-            <div className="relative flex-1 max-w-md">
+          {/* Search Bar */}
+          <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
-                type="text"
-                placeholder="Search bookings..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 text-sm text-gray-900 w-full border border-gray-200 rounded-lg"
+              type="text"
+              placeholder="Search bookings..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 pr-4 py-2 text-sm text-gray-900 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
-            </div>
+          </div>
 
-            {/* Filter Dropdown */}
-            <div className="relative">
-            <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="appearance-none text-sm text-gray-900 bg-white border border-gray-200 rounded-lg hover:bg-gray-200 px-4 py-2 pr-8"
-            >
-                <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="booked">Booked</option>
-                <option value="in transit">In Transit</option>
-                <option value="delivered">Delivered</option>
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
-            </div>
-
-            {/* Customize Columns Button */}
-            <div className="relative">
+          {/* Status Filter Dropdown */}
+          <div className="relative">
             <button
-                onClick={() => setShowColumnCustomizer(!showColumnCustomizer)}
-                className="flex items-center px-4 py-2 text-sm text-gray-900 bg-white border border-gray-200 rounded-lg hover:bg-gray-200 transition-colors"
+              ref={statusButtonRef}
+              onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-900 text-sm rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
             >
-                Customize Columns
+              {getSelectedStatusLabel()}
+              <ChevronDown className={`w-4 h-4 transition-transform ${showStatusDropdown ? 'rotate-180' : ''}`} />
             </button>
+            {renderStatusDropdown()}
+          </div>
 
-            {showColumnCustomizer && (
-                <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                <div className="p-4">
-                    <h3 className="text-sm font-medium text-gray-900 mb-3">Add/Remove Columns</h3>
-                    <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {allColumns.map((column) => (
-                        <label key={column.key} className="flex items-center">
-                        <input
-                            type="checkbox"
-                            checked={visibleColumns.includes(column.key)}
-                            onChange={() => toggleColumn(column.key)}
-                            disabled={column.mandatory}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50"
-                        />
-                        <span className={`ml-2 text-sm ${column.mandatory ? 'text-gray-500' : 'text-gray-900'}`}>
-                            {column.label}
-                            {column.mandatory && <span className="text-xs text-gray-400 ml-1">(Required)</span>}
-                        </span>
-                        </label>
-                    ))}
-                    </div>
-                </div>
-                </div>
+          {/* Customize Columns Button */}
+          <div className="relative">
+            <button
+              ref={columnButtonRef}
+              onClick={() => setShowColumnDropdown(!showColumnDropdown)}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-900 text-sm rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            >
+              Customize Columns
+              <ChevronDown className={`w-4 h-4 transition-transform ${showColumnDropdown ? 'rotate-180' : ''}`} />
+            </button>
+            {renderColumnDropdown()}
+          </div>
+        </div>
+      </div>
+
+      {/* Table Container */}
+      <div className="overflow-auto border border-gray-200 rounded-lg shadow-sm">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              {displayColumns.map((column) => (
+                <th
+                  key={column.key}
+                  style={{ minWidth: column.width }}
+                  className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                >
+                  {column.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {filteredBookings.length === 0 ? (
+              <tr>
+                <td colSpan={displayColumns.length} className="px-4 py-12">
+                  <div className="flex flex-col items-center justify-center">
+                    <Package className="h-12 w-12 text-gray-400" />
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">No bookings found</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Try adjusting your search or filter criteria.
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              currentBookings.map((booking) => (
+                <tr key={booking.id} className="hover:bg-gray-50 h-[40px]">
+                  {displayColumns.map((column) => (
+                    <td
+                      key={column.key}
+                      className="px-4 py-4 whitespace-nowrap text-xs text-gray-900"
+                    >
+                      {renderCellContent(booking, column.key)}
+                    </td>
+                  ))}
+                </tr>
+              ))
             )}
-            </div>
-        </div>
-        </div>
+          </tbody>
+        </table>
+      </div>
 
-        {/* Table Container */}
-        <div className="overflow-auto border border-gray-200 rounded-lg shadow-sm">
-            <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                    <tr>
-                    {displayColumns.map((column) => (
-                        <th
-                        key={column.key}
-                        style={{ minWidth: column.width }}
-                        className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
-                        >
-                        {column.label}
-                        </th>
-                    ))}
-                    </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredBookings.length === 0 ? (
-                        <tr>
-                        <td colSpan={displayColumns.length} className="px-4 py-12">
-                            <div className="flex flex-col items-center justify-center">
-                            <Package className="h-12 w-12 text-gray-400" />
-                            <h3 className="mt-2 text-sm font-medium text-gray-900">No bookings found</h3>
-                            <p className="mt-1 text-sm text-gray-500">
-                                Try adjusting your search or filter criteria.
-                            </p>
-                            </div>
-                        </td>
-                        </tr>
-                    ) : (
-                        currentBookings.map((booking) => (
-                        <tr key={booking.id} className="hover:bg-gray-50 h-[40px]">
-                            {displayColumns.map((column) => (
-                            <td
-                                key={column.key}
-                                className="px-4 py-4 whitespace-nowrap text-xs text-gray-900"
-                            >
-                                {renderCellContent(booking, column.key)}
-                            </td>
-                            ))}
-                        </tr>
-                        ))
-                    )}
-                </tbody>
-            </table>
-        </div>
-
-        {/* Pagination Controls - Only show if there are results */}
-        {filteredBookings.length > 0 && (
-        <div className="py-3 flex items-center justify-between bg-white">
-            <div className="text-sm text-gray-700">
+      {/* Pagination Controls - Only show if there are results */}
+      {filteredBookings.length > 0 && (
+        <div className="py-3 flex items-center justify-between bg-white border-t border-gray-200">
+          <div className="text-sm text-gray-700">
             Showing {(currentPage - 1) * rowsPerPage + 1} to{' '}
             {Math.min(currentPage * rowsPerPage, filteredBookings.length)} of{' '}
             <span className="font-medium">{filteredBookings.length}</span> shipments
-            </div>
-            <div className="flex items-center space-x-2">
+          </div>
+          <div className="flex items-center space-x-2">
             <button
-                onClick={goToPreviousPage}
-                disabled={currentPage === 1}
-                className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={goToPreviousPage}
+              disabled={currentPage === 1}
+              className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-                <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-5 h-5" />
             </button>
             {[...Array(totalPages)].map((_, i) => (
-                <button
+              <button
                 key={i + 1}
                 onClick={() => setCurrentPage(i + 1)}
                 className={`px-3 py-1 text-sm rounded ${
-                    currentPage === i + 1
+                  currentPage === i + 1
                     ? 'bg-[#007bff] text-white'
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
-                >
+              >
                 {i + 1}
-                </button>
+              </button>
             ))}
             <button
-                onClick={goToNextPage}
-                disabled={currentPage === totalPages}
-                className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={goToNextPage}
+              disabled={currentPage === totalPages}
+              className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-                <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-5 h-5" />
             </button>
-            </div>
+          </div>
         </div>
-        )}
-
-        {/* Click outside to close column customizer */}
-        {showColumnCustomizer && (
-        <div
-            className="fixed inset-0 z-40"
-            onClick={() => setShowColumnCustomizer(false)}
-        />
-        )}
+      )}
     </div>
   );
 };

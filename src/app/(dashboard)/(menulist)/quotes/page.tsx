@@ -20,15 +20,27 @@ const ForwarderUI = () => {
     router.push('/quotes/rates');
   };
   return (
-    <div className="h-screen grid grid-cols-3 gap-3 px-4">
-      <div className="col-span-2">
-        <QuoteTable />
-      </div>
-      <div className="col-span-1">
-        <RateTable 
-          view="summary" 
-          onViewAll={handleViewAll} 
-        />
+   <div>
+      {/* Header and Rate Table Layout */}
+      <div className="grid grid-cols-3 gap-3 px-4">
+        <div className="col-span-2">
+          {/* Header */}
+          <div className="bg-white border-b border-gray-200 px-2 py-2 mb-2">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <h1 className="text-2xl font-semibold text-gray-900">Your Quotes</h1>
+                <p className="text-sm text-gray-600 mt-1">Review your freight quotes</p>
+              </div>
+            </div>
+          </div>
+          <QuoteTable />
+        </div>
+        <div className="col-span-1 p-2">
+          <RateTable 
+            view="summary" 
+            onViewAll={handleViewAll} 
+          />
+        </div>
       </div>
     </div>
   );

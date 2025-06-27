@@ -7,12 +7,91 @@ import POManagementTable, {
   purchaseOrdersData,
   poDetailsData
 } from "@/app/components/purchasesorders/POManagementTable";
+import { Download, Plus, Upload } from 'lucide-react';
+
 
 const ClientUI = () => {
+  const router = useRouter();
+  const [orders] = useState<PurchaseOrder[]>(purchaseOrdersData);
+
+  const formatDateForInput = (displayDate: string): string => {
+    if (!displayDate || displayDate === '--') return '';
+    
+    const months: Record<string, string> = {
+      Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06',
+      Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12'
+    };
+    
+    try {
+      const [month, day, year] = displayDate.replace(',', '').split(' ');
+      return `${year}-${months[month]}-${day.padStart(2, '0')}`;
+    } catch (error) {
+      console.error('Error formatting date:', displayDate);
+      return '';
+    }
+  };
+
+  const handleEditOrder = (poId: string) => {
+    const po = purchaseOrdersData.find(o => o.id === poId);
+    if (!po) {
+      console.error('PO not found:', poId);
+      return;
+    }
+
+    const poNumber = parseInt(poId.replace('PO', ''));
+    const poItems = poDetailsData.filter(item => item.poOrderNumber === poNumber);
+
+    const poWithFormattedDates = {
+      ...po,
+      cargoReadyBy: formatDateForInput(po.cargoReadyBy),
+      mustArriveBy: formatDateForInput(po.mustArriveBy),
+      items: poItems
+    };
+
+    sessionStorage.setItem('currentPO', JSON.stringify(poWithFormattedDates));
+    router.push('/orders/details');
+  };
+
+  const handleCreateOrder = () => {
+      router.push('/orders/create');
+    };
+
+  const handleCreateBooking = (bookingData: {
+    poId: string;
+    selectedItems: number[];
+    bookedQuantities: Record<number, number>;
+    }[]) => {
+    sessionStorage.setItem('bookingData', JSON.stringify(bookingData));
+    router.push('/bookings/create');
+  };
+
   return (
     <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">Client Portal</h2>
-      <p className="text-gray-600">Purchase order tracking coming soon...</p>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold text-gray-900">Purchase Orders</h1>
+         <div className="flex gap-3">
+          <button className="flex items-center text-sm text-gray-900 gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-200">
+           <Upload className="w-4 h-4" />
+           Upload CSV
+          </button>
+          <button className="flex items-center text-sm text-gray-900 gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-200">
+            <Download className="w-4 h-4" />
+            Download CSV
+          </button>
+          <button 
+            onClick={handleCreateOrder}
+            className="flex items-center px-4 py-2 text-sm font-medium text-white bg-[#007bff] rounded-md hover:bg-blue-700 transition-colors">
+            <Plus size={16} className="mr-2" />
+            Create Order
+          </button>
+         </div>
+      </div>
+      <POManagementTable
+        purchaseOrders={orders}
+        onEditOrder={handleEditOrder}
+        onCreateBooking={handleCreateBooking}
+        view= "full"
+      />
     </div>
   );
 };
@@ -68,7 +147,6 @@ const ForwarderUI = () => {
       <POManagementTable
         purchaseOrders={orders}
         onEditOrder={handleEditOrder}
-        onCreateOrder={handleCreateOrder}
         view= "full"
       />
     </div>
@@ -94,7 +172,7 @@ const AdminUI = () => {
 };
 
 const OrdersPage = () => {
-  const userType: string = 'forwarder'; // Change to: 'client', 'forwarder', 'logistics', 'admin'
+  const userType: string = 'client'; // Change to: 'client', 'forwarder', 'logistics', 'admin'
   
   if (userType === 'client') return <ClientUI />;
   if (userType === 'forwarder') return <ForwarderUI />;

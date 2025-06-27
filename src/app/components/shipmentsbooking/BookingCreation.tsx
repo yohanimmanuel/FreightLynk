@@ -9,9 +9,9 @@ import POManagementTable, {
 
 
 const BookingCreation = () => {
+  const [showPOSelection, setShowPOSelection] = useState(false);
   const [requireShipmentTags, setRequireShipmentTags] = useState(true);
   const [tradeRole, setTradeRole] = useState<'shipper' | 'consignee'>('shipper');
-
   const [selectedPOs, setSelectedPOs] = useState<{
     poId: string;
     selectedItems: number[];
@@ -44,25 +44,36 @@ const BookingCreation = () => {
   const renderPOReview = () => {
     const selectedData = getSelectedPODetails();
     
-    if (selectedData.length === 0) {
-      return <div className="text-center py-6 text-gray-500">No POs selected</div>;
-    }
-
-    // Create display items combining both data sources
-    const displayItems = selectedData.flatMap(({ items, selection }) => 
-      items.map(item => ({
-        ...item,
-        booked: selection.bookedQuantities[item.id] || item.booked || 0
-      }))
-    );
-
     return (
-      <POManagementTable 
-        view="summary"
-        purchaseOrders={selectedData.map(d => d.po)}
-        poDetails={displayItems}
-        onEditOrder={() => {}}
-      />
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h3 className="text-sm font-medium text-gray-900">Selected Purchase Orders</h3>
+          <button
+            onClick={() => setShowPOSelection(true)}
+            className="px-3 py-1 text-xs text-[#007bff] hover:text-blue-700"
+          >
+            {selectedData.length > 0 ? 'Add More' : 'Add PO'}
+          </button>
+        </div>
+        
+        {selectedData.length > 0 ? (
+          <POManagementTable 
+            view="summary"
+            purchaseOrders={selectedData.map(d => d.po)}
+            poDetails={selectedData.flatMap(({ items, selection }) => 
+              items.map(item => ({
+                ...item,
+                booked: selection.bookedQuantities[item.id] || item.booked || 0
+              }))
+            )}
+            onEditOrder={() => {}}
+          />
+        ) : (
+          <div className="text-center py-6 text-gray-500">
+            No POs selected for booking
+          </div>
+        )}
+      </div>
     );
   };
 
@@ -727,6 +738,45 @@ const BookingCreation = () => {
           </button>
         </div>
       </form>
+
+      {showPOSelection && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold">Select Purchase Orders</h3>
+              <button 
+                onClick={() => setShowPOSelection(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-auto p-4">
+              <POManagementTable
+                view="summary"  // Changed from 'full' to 'summary'
+                purchaseOrders={purchaseOrdersData}
+                poDetails={poDetailsData}
+                onEditOrder={() => {}}
+                onCreateBooking={(bookingData) => {
+                  setSelectedPOs(bookingData);
+                  setShowPOSelection(false);
+                }}
+              />
+            </div>
+            
+            <div className="p-4 border-t flex justify-end">
+              <button
+                onClick={() => setShowPOSelection(false)}
+                className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 };

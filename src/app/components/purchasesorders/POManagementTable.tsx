@@ -36,9 +36,12 @@ interface POSelection {
 }
 
 export interface POManagementTableProps {
-  onCreateOrder?: () => void;
   onEditOrder: (poId: string) => void;
-  onCreateBooking?: () => void;
+  onCreateBooking?: (bookingData: {
+    poId: string;
+    selectedItems: number[];
+    bookedQuantities: Record<number, number>;
+  }[]) => void;  // Add this
   purchaseOrders?: PurchaseOrder[];
   poDetails?: PODetail[];
   view?: 'full' | 'summary';
@@ -116,7 +119,7 @@ export const poDetailsData: PODetail[] = [
       unitCost: '$15.00',
       uom: 'PC',
       requested: 200,
-      booked: 0,
+      booked: 15,
     },
     {
       id: 2,
@@ -131,7 +134,7 @@ export const poDetailsData: PODetail[] = [
       unitCost: '$20.00',
       uom: 'PC',
       requested: 300,
-      booked: 0,
+      booked: 200,
     },
     {
       id: 3,
@@ -146,7 +149,7 @@ export const poDetailsData: PODetail[] = [
       unitCost: '$16.00',
       uom: 'PC',
       requested: 250,
-      booked: 0,
+      booked: 100,
     },
     {
       id: 4,
@@ -195,7 +198,7 @@ export const poDetailsData: PODetail[] = [
     }
 ];
 
-const POManagement = ({ onCreateOrder, onEditOrder, onCreateBooking, view = 'full' }: POManagementTableProps) => {
+const POManagement = ({ onEditOrder, onCreateBooking, view = 'full' }: POManagementTableProps) => {
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(purchaseOrdersData);
   const [poDetails] = useState<PODetail[]>(poDetailsData);
   const [selectedPOs, setSelectedPOs] = useState<POSelection[]>([]);
@@ -368,17 +371,21 @@ const POManagement = ({ onCreateOrder, onEditOrder, onCreateBooking, view = 'ful
                 <button
                   onClick={() => {
                     // Prepare the booking data
-                    const bookingData = selectedPOs.map(poSelection => ({
-                      poId: poSelection.poId,
-                      selectedItems: Array.from(poSelection.selectedItems),
-                      bookedQuantities: poSelection.bookedQuantities
-                    }));
+                    const bookingData = selectedPOs
+                      .filter(po => po.selectedItems.size > 0)
+                      .map(poSelection => ({
+                        poId: poSelection.poId,
+                        selectedItems: Array.from(poSelection.selectedItems),
+                        bookedQuantities: poSelection.bookedQuantities
+                      }));
 
-                    // Store in sessionStorage to pass to BookingCreation
-                    sessionStorage.setItem('bookingData', JSON.stringify(bookingData));
+                    if (bookingData.length === 0) return;
+
+                    if (onCreateBooking) {
+                      onCreateBooking(bookingData);
+                    }
                     
-                    // Navigate to booking creation page
-                    window.location.href = '/bookings/create'; // Or use your router if available
+                    setShowBookingModal(false);
                   }}
                   className="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700"
                 >
@@ -866,26 +873,6 @@ const POManagement = ({ onCreateOrder, onEditOrder, onCreateBooking, view = 'ful
           <>
             {/* Header */}
             <div className="mb-4">
-              <div className="flex justify-between items-center mb-4">
-                <h1 className="text-2xl font-bold text-gray-900">Purchase Orders</h1>
-                <div className="flex gap-3">
-                  <button className="flex items-center text-sm text-gray-900 gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-200">
-                    <Upload className="w-4 h-4" />
-                    Upload CSV
-                  </button>
-                  <button className="flex items-center text-sm text-gray-900 gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-200">
-                    <Download className="w-4 h-4" />
-                    Download CSV
-                  </button>
-                  <button 
-                    onClick={onCreateOrder}
-                    className="flex items-center px-4 py-2 text-sm font-medium text-white bg-[#007bff] rounded-md hover:bg-blue-700 transition-colors">
-                    <Plus size={16} className="mr-2" />
-                    Create Order
-                  </button>
-                </div>
-              </div>
-
               {/* Search and Filters */}
               <div className="flex gap-4 items-center mb-4">
                 <div className="flex-1 max-w-md relative">
