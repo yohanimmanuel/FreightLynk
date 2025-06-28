@@ -26,7 +26,6 @@ export interface PODetail {
   unitCost: string;
   uom: string;
   requested: number;
-  booked: number;
 }
 
 interface POSelection {
@@ -130,8 +129,7 @@ export const poDetailsData: PODetail[] = [
       currency: 'USD',
       unitCost: '$15.00',
       uom: 'PC',
-      requested: 200,
-      booked: 0,
+      requested: 200
     },
     {
       id: 2,
@@ -145,8 +143,7 @@ export const poDetailsData: PODetail[] = [
       currency: 'USD',
       unitCost: '$20.00',
       uom: 'PC',
-      requested: 300,
-      booked: 0,
+      requested: 300
     },
     {
       id: 3,
@@ -160,8 +157,7 @@ export const poDetailsData: PODetail[] = [
       currency: 'AUD',
       unitCost: '$16.00',
       uom: 'PC',
-      requested: 250,
-      booked: 0,
+      requested: 250
     },
     {
       id: 4,
@@ -175,8 +171,7 @@ export const poDetailsData: PODetail[] = [
       currency: 'SGD',
       unitCost: '$12.00',
       uom: 'PC',
-      requested: 400,
-      booked: 0,
+      requested: 400
     },
     {
       id: 5,
@@ -190,8 +185,7 @@ export const poDetailsData: PODetail[] = [
       currency: 'SGD',
       unitCost: '$25.00',
       uom: 'PC',
-      requested: 150,
-      booked: 0,
+      requested: 150
     },
     {
       id: 6,
@@ -205,8 +199,7 @@ export const poDetailsData: PODetail[] = [
       currency: 'IDR',
       unitCost: '$12.00',
       uom: 'PC',
-      requested: 170,
-      booked: 0,
+      requested: 170
     },
     {
       id: 7,
@@ -220,8 +213,7 @@ export const poDetailsData: PODetail[] = [
       currency: 'IDR',
       unitCost: '$12.00',
       uom: 'PC',
-      requested: 170,
-      booked: 0,
+      requested: 170
     }
 ];
 
@@ -437,28 +429,16 @@ const POManagement = ({ onEditOrder, onCreateBooking, view = 'full', mode ='revi
   };
 
   const renderSummaryView = () => {
-    // Combine hardcoded booked values with user selections
-    const bookedItems = poDetails.map(item => {
-      // Find if this item was selected by the user
-      const selectedPO = selectedPOs.find(po => 
-        po.poId === `PO${item.poOrderNumber}` && 
-        po.selectedItems.has(item.id)
-      );
-      
-      return {
-        ...item,
-        // Use user's selected quantity if available, otherwise use hardcoded value
-        booked: selectedPO ? selectedPO.bookedQuantities[item.id] || 0 : item.booked
-      };
-    }).filter(item => item.booked > 0); // Only show items with bookings
+    // Only use booked values from poDetails prop (which is passed from BookingCreation)
+    const bookedItems = (poDetails as (PODetail & { booked: number })[]).filter((item: PODetail & { booked: number }) => item.booked > 0);
 
-    // Rest of the function remains the same...
-    const groupedPOs = bookedItems.reduce((acc, item) => {
+    // Group by PO
+    const groupedPOs = bookedItems.reduce((acc: Record<string, (PODetail & { booked: number })[]>, item: PODetail & { booked: number }) => {
       const poKey = `PO${item.poOrderNumber}`;
       if (!acc[poKey]) acc[poKey] = [];
       acc[poKey].push(item);
       return acc;
-    }, {} as Record<string, PODetail[]>);
+    }, {} as Record<string, (PODetail & { booked: number })[]>);
 
     const bookedPurchaseOrders = purchaseOrders.filter(po => 
       Object.keys(groupedPOs).includes(po.id)
@@ -499,7 +479,6 @@ const POManagement = ({ onEditOrder, onCreateBooking, view = 'full', mode ='revi
                 </button>
               </div>
             </div>
-            
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
@@ -514,7 +493,7 @@ const POManagement = ({ onEditOrder, onCreateBooking, view = 'full', mode ='revi
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {groupedPOs[po.id]?.map((item, index) => (
+                  {groupedPOs[po.id]?.map((item: PODetail & { booked: number }, index: number) => (
                     <tr key={item.id} className="hover:bg-gray-50">
                       <td className="px-4 py-4 text-xs text-gray-900">{index + 1}</td>
                       <td className="px-4 py-4">
@@ -1136,58 +1115,55 @@ const POManagement = ({ onEditOrder, onCreateBooking, view = 'full', mode ='revi
                                         <td className="px-4 py-3 text-xs text-gray-600">{item.unitCost}</td>
                                         <td className="px-4 py-3 text-xs text-gray-600">{item.uom}</td>
                                         <td className="px-4 py-3 text-xs text-gray-600">{item.requested}</td>
-                                          <td className="px-4 py-3">
-                                            <div className="text-xs text-gray-900">
-                                              {selectedPOs.some(selectedPO => selectedPO.poId === po.id && selectedPO.selectedItems.has(item.id))
-                                                ? selectedPOs.find(selectedPO => selectedPO.poId === po.id)?.bookedQuantities?.[item.id] || 0
-                                                : item.booked
+                                        <td className="px-4 py-3">
+                                          <div className="text-xs text-gray-900">
+                                            {selectedPOs.some(selectedPO => selectedPO.poId === po.id && selectedPO.selectedItems.has(item.id))
+                                              ? selectedPOs.find(selectedPO => selectedPO.poId === po.id)?.bookedQuantities?.[item.id] || 0
+                                              : 0
+                                            }
+                                          </div>
+                                          <div className="text-xs text-gray-500">
+                                            ({selectedPOs.some(selectedPO => selectedPO.poId === po.id && selectedPO.selectedItems.has(item.id))
+                                              ? Math.round(((selectedPOs.find(selectedPO => selectedPO.poId === po.id)?.bookedQuantities?.[item.id] || 0) / item.requested) * 100)
+                                              : 0
+                                            }%)
+                                          </div>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                          <div className="flex items-center justify-end gap-2">
+                                            <input
+                                              type="number"
+                                              min="0"
+                                              max={item.requested}
+                                              value={
+                                                selectedPOs.find(po => po.poId === `PO${item.poOrderNumber}`)
+                                                  ?.bookedQuantities[item.id] ?? 0
                                               }
-                                            </div>
-                                            <div className="text-xs text-gray-500">
-                                              ({selectedPOs.some(selectedPO => selectedPO.poId === po.id && selectedPO.selectedItems.has(item.id))
-                                                ? Math.round((
-                                                    (selectedPOs.find(selectedPO => selectedPO.poId === po.id)?.bookedQuantities?.[item.id] || 0) / 
-                                                    item.requested
-                                                  ) * 100)
-                                                : Math.round((item.booked / item.requested) * 100)
-                                              }%)
-                                            </div>
-                                          </td>
-                                          <td className="px-4 py-3">
-                                            <div className="flex items-center justify-end gap-2">
-                                              <input
-                                                type="number"
-                                                min="0"
-                                                max={item.requested}
-                                                value={
-                                                  selectedPOs.find(po => po.poId === `PO${item.poOrderNumber}`)
-                                                    ?.bookedQuantities[item.id] ?? 0
-                                                }
-                                                onChange={(e) => {
-                                                  const value = Math.max(0, Math.min(
-                                                    Number(e.target.value) || 0,
-                                                    item.requested
-                                                  ));
-                                                  handleQuantityChange(`PO${item.poOrderNumber}`, item.id, value);
-                                                }}
-                                                className="w-16 p-1 text-xs text-gray-900 border border-gray-300 rounded-sm"
-                                                onFocus={(e) => e.target.select()}
-                                              />
-                                              <button
-                                                  onClick={() => handlePOItemSelect(`PO${item.poOrderNumber}`, item.id)}
-                                                  className={`flex items-center justify-center w-6 h-6 text-xs rounded border transition-colors ${
-                                                    selectedPOs.some(po => 
-                                                      po.poId === `PO${item.poOrderNumber}` && 
-                                                      po.selectedItems.has(item.id)
-                                                    )
-                                                      ? 'bg-[#007bff] text-white border-[#007bff] hover:bg-blue-700'
-                                                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-200'
-                                                  }`}
-                                                >
-                                                  <Check className="w-3 h-3" />
-                                              </button>
-                                            </div>
-                                          </td>
+                                              onChange={(e) => {
+                                                const value = Math.max(0, Math.min(
+                                                  Number(e.target.value) || 0,
+                                                  item.requested
+                                                ));
+                                                handleQuantityChange(`PO${item.poOrderNumber}`, item.id, value);
+                                              }}
+                                              className="w-16 p-1 text-xs text-gray-900 border border-gray-300 rounded-sm"
+                                              onFocus={(e) => e.target.select()}
+                                            />
+                                            <button
+                                                onClick={() => handlePOItemSelect(`PO${item.poOrderNumber}`, item.id)}
+                                                className={`flex items-center justify-center w-6 h-6 text-xs rounded border transition-colors ${
+                                                  selectedPOs.some(po => 
+                                                    po.poId === `PO${item.poOrderNumber}` && 
+                                                    po.selectedItems.has(item.id)
+                                                  )
+                                                    ? 'bg-[#007bff] text-white border-[#007bff] hover:bg-blue-700'
+                                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-200'
+                                                }`}
+                                              >
+                                                <Check className="w-3 h-3" />
+                                            </button>
+                                          </div>
+                                        </td>
                                       </tr>
                                     ))}
                                   </tbody>

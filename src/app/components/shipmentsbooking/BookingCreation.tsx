@@ -37,9 +37,13 @@ const BookingCreation = () => {
     const bookingData = sessionStorage.getItem('bookingData');
     if (bookingData) {
       setSelectedPOs(JSON.parse(bookingData));
-      sessionStorage.removeItem('bookingData'); // Clean up
     }
   }, []);
+
+  // Add debug log for selectedPOs
+  useEffect(() => {
+    console.log('selectedPOs state:', selectedPOs);
+  }, [selectedPOs]);
 
   const handleEditOrder = (poId: string) => {
     // 1. Find the PO and its items using your existing data sources
@@ -80,23 +84,26 @@ const BookingCreation = () => {
   };
 
   const getSelectedPODetails = () => {
-    return selectedPOs
+    const details = selectedPOs
       .map(poSelection => {
         const po = purchaseOrdersData.find(p => p.id === poSelection.poId);
-        if (!po) return null; // Filter out undefined POs
-        
-        const items = poDetailsData.filter(item => 
-          poSelection.selectedItems.includes(item.id) && 
+        if (!po) return null;
+        const items = poDetailsData.filter(item =>
+          poSelection.selectedItems.includes(item.id) &&
           item.poOrderNumber === parseInt(poSelection.poId.replace('PO', ''))
-        );
+        ).map(item => ({
+          ...item,
+          booked: poSelection.bookedQuantities[item.id] || 0
+        })).filter(item => item.booked > 0);
         return { po, items, selection: poSelection };
       })
       .filter((data): data is NonNullable<typeof data> => data !== null && data.items.length > 0);
+    console.log('getSelectedPODetails:', details);
+    return details;
   };
 
   const renderPOReview = () => {
     const selectedData = getSelectedPODetails();
-    
     return (
       <div className="space-y-4">
         <div className="flex justify-between items-center">
@@ -108,24 +115,23 @@ const BookingCreation = () => {
             {selectedData.length > 0 ? 'Add More' : 'Add PO'}
           </button>
         </div>
-        
         {selectedData.length > 0 ? (
-          <POManagementTable 
+          <POManagementTable
             view="summary"
             purchaseOrders={selectedData.map(d => d.po)}
-            poDetails={selectedData.flatMap(({ items, selection }) => 
-              items.map(item => ({
-                ...item,
-                booked: selection.bookedQuantities[item.id] || item.booked || 0
-              }))
-            )}
-            onEditOrder={handleEditOrder} // Pass the handler here
+            poDetails={selectedData.flatMap(({ items }) => items)}
+            onEditOrder={handleEditOrder}
           />
         ) : (
           <div className="text-center py-6 text-gray-500">
             No POs selected for booking
           </div>
         )}
+        {/* Debug table for selectedPOs */}
+        <div className="mt-4 p-2 bg-gray-50 border border-gray-200 rounded text-xs">
+          <div className="font-bold mb-1">Debug: Raw selectedPOs</div>
+          <pre>{JSON.stringify(selectedPOs, null, 2)}</pre>
+        </div>
       </div>
     );
   };
@@ -808,12 +814,20 @@ const BookingCreation = () => {
             <div className="flex-1 overflow-auto p-4">
               <POManagementTable
                 mode='standalone'
-                view="full"  // Changed from 'full' to 'summary'
+                view="full"
                 purchaseOrders={purchaseOrdersData}
                 poDetails={poDetailsData}
                 onEditOrder={handleEditOrder}
                 onCreateBooking={(bookingData) => {
-                  setSelectedPOs(bookingData);
+                  // Ensure at least 1 booked quantity for each selected item
+                  const normalized = bookingData.map(poSel => ({
+                    ...poSel,
+                    bookedQuantities: Object.fromEntries(
+                      Object.entries(poSel.bookedQuantities).map(([id, qty]) => [id, qty > 0 ? qty : 1])
+                    )
+                  }));
+                  setSelectedPOs(normalized);
+                  sessionStorage.setItem('bookingData', JSON.stringify(normalized));
                   setShowPOSelection(false);
                 }}
               />
@@ -822,7 +836,7 @@ const BookingCreation = () => {
             <div className="p-4 border-t flex justify-end">
               <button
                 onClick={() => setShowPOSelection(false)}
-                className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+                className="px-4 py-2 text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg shadow-sm border border-gray-200"
               >
                 Close
               </button>
