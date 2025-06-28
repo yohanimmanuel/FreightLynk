@@ -545,27 +545,6 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ view, onSeeAll }) => {
 
   return (
     <div className="bg-white">
-      {/* Header */}
-      <div className="p-1 -mt-2">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Your Shipments</h1>
-          <div className="flex space-x-3">
-            <button className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-md hover:bg-gray-200 transition-colors">
-              <Upload size={16} className="mr-2" />
-              Import CSV
-            </button>
-            <button className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-md hover:bg-gray-200 transition-colors">
-              <Download size={16} className="mr-2" />
-              Export CSV
-            </button>
-            <button className="flex items-center px-4 py-2 text-sm font-medium text-white bg-[#007bff] rounded-md hover:bg-blue-700 transition-colors">
-              <Plus size={16} className="mr-2" />
-              Create Booking
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Search and Filter Section */}
       <div className="flex items-center gap-4 mt-2 mb-2">
           <div className="relative flex-1 max-w-md">

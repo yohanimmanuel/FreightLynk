@@ -25,12 +25,12 @@ const ClientUI = () => {
   return (
     <div>
       {/* Header and Calendar Layout */}
-      <div className="grid grid-cols-3 gap-4 px-4">
-        <div className="col-span-2">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-2 md:px-4">
+        <div className="md:col-span-2 col-span-1">
           {/* Header Controls */}
-          <div className="flex items-center justify-between mb-6 mt-3 pb-3 border-b border-gray-200">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 mt-3 pb-3 border-b border-gray-200 gap-2">
               <h1 className="text-2xl font-semibold text-gray-900">Bookings</h1>
-              <div className="flex items-center space-x-2">
+              <div className="flex flex-col md:flex-row items-stretch md:items-center space-y-2 md:space-y-0 md:space-x-2">
               <button
                   onClick={handleImportCSV}
                   className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-200"
@@ -56,7 +56,7 @@ const ClientUI = () => {
           </div>
           <BookingTable />
         </div>
-        <div className="col-span-1 p-2">
+        <div className="md:col-span-1 col-span-1 p-0 md:p-2 mt-4 md:mt-0">
           <BookingCalendar />
         </div>
       </div>
@@ -72,12 +72,12 @@ const ForwarderUI = () => {
   };
  
   return (
-    <div className="grid grid-cols-3 gap-4 px-4">
-      <div className="col-span-2">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-2 md:px-4">
+      <div className="md:col-span-2 col-span-1">
         <BookingTable 
         />
       </div>
-      <div className="col-span-1 p-2">
+      <div className="md:col-span-1 col-span-1 p-0 md:p-2 mt-4 md:mt-0">
         <BookingCalendar />
       </div>
     </div>

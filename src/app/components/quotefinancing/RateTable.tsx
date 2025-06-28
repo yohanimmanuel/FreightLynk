@@ -445,129 +445,103 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
   // Full Management View
   return (
     <div className="bg-white">
-      {/* Header */}
-      <div className="p-4 -mt-1">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-semibold text-gray-900">Rate Management</h2>
-          <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-200">
-              <Upload className="w-4 h-4" />
-              Import CSV
-            </button>
-            <button className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-200">
-              <Download className="w-4 h-4" />
-              Export CSV
-            </button>
-            <button 
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-[#007bff] rounded-lg hover:bg-blue-700"
-            >
-              <Plus className="w-4 h-4" />
-              Add New Rate
-            </button>
-          </div>
+      {/* Search and Filters */}
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search by route, city, or carrier..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 pr-4 py-2 text-sm text-gray-900 w-full border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
         </div>
-
-        {/* Search and Filters */}
-        <div className="flex items-center gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by route, city, or carrier..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 text-sm text-gray-900 w-full border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+        <div className="relative">
+            <button 
+              onClick={() => setShowModeDropdown(!showModeDropdown)}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              {filterMode === 'all' ? 'All Modes' : filterMode.charAt(0).toUpperCase() + filterMode.slice(1)}
+              <ChevronDown className={`w-4 h-4 transition-transform ${showModeDropdown ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {showModeDropdown && (
+              <div className="absolute right-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 w-40 z-50">
+                <div className="p-2">
+                  {['all', 'ocean', 'air', 'truck', 'rail'].map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => {
+                        setFilterMode(mode as any);
+                        setShowModeDropdown(false);
+                      }}
+                      className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-sm transition-colors ${
+                        filterMode === mode ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                      }`}
+                    >
+                      {mode === 'all' ? 'All Modes' : mode.charAt(0).toUpperCase() + mode.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           <div className="relative">
-              <button 
-                onClick={() => setShowModeDropdown(!showModeDropdown)}
-                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                {filterMode === 'all' ? 'All Modes' : filterMode.charAt(0).toUpperCase() + filterMode.slice(1)}
-                <ChevronDown className={`w-4 h-4 transition-transform ${showModeDropdown ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {showModeDropdown && (
-                <div className="absolute right-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 w-40 z-50">
-                  <div className="p-2">
-                    {['all', 'ocean', 'air', 'truck', 'rail'].map((mode) => (
-                      <button
-                        key={mode}
-                        onClick={() => {
-                          setFilterMode(mode as any);
-                          setShowModeDropdown(false);
-                        }}
-                        className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-sm transition-colors ${
-                          filterMode === mode ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-                        }`}
-                      >
-                        {mode === 'all' ? 'All Modes' : mode.charAt(0).toUpperCase() + mode.slice(1)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="relative">
-              <button 
-                onClick={() => setShowColumnModal(!showColumnModal)}
-                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Add/Remove Columns
-                <ChevronDown className={`w-4 h-4 transition-transform ${showColumnModal ? 'rotate-180' : ''}`} />
-              </button>
+            <button 
+              onClick={() => setShowColumnModal(!showColumnModal)}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Add/Remove Columns
+              <ChevronDown className={`w-4 h-4 transition-transform ${showColumnModal ? 'rotate-180' : ''}`} />
+            </button>
 
-              {showColumnModal && (
-                <div className="absolute right-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 w-56 z-50">
-                  <div className="p-2 max-h-64 overflow-y-auto">
-                    {Object.entries(columnVisibility).map(([key, visible]) => (
-                      <label key={key} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={visible}
-                          onChange={(e) => setColumnVisibility(prev => ({
-                            ...prev,
-                            [key]: e.target.checked
-                          }))}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-gray-700 capitalize">
-                          {key.replace(/([A-Z])/g, ' $1').trim()}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
+            {showColumnModal && (
+              <div className="absolute right-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 w-56 z-50">
+                <div className="p-2 max-h-64 overflow-y-auto">
+                  {Object.entries(columnVisibility).map(([key, visible]) => (
+                    <label key={key} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={visible}
+                        onChange={(e) => setColumnVisibility(prev => ({
+                          ...prev,
+                          [key]: e.target.checked
+                        }))}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700 capitalize">
+                        {key.replace(/([A-Z])/g, ' $1').trim()}
+                      </span>
+                    </label>
+                  ))}
                 </div>
-              )}
-            </div>
-        </div>
-
-        {/* Bulk Actions */}
-        {selectedRates.length > 0 && (
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-blue-700">
-                {selectedRates.length} rate{selectedRates.length > 1 ? 's' : ''} selected
-              </span>
-              <div className="flex items-center gap-2">
-                <button className="flex items-center gap-1 px-3 py-1 text-sm text-[#007bff] hover:text-blue-700">
-                  Post Quote
-                </button>
-                <button className="flex items-center gap-1 px-3 py-1 text-sm text-red-600 hover:text-red-800">
-                  <Trash2 className="w-4 h-4" />
-                  Delete
-                </button>
-                <button className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800">
-                  Archive
-                </button>
               </div>
+            )}
+          </div>
+      </div>
+      {/* Bulk Actions */}
+      {selectedRates.length > 0 && (
+        <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-blue-700">
+              {selectedRates.length} rate{selectedRates.length > 1 ? 's' : ''} selected
+            </span>
+            <div className="flex items-center gap-2">
+              <button className="flex items-center gap-1 px-3 py-1 text-sm text-[#007bff] hover:text-blue-700">
+                Post Quote
+              </button>
+              <button className="flex items-center gap-1 px-3 py-1 text-sm text-red-600 hover:text-red-800">
+                <Trash2 className="w-4 h-4" />
+                Delete
+              </button>
+              <button className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800">
+                Archive
+              </button>
             </div>
           </div>
-        )}
-      </div>
-
+        </div>
+      )}
       {/* Table Container with horizontal scrolling */}
       <div className="px-4 pb-4">
         <div className="overflow-x-auto">
