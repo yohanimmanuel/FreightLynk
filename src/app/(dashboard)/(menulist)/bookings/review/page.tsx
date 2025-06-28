@@ -1,10 +1,11 @@
 'use client';
 
+import BookingReview from "@/app/components/shipmentsbooking/BookingReview";
+
 const ClientUI = () => {
   return (
     <div>
-      <h2>Client</h2>
-      <p>Coming Soon...</p>
+      <BookingReview />
     </div>
   );
 };

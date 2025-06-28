@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, Filter, Settings, Eye, EyeOff, Calendar, Package, MapPin, Ship, Clock, AlertTriangle, CheckCircle, XCircle, Minus, Download, Upload, Plus, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronDown } from 'lucide-react';
 
-interface RateTableProps {
-  onCreateBooking?: () => void;
+interface BookingTableProps {
+  onSubmitBooking?: () => void;
 }
 
-const BookingTable: React.FC<RateTableProps> = ({ onCreateBooking = () => {} }) => { 
+const BookingTable: React.FC<BookingTableProps> = ({ onSubmitBooking = () => {} }) => { 
   // Sample booking data (now with 8 entries)
   const [bookings] = useState<Booking[]>([
     {

@@ -8,7 +8,11 @@ import POManagementTable, {
 } from '../purchasesorders/POManagementTable';
 import { useRouter } from 'next/navigation';
 
-const BookingCreation = () => {
+interface BookingCreationProps {
+  onSubmitBooking?: () => void;
+}
+
+const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () => {} }) => {
   const router = useRouter(); 
   const [showPOSelection, setShowPOSelection] = useState(false);
   const [requireShipmentTags, setRequireShipmentTags] = useState(true);
@@ -18,11 +22,6 @@ const BookingCreation = () => {
     selectedItems: number[];
     bookedQuantities: Record<number, number>;
   }[]>([]);
-
-  useEffect(() => {
-    // Always clear bookingData on mount for a fresh booking
-    sessionStorage.removeItem('bookingData');
-  }, []);
 
   function formatDateForInput(displayDate: string): string {
     if (!displayDate || displayDate === '--') return '';
@@ -363,7 +362,13 @@ const BookingCreation = () => {
         <p className="text-gray-600 text-sm">Fill in the details below to create a new freight booking</p>
       </div>
 
-      <form className="space-y-2 -mt-2">
+      <form
+        className="space-y-2 -mt-2"
+        onSubmit={e => {
+          e.preventDefault();
+          onSubmitBooking();
+        }}
+      >
         {/* Pre-fill Booking */}
         <div className="border border-gray-200 rounded-lg mb-2 overflow-hidden">
           <SectionHeader title="Pre-fill Booking" icon={Package} section="prefill" />

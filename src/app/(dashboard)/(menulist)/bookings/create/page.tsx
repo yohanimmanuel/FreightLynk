@@ -1,11 +1,17 @@
 'use client';
 
 import BookingCreation from "@/app/components/shipmentsbooking/BookingCreation";
+import { useRouter } from "next/navigation";
 
 const ClientUI = () => {
+  const router = useRouter();
+  const handleSubmitBooking = () => {
+    router.push('/bookings/review');
+  };
+
   return (
     <div>
-      <BookingCreation />
+      <BookingCreation onSubmitBooking={handleSubmitBooking} />
     </div>
   );
 };
@@ -13,7 +19,6 @@ const ClientUI = () => {
 const ForwarderUI = () => {
   return (
     <div>
-       <BookingCreation />
     </div>
   );
 };
