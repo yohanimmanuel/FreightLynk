@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronUp, Package, Users, Truck, MapPin, Target, Scale, FileText, Tag, MessageSquare, Save, Send, Info, Plus, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, Package, Users, Truck, MapPin, Target, Scale, FileText, Tag, MessageSquare, Save, Send, Info, Plus, X, Edit, Trash2 } from 'lucide-react';
 import POManagementTable, { 
   PurchaseOrder, 
   PODetail, 
@@ -18,6 +18,11 @@ const BookingCreation = () => {
     selectedItems: number[];
     bookedQuantities: Record<number, number>;
   }[]>([]);
+
+  useEffect(() => {
+    // Always clear bookingData on mount for a fresh booking
+    sessionStorage.removeItem('bookingData');
+  }, []);
 
   function formatDateForInput(displayDate: string): string {
     if (!displayDate || displayDate === '--') return '';
@@ -88,11 +93,13 @@ const BookingCreation = () => {
       .map(poSelection => {
         const po = purchaseOrdersData.find(p => p.id === poSelection.poId);
         if (!po) return null;
+        const poNum = parseInt(poSelection.poId.replace('PO', ''));
         const items = poDetailsData.filter(item =>
           poSelection.selectedItems.includes(item.id) &&
-          item.poOrderNumber === parseInt(poSelection.poId.replace('PO', ''))
+          item.poOrderNumber === poNum
         ).map(item => ({
           ...item,
+          poOrderNumber: poNum,
           booked: poSelection.bookedQuantities[item.id] || 0
         })).filter(item => item.booked > 0);
         return { po, items, selection: poSelection };
@@ -104,6 +111,50 @@ const BookingCreation = () => {
 
   const renderPOReview = () => {
     const selectedData = getSelectedPODetails();
+    // Map all selected PO items with booked > 0 for summary view
+    const poDetailsForSummary = selectedData.flatMap(({ items, po }) =>
+      items.map(item => ({
+        ...item,
+        poOrderNumber: typeof item.poOrderNumber === 'number' ? item.poOrderNumber : parseInt(po.id.replace('PO', '')),
+        booked: Number(item.booked) || 0
+      }))
+    );
+    // Always get the full PO object from purchaseOrdersData for every poOrderNumber in poDetailsForSummary
+    const purchaseOrdersForSummary = Array.from(
+      new Set(
+        poDetailsForSummary
+          .map(item => purchaseOrdersData.find(po => po.id === `PO${item.poOrderNumber}`))
+          .filter((po): po is PurchaseOrder => Boolean(po))
+      )
+    );
+
+    // Group by PO
+    const groupedPOs: Record<string, (typeof poDetailsForSummary)> = poDetailsForSummary.reduce((acc, item) => {
+      const poKey = `PO${item.poOrderNumber}`;
+      if (!acc[poKey]) acc[poKey] = [];
+      acc[poKey].push(item);
+      return acc;
+    }, {} as Record<string, typeof poDetailsForSummary>);
+
+    if (poDetailsForSummary.length === 0) {
+      return (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-sm font-medium text-gray-900">Selected Purchase Orders</h3>
+            <button
+              onClick={() => setShowPOSelection(true)}
+              className="px-3 py-1 text-xs text-[#007bff] hover:text-blue-700"
+            >
+              Add PO
+            </button>
+          </div>
+          <div className="text-center py-12 text-gray-500">
+            No booked purchase orders found
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-4">
         <div className="flex justify-between items-center">
@@ -115,22 +166,82 @@ const BookingCreation = () => {
             {selectedData.length > 0 ? 'Add More' : 'Add PO'}
           </button>
         </div>
-        {selectedData.length > 0 ? (
-          <POManagementTable
-            view="summary"
-            purchaseOrders={selectedData.map(d => d.po)}
-            poDetails={selectedData.flatMap(({ items }) => items)}
-            onEditOrder={handleEditOrder}
-          />
-        ) : (
-          <div className="text-center py-6 text-gray-500">
-            No POs selected for booking
-          </div>
-        )}
-        {/* Debug table for selectedPOs */}
-        <div className="mt-4 p-2 bg-gray-50 border border-gray-200 rounded text-xs">
-          <div className="font-bold mb-1">Debug: Raw selectedPOs</div>
-          <pre>{JSON.stringify(selectedPOs, null, 2)}</pre>
+        <div className="space-y-2">
+          {purchaseOrdersForSummary.map((po) => (
+            <div key={po.id} className="bg-white rounded-lg border border-gray-200">
+              <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="text-sm font-medium text-blue-600">{po.id}</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs px-2 py-1 rounded ${
+                    po.status === 'Open' 
+                      ? 'bg-green-100 text-green-800' 
+                      : po.status === 'Closed' 
+                        ? 'bg-gray-100 text-gray-800' 
+                        : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {po.status}
+                  </span>
+                  {/* Trash Button */}
+                  <button
+                    onClick={() => {
+                      setSelectedPOs(prev => {
+                        const updated = prev.filter(sel => sel.poId !== po.id);
+                        sessionStorage.setItem('bookingData', JSON.stringify(updated));
+                        return updated;
+                      });
+                    }}
+                    className="p-1 text-gray-400 hover:text-red-600 rounded-full focus:outline-none"
+                    title="Remove PO"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Currency</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Cost</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requested</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booked</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {groupedPOs[po.id]?.map((item, index) => (
+                      <tr key={item.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-4 text-xs text-gray-900">{index + 1}</td>
+                        <td className="px-4 py-4">
+                          <div className="text-xs font-medium text-gray-900">{item.productCode}</div>
+                          <div className="text-xs text-gray-500">{item.productName}</div>
+                        </td>
+                        <td className="px-4 py-4 text-xs text-gray-900">{item.currency}</td>
+                        <td className="px-4 py-4 text-xs text-gray-900">{item.unitCost}</td>
+                        <td className="px-4 py-4 text-xs text-gray-900">{item.requested}</td>
+                        <td className="px-4 py-4 text-xs text-gray-900">{item.booked}</td>
+                        <td className="px-4 py-4 text-xs text-gray-900">
+                          <div className="w-full bg-gray-200 rounded-full h-1.5">
+                            <div 
+                              className="bg-blue-600 h-1.5 rounded-full" 
+                              style={{ width: `${(item.booked / item.requested) * 100}%` }}
+                            ></div>
+                          </div>
+                          <span className="text-xs text-gray-500 mt-1">
+                            {Math.round((item.booked / item.requested) * 100)}%
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -811,10 +922,9 @@ const BookingCreation = () => {
               </button>
             </div>
             
-            <div className="flex-1 overflow-auto p-4">
+            <div className="flex-1 overflow-auto p-4 text-black">
               <POManagementTable
                 mode='standalone'
-                view="full"
                 purchaseOrders={purchaseOrdersData}
                 poDetails={poDetailsData}
                 onEditOrder={handleEditOrder}
@@ -826,8 +936,18 @@ const BookingCreation = () => {
                       Object.entries(poSel.bookedQuantities).map(([id, qty]) => [id, qty > 0 ? qty : 1])
                     )
                   }));
-                  setSelectedPOs(normalized);
-                  sessionStorage.setItem('bookingData', JSON.stringify(normalized));
+                  
+                  // Merge new selections with existing ones instead of replacing
+                  setSelectedPOs(prevSelectedPOs => {
+                    const existingPOIds = new Set(prevSelectedPOs.map(po => po.poId));
+                    const newPOs = normalized.filter(po => !existingPOIds.has(po.poId));
+                    const mergedPOs = [...prevSelectedPOs, ...newPOs];
+                    
+                    // Update sessionStorage with merged data
+                    sessionStorage.setItem('bookingData', JSON.stringify(mergedPOs));
+                    return mergedPOs;
+                  });
+                  
                   setShowPOSelection(false);
                 }}
               />

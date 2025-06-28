@@ -90,7 +90,6 @@ const ClientUI = () => {
         purchaseOrders={orders}
         onEditOrder={handleEditOrder}
         onCreateBooking={handleCreateBooking}
-        view= "full"
       />
     </div>
   );
@@ -147,7 +146,6 @@ const ForwarderUI = () => {
       <POManagementTable
         purchaseOrders={orders}
         onEditOrder={handleEditOrder}
-        view= "full"
       />
     </div>
   );
