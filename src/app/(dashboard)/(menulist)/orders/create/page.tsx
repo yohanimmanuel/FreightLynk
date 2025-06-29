@@ -13,7 +13,8 @@ const ClientUI = () => {
 const ForwarderUI = () => {
   return (
     <div>
-      <POCreation />
+      <h2>Forwarder Invoice Interface</h2>
+      <p>Coming Soon...</p>
     </div>
   );
 };

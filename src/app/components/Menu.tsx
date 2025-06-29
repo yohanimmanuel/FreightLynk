@@ -53,7 +53,7 @@ const menuItems = [
             icon: FileText,
             label: "Quotes",
             href: "/quotes",
-            visible: ["admin", "client", "forwarder", "logisticsprovider"],
+            visible: ["admin", "forwarder", "logisticsprovider"],
           },
           {
             icon: NotebookText,
@@ -95,7 +95,7 @@ const menuItems = [
             icon: BarChart3,
             label: "Analytics",
             href: "#", // Changed to # since it's dropdown only
-            visible: ["admin", "client", "forwarder", "logisticsprovider"],
+            visible: [],
             hasSubmenu: true,
             submenu: [
               {

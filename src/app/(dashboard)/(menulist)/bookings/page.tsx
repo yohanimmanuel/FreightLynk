@@ -65,21 +65,10 @@ const ClientUI = () => {
 };
 
 const ForwarderUI = () => {
-  const router = useRouter();
-  
-  const handleCreateBooking = () => {
-    router.push('/bookings/create');
-  };
- 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-2 md:px-4">
-      <div className="md:col-span-2 col-span-1">
-        <BookingTable 
-        />
-      </div>
-      <div className="md:col-span-1 col-span-1 p-0 md:p-2 mt-4 md:mt-0">
-        <BookingCalendar />
-      </div>
+    <div>
+      <h2>Forwarder Invoice Interface</h2>
+      <p>Coming Soon...</p>
     </div>
   );
 };

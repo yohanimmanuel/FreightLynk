@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, ChevronUp, Package, Users, Truck, MapPin, Target, Scale, FileText, Tag, MessageSquare, Save, Send, Info, Plus, X, Edit, Trash2 } from 'lucide-react';
 import POManagementTable, { 
   PurchaseOrder, 
@@ -7,6 +7,7 @@ import POManagementTable, {
   poDetailsData, 
 } from '../purchasesorders/POManagementTable';
 import { useRouter } from 'next/navigation';
+import ReactDOM from 'react-dom';
 
 interface BookingCreationProps {
   onSubmitBooking?: () => void;
@@ -22,6 +23,48 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
     selectedItems: number[];
     bookedQuantities: Record<number, number>;
   }[]>([]);
+  const [showShipperDropdown, setShowShipperDropdown] = useState(false);
+  const [showConsigneeDropdown, setShowConsigneeDropdown] = useState(false);
+  const shipperDropdownRef = useRef<HTMLDivElement>(null);
+  const consigneeDropdownRef = useRef<HTMLDivElement>(null);
+  const [shipperDropdownPos, setShipperDropdownPos] = useState<{top: number, left: number, width: number} | null>(null);
+  const [consigneeDropdownPos, setConsigneeDropdownPos] = useState<{top: number, left: number, width: number} | null>(null);
+
+  // Add state and refs for transport details dropdowns
+  const [showTransportModeDropdown, setShowTransportModeDropdown] = useState(false);
+  const [transportModeDropdownPos, setTransportModeDropdownPos] = useState<{top: number, left: number, width: number} | null>(null);
+  const transportModeDropdownRef = useRef<HTMLDivElement>(null);
+
+  const [showShipmentTypeDropdown, setShowShipmentTypeDropdown] = useState(false);
+  const [shipmentTypeDropdownPos, setShipmentTypeDropdownPos] = useState<{top: number, left: number, width: number} | null>(null);
+  const shipmentTypeDropdownRef = useRef<HTMLDivElement>(null);
+
+  const [showContainerTypeDropdown, setShowContainerTypeDropdown] = useState(false);
+  const [containerTypeDropdownPos, setContainerTypeDropdownPos] = useState<{top: number, left: number, width: number} | null>(null);
+  const containerTypeDropdownRef = useRef<HTMLDivElement>(null);
+
+  const [showIncotermsDropdown, setShowIncotermsDropdown] = useState(false);
+  const [incotermsDropdownPos, setIncotermsDropdownPos] = useState<{top: number, left: number, width: number} | null>(null);
+  const incotermsDropdownRef = useRef<HTMLDivElement>(null);
+
+  const [showPackageTypeDropdown, setShowPackageTypeDropdown] = useState(false);
+  const [packageTypeDropdownPos, setPackageTypeDropdownPos] = useState<{top: number, left: number, width: number} | null>(null);
+  const packageTypeDropdownRef = useRef<HTMLDivElement>(null);
+
+  const [showPrefillDropdown, setShowPrefillDropdown] = useState(false);
+  const [prefillDropdownPos, setPrefillDropdownPos] = useState<{top: number, left: number, width: number} | null>(null);
+  const prefillDropdownRef = useRef<HTMLDivElement>(null);
+  const [selectedPrefill, setSelectedPrefill] = useState<string>("");
+
+  // Add refs for portal dropdown content
+  const prefillDropdownContentRef = useRef<HTMLDivElement>(null);
+  const shipperDropdownContentRef = useRef<HTMLDivElement>(null);
+  const consigneeDropdownContentRef = useRef<HTMLDivElement>(null);
+  const transportModeDropdownContentRef = useRef<HTMLDivElement>(null);
+  const shipmentTypeDropdownContentRef = useRef<HTMLDivElement>(null);
+  const containerTypeDropdownContentRef = useRef<HTMLDivElement>(null);
+  const incotermsDropdownContentRef = useRef<HTMLDivElement>(null);
+  const packageTypeDropdownContentRef = useRef<HTMLDivElement>(null);
 
   function formatDateForInput(displayDate: string): string {
     if (!displayDate || displayDate === '--') return '';
@@ -355,6 +398,122 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
     </div>
   );
 
+  // Generalized outside click handler for all dropdowns
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      // Prefill
+      if (showPrefillDropdown && prefillDropdownRef.current && prefillDropdownContentRef.current &&
+        !prefillDropdownRef.current.contains(event.target as Node) &&
+        !prefillDropdownContentRef.current.contains(event.target as Node)) {
+        setShowPrefillDropdown(false);
+      }
+      // Shipper
+      if (showShipperDropdown && shipperDropdownRef.current && shipperDropdownContentRef.current &&
+        !shipperDropdownRef.current.contains(event.target as Node) &&
+        !shipperDropdownContentRef.current.contains(event.target as Node)) {
+        setShowShipperDropdown(false);
+      }
+      // Consignee
+      if (showConsigneeDropdown && consigneeDropdownRef.current && consigneeDropdownContentRef.current &&
+        !consigneeDropdownRef.current.contains(event.target as Node) &&
+        !consigneeDropdownContentRef.current.contains(event.target as Node)) {
+        setShowConsigneeDropdown(false);
+      }
+      // Transport Mode
+      if (showTransportModeDropdown && transportModeDropdownRef.current && transportModeDropdownContentRef.current &&
+        !transportModeDropdownRef.current.contains(event.target as Node) &&
+        !transportModeDropdownContentRef.current.contains(event.target as Node)) {
+        setShowTransportModeDropdown(false);
+      }
+      // Shipment Type
+      if (showShipmentTypeDropdown && shipmentTypeDropdownRef.current && shipmentTypeDropdownContentRef.current &&
+        !shipmentTypeDropdownRef.current.contains(event.target as Node) &&
+        !shipmentTypeDropdownContentRef.current.contains(event.target as Node)) {
+        setShowShipmentTypeDropdown(false);
+      }
+      // Container Type
+      if (showContainerTypeDropdown && containerTypeDropdownRef.current && containerTypeDropdownContentRef.current &&
+        !containerTypeDropdownRef.current.contains(event.target as Node) &&
+        !containerTypeDropdownContentRef.current.contains(event.target as Node)) {
+        setShowContainerTypeDropdown(false);
+      }
+      // Incoterms
+      if (showIncotermsDropdown && incotermsDropdownRef.current && incotermsDropdownContentRef.current &&
+        !incotermsDropdownRef.current.contains(event.target as Node) &&
+        !incotermsDropdownContentRef.current.contains(event.target as Node)) {
+        setShowIncotermsDropdown(false);
+      }
+      // Package Type
+      if (showPackageTypeDropdown && packageTypeDropdownRef.current && packageTypeDropdownContentRef.current &&
+        !packageTypeDropdownRef.current.contains(event.target as Node) &&
+        !packageTypeDropdownContentRef.current.contains(event.target as Node)) {
+        setShowPackageTypeDropdown(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showPrefillDropdown, showShipperDropdown, showConsigneeDropdown, showTransportModeDropdown, showShipmentTypeDropdown, showContainerTypeDropdown, showIncotermsDropdown, showPackageTypeDropdown]);
+
+  const handleShipperDropdown = () => {
+    if (!showShipperDropdown) {
+      const rect = shipperDropdownRef.current?.getBoundingClientRect();
+      if (rect) setShipperDropdownPos({top: rect.bottom + window.scrollY, left: rect.left + window.scrollX, width: rect.width});
+    }
+    setShowShipperDropdown((v) => !v);
+  };
+
+  const handleConsigneeDropdown = () => {
+    if (!showConsigneeDropdown) {
+      const rect = consigneeDropdownRef.current?.getBoundingClientRect();
+      if (rect) setConsigneeDropdownPos({top: rect.bottom + window.scrollY, left: rect.left + window.scrollX, width: rect.width});
+    }
+    setShowConsigneeDropdown((v) => !v);
+  };
+
+  const handleTransportModeDropdown = () => {
+    if (!showTransportModeDropdown) {
+      const rect = transportModeDropdownRef.current?.getBoundingClientRect();
+      if (rect) setTransportModeDropdownPos({top: rect.bottom + window.scrollY, left: rect.left + window.scrollX, width: rect.width});
+    }
+    setShowTransportModeDropdown((v) => !v);
+  };
+  const handleShipmentTypeDropdown = () => {
+    if (!showShipmentTypeDropdown) {
+      const rect = shipmentTypeDropdownRef.current?.getBoundingClientRect();
+      if (rect) setShipmentTypeDropdownPos({top: rect.bottom + window.scrollY, left: rect.left + window.scrollX, width: rect.width});
+    }
+    setShowShipmentTypeDropdown((v) => !v);
+  };
+  const handleContainerTypeDropdown = () => {
+    if (!showContainerTypeDropdown) {
+      const rect = containerTypeDropdownRef.current?.getBoundingClientRect();
+      if (rect) setContainerTypeDropdownPos({top: rect.bottom + window.scrollY, left: rect.left + window.scrollX, width: rect.width});
+    }
+    setShowContainerTypeDropdown((v) => !v);
+  };
+  const handleIncotermsDropdown = () => {
+    if (!showIncotermsDropdown) {
+      const rect = incotermsDropdownRef.current?.getBoundingClientRect();
+      if (rect) setIncotermsDropdownPos({top: rect.bottom + window.scrollY, left: rect.left + window.scrollX, width: rect.width});
+    }
+    setShowIncotermsDropdown((v) => !v);
+  };
+  const handlePackageTypeDropdown = () => {
+    if (!showPackageTypeDropdown) {
+      const rect = packageTypeDropdownRef.current?.getBoundingClientRect();
+      if (rect) setPackageTypeDropdownPos({top: rect.bottom + window.scrollY, left: rect.left + window.scrollX, width: rect.width});
+    }
+    setShowPackageTypeDropdown((v) => !v);
+  };
+
+  const handlePrefillDropdown = () => {
+    if (!showPrefillDropdown) {
+      const rect = prefillDropdownRef.current?.getBoundingClientRect();
+      if (rect) setPrefillDropdownPos({top: rect.bottom + window.scrollY, left: rect.left + window.scrollX, width: rect.width});
+    }
+    setShowPrefillDropdown((v) => !v);
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-2 bg-white">
       <div className="mb-8 border-b border-gray-200 pb-4">
@@ -377,17 +536,44 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
               <p className="text-xs text-gray-700 mb-3">Start this booking from a template or previous shipment</p>
               {previousShipments.length > 0 ? (
                 <div className="space-y-2">
-                  <select 
-                    className="w-full p-2 text-gray-900 text-xs border border-gray-200 rounded-lg"
-                    onChange={(e) => e.target.value && handlePrefillShipment(e.target.value)}
-                  >
-                    <option value="">Select a previous shipment to pre-fill</option>
-                    {previousShipments.map(shipment => (
-                      <option key={shipment.id} value={shipment.id}>
-                        {shipment.name} - {shipment.date}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative" ref={prefillDropdownRef}>
+                    <button
+                      type="button"
+                      onClick={handlePrefillDropdown}
+                      className="flex items-center justify-between w-full px-3 py-3 border border-gray-300 text-xs text-gray-900 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    >
+                      {selectedPrefill
+                        ? previousShipments.find(s => s.id === selectedPrefill)?.name +
+                          ' - ' + previousShipments.find(s => s.id === selectedPrefill)?.date
+                        : 'Select a previous shipment to pre-fill'}
+                      <ChevronDown className={`w-4 h-4 transition-transform ${showPrefillDropdown ? 'rotate-180' : ''}`} />
+                    </button>
+                    {showPrefillDropdown && prefillDropdownPos && ReactDOM.createPortal(
+                      <div ref={prefillDropdownContentRef} style={{position: 'absolute', top: prefillDropdownPos.top, left: prefillDropdownPos.left, width: prefillDropdownPos.width, zIndex: 9999}} className="bg-white rounded-lg shadow-lg border border-gray-200">
+                        <div className="p-2 max-h-64 overflow-y-auto">
+                          <div className="space-y-1">
+                            {previousShipments.map(shipment => (
+                              <button
+                                key={shipment.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedPrefill(shipment.id);
+                                  setShowPrefillDropdown(false);
+                                  handlePrefillShipment(shipment.id);
+                                }}
+                                className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${
+                                  selectedPrefill === shipment.id ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                                }`}
+                              >
+                                {shipment.name} - {shipment.date}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>,
+                      document.body
+                    )}
+                  </div>
                   <div className="flex items-center gap-2 text-xs text-gray-500 mt-4">
                     <Info className="w-4 h-4" />
                     <span>Speed up the process by loading info from a past booking</span>
@@ -462,51 +648,104 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                   Consignee
                 </button>
               </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-2">
                     Shipper <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    value={formData.shipper}
-                    onChange={(e) => handleInputChange('shipper', e.target.value)}
-                    className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Select shipper</option>
-                    <option value="studio-apparel">Studio Apparel</option>
-                    <option value="global-trade">Global Trade Co</option>
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => {/* Add new shipper logic */}}
-                    className="mt-2 w-full flex items-center justify-center gap-2 px-4 py-2 text-xs text-white bg-[#007bff] hover:bg-blue-700 rounded-lg shadow-sm transition-colors"
-                  >
-                    <Plus className="w-3 h-3" />
-                    Register New Shipper
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1" ref={shipperDropdownRef}>
+                      <button
+                        type="button"
+                        onClick={handleShipperDropdown}
+                        className="flex items-center justify-between w-full px-3 py-3 border border-gray-300 text-xs text-gray-900 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      >
+                        {formData.shipper || 'Select shipper'}
+                        <ChevronDown className={`w-4 h-4 transition-transform ${showShipperDropdown ? 'rotate-180' : ''}`} />
+                      </button>
+                      {showShipperDropdown && shipperDropdownPos && ReactDOM.createPortal(
+                        <div ref={shipperDropdownContentRef} style={{position: 'absolute', top: shipperDropdownPos.top, left: shipperDropdownPos.left, width: shipperDropdownPos.width, zIndex: 9999}} className="bg-white rounded-lg shadow-lg border border-gray-200">
+                          <div className="p-2 max-h-64 overflow-y-auto">
+                            <div className="space-y-1">
+                              {["studio-apparel", "global-trade"].map((option) => (
+                                <button
+                                  key={option}
+                                  type="button"
+                                  onClick={() => {
+                                    handleInputChange('shipper', option);
+                                    setShowShipperDropdown(false);
+                                  }}
+                                  className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${
+                                    formData.shipper === option ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                                  }`}
+                                >
+                                  {option === 'studio-apparel' ? 'Studio Apparel' : 'Global Trade Co'}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>,
+                        document.body
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {/* Add new shipper logic */}}
+                      className="flex items-center gap-2 px-4 py-3 text-xs text-white bg-[#007bff] hover:bg-blue-700 rounded-lg shadow-sm transition-colors whitespace-nowrap"
+                    >
+                      <Plus className="w-3 h-3" />
+                      New Shipper
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-2">
                     Consignee <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    value={formData.consignee}
-                    onChange={(e) => handleInputChange('consignee', e.target.value)}
-                    className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Select consignee</option>
-                    <option value="forward-supply">Forward Supply Co</option>
-                    <option value="logistics-hub">Logistics Hub</option>
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => {/* Add new consignee logic */}}
-                    className="mt-2 w-full flex items-center justify-center gap-2 px-4 py-2 text-xs text-white bg-[#007bff] hover:bg-blue-700 rounded-lg shadow-sm transition-colors"
-                  >
-                    <Plus className="w-3 h-3" />
-                    Register New Consignee
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1" ref={consigneeDropdownRef}>
+                      <button
+                        type="button"
+                        onClick={handleConsigneeDropdown}
+                        className="flex items-center justify-between w-full px-3 py-3 border border-gray-300 text-xs text-gray-900 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      >
+                        {formData.consignee || 'Select consignee'}
+                        <ChevronDown className={`w-4 h-4 transition-transform ${showConsigneeDropdown ? 'rotate-180' : ''}`} />
+                      </button>
+                      {showConsigneeDropdown && consigneeDropdownPos && ReactDOM.createPortal(
+                        <div ref={consigneeDropdownContentRef} style={{position: 'absolute', top: consigneeDropdownPos.top, left: consigneeDropdownPos.left, width: consigneeDropdownPos.width, zIndex: 9999}} className="bg-white rounded-lg shadow-lg border border-gray-200">
+                          <div className="p-2 max-h-64 overflow-y-auto">
+                            <div className="space-y-1">
+                              {["forward-supply", "logistics-hub"].map((option) => (
+                                <button
+                                  key={option}
+                                  type="button"
+                                  onClick={() => {
+                                    handleInputChange('consignee', option);
+                                    setShowConsigneeDropdown(false);
+                                  }}
+                                  className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${
+                                    formData.consignee === option ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                                  }`}
+                                >
+                                  {option === 'forward-supply' ? 'Forward Supply Co' : 'Logistics Hub'}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>,
+                        document.body
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {/* Add new consignee logic */}}
+                      className="flex items-center gap-2 px-4 py-3 text-xs text-white bg-[#007bff] hover:bg-blue-700 rounded-lg shadow-sm transition-colors whitespace-nowrap"
+                    >
+                      <Plus className="w-3 h-3" />
+                      New Consignee
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -522,57 +761,171 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                 <label className="block text-xs font-medium text-gray-700 mb-2">
                   Transport Mode <span className="text-red-500">*</span>
                 </label>
-                <select
-                  value={formData.transportMode}
-                  onChange={(e) => handleInputChange('transportMode', e.target.value)}
-                  className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="sea">Sea Freight</option>
-                  <option value="air">Air Freight</option>
-                  <option value="land">Land Transport</option>
-                </select>
+                <div className="relative" ref={transportModeDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={handleTransportModeDropdown}
+                    className="flex items-center justify-between w-full px-3 py-3 border border-gray-300 text-xs text-gray-900 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  >
+                    {formData.transportMode === 'sea' ? 'Sea Freight' : formData.transportMode === 'air' ? 'Air Freight' : formData.transportMode === 'land' ? 'Land Transport' : 'Select mode'}
+                    <ChevronDown className={`w-4 h-4 transition-transform ${showTransportModeDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+                  {showTransportModeDropdown && transportModeDropdownPos && ReactDOM.createPortal(
+                    <div ref={transportModeDropdownContentRef} style={{position: 'absolute', top: transportModeDropdownPos.top, left: transportModeDropdownPos.left, width: transportModeDropdownPos.width, zIndex: 9999}} className="bg-white rounded-lg shadow-lg border border-gray-200">
+                      <div className="p-2 max-h-64 overflow-y-auto">
+                        <div className="space-y-1">
+                          {[
+                            {value: 'sea', label: 'Sea Freight'},
+                            {value: 'air', label: 'Air Freight'},
+                            {value: 'land', label: 'Land Transport'}
+                          ].map(option => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => {
+                                handleInputChange('transportMode', option.value);
+                                setShowTransportModeDropdown(false);
+                              }}
+                              className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${
+                                formData.transportMode === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>,
+                    document.body
+                  )}
+                </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2">
                   Shipment Type <span className="text-red-500">*</span>
                 </label>
-                <select
-                  value={formData.shipmentType}
-                  onChange={(e) => handleInputChange('shipmentType', e.target.value)}
-                  className="w-full text-xs text-gray-900 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="fcl">FCL (Full Container Load)</option>
-                  <option value="lcl">LCL (Less Container Load)</option>
-                  <option value="breakbulk">Breakbulk</option>
-                </select>
+                <div className="relative" ref={shipmentTypeDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={handleShipmentTypeDropdown}
+                    className="flex items-center justify-between w-full px-3 py-3 border border-gray-300 text-xs text-gray-900 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  >
+                    {formData.shipmentType === 'fcl' ? 'FCL (Full Container Load)' : formData.shipmentType === 'lcl' ? 'LCL (Less Container Load)' : formData.shipmentType === 'breakbulk' ? 'Breakbulk' : 'Select type'}
+                    <ChevronDown className={`w-4 h-4 transition-transform ${showShipmentTypeDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+                  {showShipmentTypeDropdown && shipmentTypeDropdownPos && ReactDOM.createPortal(
+                    <div ref={shipmentTypeDropdownContentRef} style={{position: 'absolute', top: shipmentTypeDropdownPos.top, left: shipmentTypeDropdownPos.left, width: shipmentTypeDropdownPos.width, zIndex: 9999}} className="bg-white rounded-lg shadow-lg border border-gray-200">
+                      <div className="p-2 max-h-64 overflow-y-auto">
+                        <div className="space-y-1">
+                          {[
+                            {value: 'fcl', label: 'FCL (Full Container Load)'},
+                            {value: 'lcl', label: 'LCL (Less Container Load)'},
+                            {value: 'breakbulk', label: 'Breakbulk'}
+                          ].map(option => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => {
+                                handleInputChange('shipmentType', option.value);
+                                setShowShipmentTypeDropdown(false);
+                              }}
+                              className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${
+                                formData.shipmentType === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>,
+                    document.body
+                  )}
+                </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2">Container Type</label>
-                <select
-                  value={formData.containerType}
-                  onChange={(e) => handleInputChange('containerType', e.target.value)}
-                  className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Select container type</option>
-                  <option value="20ft">20ft Standard</option>
-                  <option value="40ft">40ft Standard</option>
-                  <option value="40ft-hc">40ft High Cube</option>
-                  <option value="45ft">45ft High Cube</option>
-                </select>
+                <div className="relative" ref={containerTypeDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={handleContainerTypeDropdown}
+                    className="flex items-center justify-between w-full px-3 py-3 border border-gray-300 text-xs text-gray-900 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  >
+                    {formData.containerType === '20ft' ? '20ft Standard' : formData.containerType === '40ft' ? '40ft Standard' : formData.containerType === '40ft-hc' ? '40ft High Cube' : formData.containerType === '45ft' ? '45ft High Cube' : 'Select container type'}
+                    <ChevronDown className={`w-4 h-4 transition-transform ${showContainerTypeDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+                  {showContainerTypeDropdown && containerTypeDropdownPos && ReactDOM.createPortal(
+                    <div ref={containerTypeDropdownContentRef} style={{position: 'absolute', top: containerTypeDropdownPos.top, left: containerTypeDropdownPos.left, width: containerTypeDropdownPos.width, zIndex: 9999}} className="bg-white rounded-lg shadow-lg border border-gray-200">
+                      <div className="p-2 max-h-64 overflow-y-auto">
+                        <div className="space-y-1">
+                          {[
+                            {value: '20ft', label: '20ft Standard'},
+                            {value: '40ft', label: '40ft Standard'},
+                            {value: '40ft-hc', label: '40ft High Cube'},
+                            {value: '45ft', label: '45ft High Cube'}
+                          ].map(option => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => {
+                                handleInputChange('containerType', option.value);
+                                setShowContainerTypeDropdown(false);
+                              }}
+                              className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${
+                                formData.containerType === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>,
+                    document.body
+                  )}
+                </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2">Incoterms</label>
-                <select
-                  value={formData.incoterms}
-                  onChange={(e) => handleInputChange('incoterms', e.target.value)}
-                  className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Select incoterms</option>
-                  <option value="FOB">FOB - Free on Board</option>
-                  <option value="EXW">EXW - Ex Works</option>
-                  <option value="DDP">DDP - Delivered Duty Paid</option>
-                  <option value="CIF">CIF - Cost, Insurance & Freight</option>
-                </select>
+                <div className="relative" ref={incotermsDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={handleIncotermsDropdown}
+                    className="flex items-center justify-between w-full px-3 py-3 border border-gray-300 text-xs text-gray-900 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  >
+                    {formData.incoterms === 'FOB' ? 'FOB - Free on Board' : formData.incoterms === 'EXW' ? 'EXW - Ex Works' : formData.incoterms === 'DDP' ? 'DDP - Delivered Duty Paid' : formData.incoterms === 'CIF' ? 'CIF - Cost, Insurance & Freight' : 'Select incoterms'}
+                    <ChevronDown className={`w-4 h-4 transition-transform ${showIncotermsDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+                  {showIncotermsDropdown && incotermsDropdownPos && ReactDOM.createPortal(
+                    <div ref={incotermsDropdownContentRef} style={{position: 'absolute', top: incotermsDropdownPos.top, left: incotermsDropdownPos.left, width: incotermsDropdownPos.width, zIndex: 9999}} className="bg-white rounded-lg shadow-lg border border-gray-200">
+                      <div className="p-2 max-h-64 overflow-y-auto">
+                        <div className="space-y-1">
+                          {[
+                            {value: 'FOB', label: 'FOB - Free on Board'},
+                            {value: 'EXW', label: 'EXW - Ex Works'},
+                            {value: 'DDP', label: 'DDP - Delivered Duty Paid'},
+                            {value: 'CIF', label: 'CIF - Cost, Insurance & Freight'}
+                          ].map(option => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => {
+                                handleInputChange('incoterms', option.value);
+                                setShowIncotermsDropdown(false);
+                              }}
+                              className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${
+                                formData.incoterms === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>,
+                    document.body
+                  )}
+                </div>
               </div>
             </div>
           </FormSection>
@@ -746,17 +1099,45 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2">Package Type</label>
-                <select
-                  value={formData.packageType}
-                  onChange={(e) => handleInputChange('packageType', e.target.value)}
-                  className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Select package type</option>
-                  <option value="pallet">Pallet</option>
-                  <option value="box">Box</option>
-                  <option value="crate">Crate</option>
-                  <option value="carton">Carton</option>
-                </select>
+                <div className="relative" ref={packageTypeDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={handlePackageTypeDropdown}
+                    className="flex items-center justify-between w-full px-3 py-3 border border-gray-300 text-xs text-gray-900 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  >
+                    {formData.packageType === 'pallet' ? 'Pallet' : formData.packageType === 'box' ? 'Box' : formData.packageType === 'crate' ? 'Crate' : formData.packageType === 'carton' ? 'Carton' : 'Select package type'}
+                    <ChevronDown className={`w-4 h-4 transition-transform ${showPackageTypeDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+                  {showPackageTypeDropdown && packageTypeDropdownPos && ReactDOM.createPortal(
+                    <div ref={packageTypeDropdownContentRef} style={{position: 'absolute', top: packageTypeDropdownPos.top, left: packageTypeDropdownPos.left, width: packageTypeDropdownPos.width, zIndex: 9999}} className="bg-white rounded-lg shadow-lg border border-gray-200">
+                      <div className="p-2 max-h-64 overflow-y-auto">
+                        <div className="space-y-1">
+                          {[
+                            {value: 'pallet', label: 'Pallet'},
+                            {value: 'box', label: 'Box'},
+                            {value: 'crate', label: 'Crate'},
+                            {value: 'carton', label: 'Carton'}
+                          ].map(option => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => {
+                                handleInputChange('packageType', option.value);
+                                setShowPackageTypeDropdown(false);
+                              }}
+                              className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${
+                                formData.packageType === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>,
+                    document.body
+                  )}
+                </div>
               </div>
             </div>
             <div>
