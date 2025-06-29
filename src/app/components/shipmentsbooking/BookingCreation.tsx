@@ -901,14 +901,12 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
             type="button"
             className="flex items-center gap-2 px-5 py-3 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-200 transition-colors"
           >
-            <Save className="w-4 h-4" />
             Save as Draft
           </button>
           <button
             type="submit"
-            className="flex items-center gap-2 px-5 py-3 text-sm bg-[#007bff] text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-5 py- font-semibold text-sm bg-[#007bff] text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            <Send className="w-4 h-4" />
             Submit Booking
           </button>
         </div>

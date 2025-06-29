@@ -80,7 +80,7 @@ const ClientUI = () => {
           </button>
           <button 
             onClick={handleCreateOrder}
-            className="w-full md:w-auto flex items-center px-4 py-2 text-sm font-medium text-white bg-[#007bff] rounded-md hover:bg-blue-700 transition-colors">
+            className="w-full md:w-auto flex items-center px-4 py-2 text-sm font-semibold text-white bg-[#007bff] rounded-md hover:bg-blue-700 transition-colors">
             <Plus size={16} className="mr-2" />
             Create Order
           </button>

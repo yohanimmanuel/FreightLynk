@@ -1,11 +1,17 @@
 'use client';
 
 import BookingReview from "@/app/components/shipmentsbooking/BookingReview";
+import { useRouter } from "next/navigation";
 
 const ClientUI = () => {
+  const router = useRouter();
+  
+  const handleConfirmBooking = () => {
+    router.push('/bookings/confirmation');
+  };
   return (
     <div>
-      <BookingReview />
+      <BookingReview onConfirmBooking={handleConfirmBooking} />
     </div>
   );
 };

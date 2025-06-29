@@ -415,7 +415,7 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
                     
                     setShowBookingModal(false);
                   }}
-                  className="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                  className="px-4 py-2 text-sm font-semibold text-white bg-[#007bff] rounded-lg hover:bg-blue-700"
                 >
                   Create Booking
                 </button>

@@ -1,10 +1,11 @@
 'use client';
 
+import BookingConfirm from "@/app/components/shipmentsbooking/BookingConfirm";
+
 const ClientUI = () => {
   return (
     <div>
-      <h2>Client</h2>
-      <p>Coming Soon...</p>
+      <BookingConfirm />
     </div>
   );
 };
