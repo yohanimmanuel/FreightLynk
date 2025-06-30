@@ -22,15 +22,6 @@ const BookingCreation: React.FC<BookingCreationProps> = memo(({ onSubmitBooking 
     selectedItems: number[];
     bookedQuantities: Record<number, number>;
   }[]>([]);
-  
-  // Simple solution: Use HTML select elements with refs - no state, no re-renders
-  const shipperSelectRef = useRef<HTMLSelectElement>(null);
-  const consigneeSelectRef = useRef<HTMLSelectElement>(null);
-  const transportModeSelectRef = useRef<HTMLSelectElement>(null);
-  const shipmentTypeSelectRef = useRef<HTMLSelectElement>(null);
-  const containerTypeSelectRef = useRef<HTMLSelectElement>(null);
-  const incotermsSelectRef = useRef<HTMLSelectElement>(null);
-  const packageTypeSelectRef = useRef<HTMLSelectElement>(null);
 
   // Use refs for all inputs to make them completely independent of React re-renders
   const shipmentNameRef = useRef(null);
