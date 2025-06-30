@@ -493,7 +493,6 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
   // Full Management View
   return (
     <div className="bg-white">
-
       {/* Header */}
        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-2 md:gap-0">
         <h2 className="text-2xl font-semibold text-gray-900">Rate Management</h2>
@@ -613,8 +612,9 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
           </div>
         </div>
       )}
+
       {/* Table Container with horizontal scrolling */}
-      <div className="px-4 pb-4">
+      <div className="mt-4">
         <div className="overflow-x-auto">
           <div className="inline-block min-w-full align-middle">
             <div className="overflow-hidden shadow-sm border border-gray-200 rounded-lg">
