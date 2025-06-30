@@ -64,6 +64,134 @@ const BookingCreation: React.FC<BookingCreationProps> = memo(({ onSubmitBooking 
   // Add state for PO review display control
   const [showPOReview, setShowPOReview] = useState(false);
 
+  const [prefillValue, setPrefillValue] = useState('');
+  const [shipperValue, setShipperValue] = useState('');
+  const [consigneeValue, setConsigneeValue] = useState('');
+  const [transportModeValue, setTransportModeValue] = useState('');
+  const [shipmentTypeValue, setShipmentTypeValue] = useState('');
+  const [containerTypeValue, setContainerTypeValue] = useState('');
+  const [incotermsValue, setIncotermsValue] = useState('');
+  const [packageTypeValue, setPackageTypeValue] = useState('');
+
+  const Dropdown = React.forwardRef<HTMLDivElement, {
+    options: { value: string; label: string }[];
+    value: string;
+    placeholder: string;
+    onChange: (value: string) => void;
+  }>(({ options, value, placeholder, onChange }, ref) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const buttonRef = useRef<HTMLButtonElement>(null);
+    const [dropdownPos, setDropdownPos] = useState<{top: number, left: number, width: number} | null>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    const selectedOption = options.find(opt => opt.value === value);
+    const displayValue = selectedOption ? selectedOption.label : placeholder;
+
+    // Close dropdown on outside click or scroll
+    useEffect(() => {
+      const handleClickOrScroll = (event: MouseEvent | Event) => {
+        if (
+          dropdownRef.current &&
+          !dropdownRef.current.contains((event as MouseEvent).target as Node) &&
+          buttonRef.current &&
+          !(buttonRef.current as any).contains((event as MouseEvent).target as Node)
+        ) {
+          setIsOpen(false);
+        }
+      };
+      if (isOpen) {
+        document.addEventListener('mousedown', handleClickOrScroll);
+        window.addEventListener('scroll', handleClickOrScroll, true);
+      }
+      return () => {
+        document.removeEventListener('mousedown', handleClickOrScroll);
+        window.removeEventListener('scroll', handleClickOrScroll, true);
+      };
+    }, [isOpen]);
+
+    // Position dropdown below button
+    useEffect(() => {
+      if (isOpen && buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        setDropdownPos({
+          top: rect.bottom + window.scrollY,
+          left: rect.left + window.scrollX,
+          width: rect.width,
+        });
+      }
+    }, [isOpen]);
+
+    // Toggle dropdown and set position
+    const handleButtonClick = () => {
+      if (!isOpen && buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        setDropdownPos({
+          top: rect.bottom + window.scrollY,
+          left: rect.left + window.scrollX,
+          width: rect.width,
+        });
+      }
+      setIsOpen((v) => !v);
+    };
+
+    // Dropdown content
+    const dropdownContent = isOpen && dropdownPos
+      ? ReactDOM.createPortal(
+          <div
+            ref={dropdownRef}
+            className={`absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-[${dropdownPos.width}px] mt-1 transition-all duration-200 opacity-100 scale-100`}
+            style={{
+              top: dropdownPos.top,
+              left: dropdownPos.left,
+              width: dropdownPos.width,
+              minWidth: 120,
+            }}
+          >
+            <div className="py-1 max-h-60 overflow-auto">
+              {options.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => {
+                    onChange(option.value);
+                    setIsOpen(false);
+                  }}
+                  className={`block w-full text-left px-4 py-2 text-xs ${
+                    value === option.value
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>,
+          document.body
+        )
+      : null;
+
+    return (
+      <div className="relative" ref={ref}>
+        <button
+          ref={buttonRef}
+          onClick={handleButtonClick}
+          type="button"
+          className={`flex items-center justify-between w-full pl-3 pr-8 py-2 text-xs text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+            !selectedOption ? 'text-gray-500' : ''
+          }`}
+        >
+          {displayValue}
+          <ChevronDown
+            className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 transition-transform ${
+              isOpen ? 'rotate-180' : ''
+            }`}
+          />
+        </button>
+        {dropdownContent}
+      </div>
+    );
+  });
+
   // Sync checkbox ref with display state
   useEffect(() => {
     const handleCheckboxChange = () => {
@@ -417,14 +545,15 @@ const BookingCreation: React.FC<BookingCreationProps> = memo(({ onSubmitBooking 
               <p className="text-xs text-gray-700 mb-3">Start this booking from a template or previous shipment</p>
               {previousShipments.length > 0 ? (
                 <div className="space-y-2">
-                  <div className="relative">
-                    <select ref={shipperSelectRef} className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                      <option value="">Select a previous shipment to pre-fill</option>
-                      {previousShipments.map(shipment => (
-                        <option key={shipment.id} value={shipment.id}>{shipment.name} - {shipment.date}</option>
-                      ))}
-                    </select>
-                  </div>
+                    <Dropdown
+                      value={prefillValue}
+                      onChange={(value) => handlePrefillShipment(value)}
+                      options={previousShipments.map(s => ({ 
+                        value: s.id, 
+                        label: `${s.name} - ${s.date}` 
+                      }))}
+                      placeholder="Select a previous shipment to pre-fill"
+                    />   
                   <div className="flex items-center gap-2 text-xs text-gray-500 mt-4">
                     <Info className="w-4 h-4" />
                     <span>Speed up the process by loading info from a past booking</span>
@@ -505,14 +634,20 @@ const BookingCreation: React.FC<BookingCreationProps> = memo(({ onSubmitBooking 
                     Shipper <span className="text-red-500">*</span>
                   </label>
                   <div className="flex gap-2">
-                    <select ref={shipperSelectRef} className="flex-1 p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                      <option value="">Select shipper</option>
-                      <option value="studio-apparel">Studio Apparel</option>
-                      <option value="global-trade">Global Trade Co</option>
-                    </select>
+                    <div className="flex-1">
+                      <Dropdown
+                        value={shipperValue}
+                        onChange={(value) => setShipperValue(value)}
+                        options={[
+                          { value: 'studio-apparel', label: 'Studio Apparel' },
+                          { value: 'global-trade', label: 'Global Trade Co' }
+                        ]}
+                        placeholder="Select shipper"
+                      />
+                    </div>
                     <button
                       type="button"
-                      className="px-4 py-2 text-xs bg-[#007bff] text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center gap-1"
+                      className="px-4 py-2 text-xs bg-[#007bff] text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center justify-center gap-1"
                     >
                       <Plus className="w-3 h-3" />
                       <span>New Shipper</span>
@@ -524,14 +659,20 @@ const BookingCreation: React.FC<BookingCreationProps> = memo(({ onSubmitBooking 
                     Consignee <span className="text-red-500">*</span>
                   </label>
                   <div className="flex gap-2">
-                    <select ref={consigneeSelectRef} className="flex-1 p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                      <option value="">Select consignee</option>
-                      <option value="forward-supply">Forward Supply Co</option>
-                      <option value="logistics-hub">Logistics Hub</option>
-                    </select>
+                    <div className="flex-1">
+                      <Dropdown
+                        value={consigneeValue}
+                        onChange={(value) => setConsigneeValue(value)}
+                        options={[
+                          { value: 'forward-supply', label: 'Forward Supply Co' },
+                          { value: 'logistics-hub', label: 'Logistics Hub' }
+                        ]}
+                        placeholder="Select consignee"
+                      />
+                    </div>
                     <button
                       type="button"
-                      className="px-4 py-2 text-xs bg-[#007bff] text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center gap-1"
+                      className="px-4 py-2 text-xs bg-[#007bff] text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center justify-center gap-1"
                     >
                       <Plus className="w-3 h-3" />
                       <span>New Consignee</span>
@@ -553,12 +694,16 @@ const BookingCreation: React.FC<BookingCreationProps> = memo(({ onSubmitBooking 
                   Transport Mode <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <select ref={transportModeSelectRef} className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    <option value="">Select mode</option>
-                    <option value="sea">Sea Freight</option>
-                    <option value="air">Air Freight</option>
-                    <option value="land">Land Transport</option>
-                  </select>
+                  <Dropdown
+                    value={transportModeValue}
+                    onChange={(value) => setTransportModeValue(value)}
+                    options={[
+                      { value: 'sea', label: 'Sea Freight' },
+                      { value: 'air', label: 'Air Freight' },
+                      { value: 'land', label: 'Land Transport' }
+                    ]}
+                    placeholder="Select mode"
+                  />
                 </div>
               </div>
               <div>
@@ -566,36 +711,48 @@ const BookingCreation: React.FC<BookingCreationProps> = memo(({ onSubmitBooking 
                   Shipment Type <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <select ref={shipmentTypeSelectRef} className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    <option value="">Select type</option>
-                    <option value="fcl">FCL (Full Container Load)</option>
-                    <option value="lcl">LCL (Less Container Load)</option>
-                    <option value="breakbulk">Breakbulk</option>
-                  </select>
+                  <Dropdown
+                    value={shipmentTypeValue}
+                    onChange={(value) => setShipmentTypeValue(value)}
+                    options={[
+                      { value: 'fcl', label: 'FCL (Full Container Load)' },
+                      { value: 'lcl', label: 'LCL (Less Container Load)' },
+                      { value: 'breakbulk', label: 'Breakbulk' }
+                    ]}
+                    placeholder="Select type"
+                  />
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2">Container Type</label>
                 <div className="relative">
-                  <select ref={containerTypeSelectRef} className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    <option value="">Select container type</option>
-                    <option value="20ft">20ft Standard</option>
-                    <option value="40ft">40ft Standard</option>
-                    <option value="40ft-hc">40ft High Cube</option>
-                    <option value="45ft">45ft High Cube</option>
-                  </select>
+                  <Dropdown
+                    value={containerTypeValue}
+                    onChange={(value) => setContainerTypeValue(value)}
+                    options={[
+                      { value: '20ft', label: '20ft Standard' },
+                      { value: '40ft', label: '40ft Standard' },
+                      { value: '40ft-hc', label: '40ft High Cube' },
+                      { value: '45ft', label: '45ft High Cube' }
+                    ]}
+                    placeholder="Select container type"
+                  />
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2">Incoterms</label>
                 <div className="relative">
-                  <select ref={incotermsSelectRef} className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    <option value="">Select incoterms</option>
-                    <option value="FOB">FOB - Free on Board</option>
-                    <option value="EXW">EXW - Ex Works</option>
-                    <option value="DDP">DDP - Delivered Duty Paid</option>
-                    <option value="CIF">CIF - Cost, Insurance & Freight</option>
-                  </select>
+                  <Dropdown
+                    value={incotermsValue}
+                    onChange={(value) => setIncotermsValue(value)}
+                    options={[
+                      { value: 'FOB', label: 'FOB - Free on Board' },
+                      { value: 'EXW', label: 'EXW - Ex Works' },
+                      { value: 'DDP', label: 'DDP - Delivered Duty Paid' },
+                      { value: 'CIF', label: 'CIF - Cost, Insurance & Freight' }
+                    ]}
+                    placeholder="Select incoterms"
+                  />
                 </div>
               </div>
             </div>
@@ -767,13 +924,17 @@ const BookingCreation: React.FC<BookingCreationProps> = memo(({ onSubmitBooking 
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2">Package Type</label>
                 <div className="relative">
-                  <select ref={packageTypeSelectRef} className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    <option value="">Select package type</option>
-                    <option value="pallet">Pallet</option>
-                    <option value="box">Box</option>
-                    <option value="crate">Crate</option>
-                    <option value="carton">Carton</option>
-                  </select>
+                  <Dropdown
+                    value={packageTypeValue}
+                    onChange={(value) => setPackageTypeValue(value)}
+                    options={[
+                      { value: 'pallet', label: 'Pallet' },
+                      { value: 'box', label: 'Box' },
+                      { value: 'crate', label: 'Crate' },
+                      { value: 'carton', label: 'Carton' }
+                    ]}
+                    placeholder="Select package type"
+                  />
                 </div>
               </div>
             </div>
@@ -919,6 +1080,7 @@ const BookingCreation: React.FC<BookingCreationProps> = memo(({ onSubmitBooking 
             Save as Draft
           </button>
           <button
+            onClick={onSubmitBooking}
             type="submit"
             className="flex items-center gap-2 px-5 py- font-semibold text-sm bg-[#007bff] text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
