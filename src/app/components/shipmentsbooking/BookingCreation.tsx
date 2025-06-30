@@ -442,7 +442,7 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
 
   return (
     <div className="max-w-4xl mx-auto p-2 bg-white">
-      <div className="mb-8 border-b border-gray-200 pb-4">
+      <div className="mb-4 border-b border-gray-200 pb-4">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Create Booking</h1>
         <p className="text-gray-600 text-sm">Fill in the details below to create a new freight booking</p>
       </div>
