@@ -169,7 +169,7 @@ const BookingReview = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Booking Confirm PopUp */}
       {showPopup && <BookingConfirmPopUp onClose={() => setShowPopup(false)} />}
       {/* Header */}

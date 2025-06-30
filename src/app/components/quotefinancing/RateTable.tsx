@@ -95,6 +95,28 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
     { value: 'archived', label: 'Archived' },
   ];
 
+  // Add refs for add/edit modal dropdowns
+  const addTransportModeDropdownRef = useRef<HTMLDivElement>(null);
+  const addTransportModeButtonRef = useRef<HTMLButtonElement>(null);
+  const addContainerTypeDropdownRef = useRef<HTMLDivElement>(null);
+  const addContainerTypeButtonRef = useRef<HTMLButtonElement>(null);
+  const addCurrencyDropdownRef = useRef<HTMLDivElement>(null);
+  const addCurrencyButtonRef = useRef<HTMLButtonElement>(null);
+  const addIncotermDropdownRef = useRef<HTMLDivElement>(null);
+  const addIncotermButtonRef = useRef<HTMLButtonElement>(null);
+  const addStatusDropdownRef = useRef<HTMLDivElement>(null);
+  const addStatusButtonRef = useRef<HTMLButtonElement>(null);
+  const editTransportModeDropdownRef = useRef<HTMLDivElement>(null);
+  const editTransportModeButtonRef = useRef<HTMLButtonElement>(null);
+  const editContainerTypeDropdownRef = useRef<HTMLDivElement>(null);
+  const editContainerTypeButtonRef = useRef<HTMLButtonElement>(null);
+  const editCurrencyDropdownRef = useRef<HTMLDivElement>(null);
+  const editCurrencyButtonRef = useRef<HTMLButtonElement>(null);
+  const editIncotermDropdownRef = useRef<HTMLDivElement>(null);
+  const editIncotermButtonRef = useRef<HTMLButtonElement>(null);
+  const editStatusDropdownRef = useRef<HTMLDivElement>(null);
+  const editStatusButtonRef = useRef<HTMLButtonElement>(null);
+
   // Update your useEffect for click outside handling
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -108,6 +130,49 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
       if (modeDropdownRef.current && !modeDropdownRef.current.contains(event.target as Node) &&
           modeButtonRef.current && !modeButtonRef.current.contains(event.target as Node)) {
         setShowModeDropdown(false);
+      }
+      
+      // Add modal dropdowns
+      if (addTransportModeDropdownRef.current && !addTransportModeDropdownRef.current.contains(event.target as Node) &&
+          addTransportModeButtonRef.current && !addTransportModeButtonRef.current.contains(event.target as Node)) {
+        setShowAddTransportModeDropdown(false);
+      }
+      if (addContainerTypeDropdownRef.current && !addContainerTypeDropdownRef.current.contains(event.target as Node) &&
+          addContainerTypeButtonRef.current && !addContainerTypeButtonRef.current.contains(event.target as Node)) {
+        setShowAddContainerTypeDropdown(false);
+      }
+      if (addCurrencyDropdownRef.current && !addCurrencyDropdownRef.current.contains(event.target as Node) &&
+          addCurrencyButtonRef.current && !addCurrencyButtonRef.current.contains(event.target as Node)) {
+        setShowAddCurrencyDropdown(false);
+      }
+      if (addIncotermDropdownRef.current && !addIncotermDropdownRef.current.contains(event.target as Node) &&
+          addIncotermButtonRef.current && !addIncotermButtonRef.current.contains(event.target as Node)) {
+        setShowAddIncotermDropdown(false);
+      }
+      if (addStatusDropdownRef.current && !addStatusDropdownRef.current.contains(event.target as Node) &&
+          addStatusButtonRef.current && !addStatusButtonRef.current.contains(event.target as Node)) {
+        setShowAddStatusDropdown(false);
+      }
+      // Edit modal dropdowns
+      if (editTransportModeDropdownRef.current && !editTransportModeDropdownRef.current.contains(event.target as Node) &&
+          editTransportModeButtonRef.current && !editTransportModeButtonRef.current.contains(event.target as Node)) {
+        setShowEditTransportModeDropdown(false);
+      }
+      if (editContainerTypeDropdownRef.current && !editContainerTypeDropdownRef.current.contains(event.target as Node) &&
+          editContainerTypeButtonRef.current && !editContainerTypeButtonRef.current.contains(event.target as Node)) {
+        setShowEditContainerTypeDropdown(false);
+      }
+      if (editCurrencyDropdownRef.current && !editCurrencyDropdownRef.current.contains(event.target as Node) &&
+          editCurrencyButtonRef.current && !editCurrencyButtonRef.current.contains(event.target as Node)) {
+        setShowEditCurrencyDropdown(false);
+      }
+      if (editIncotermDropdownRef.current && !editIncotermDropdownRef.current.contains(event.target as Node) &&
+          editIncotermButtonRef.current && !editIncotermButtonRef.current.contains(event.target as Node)) {
+        setShowEditIncotermDropdown(false);
+      }
+      if (editStatusDropdownRef.current && !editStatusDropdownRef.current.contains(event.target as Node) &&
+          editStatusButtonRef.current && !editStatusButtonRef.current.contains(event.target as Node)) {
+        setShowEditStatusDropdown(false);
       }
     };
 
@@ -761,6 +826,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                     <div className="relative">
                       <button
                         type="button"
+                        ref={addTransportModeButtonRef}
                         onClick={() => setShowAddTransportModeDropdown((v) => !v)}
                         className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       >
@@ -768,7 +834,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                         <ChevronDown className={`w-4 h-4 transition-transform ${showAddTransportModeDropdown ? 'rotate-180' : ''}`} />
                       </button>
                       {showAddTransportModeDropdown && (
-                        <div className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                        <div ref={addTransportModeDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
                           {transportModeOptions.map((option) => (
                             <button
                               key={option.value}
@@ -813,6 +879,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                     <div className="relative">
                       <button
                         type="button"
+                        ref={addContainerTypeButtonRef}
                         onClick={() => setShowAddContainerTypeDropdown((v) => !v)}
                         className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       >
@@ -820,7 +887,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                         <ChevronDown className={`w-4 h-4 transition-transform ${showAddContainerTypeDropdown ? 'rotate-180' : ''}`} />
                       </button>
                       {showAddContainerTypeDropdown && (
-                        <div className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                        <div ref={addContainerTypeDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
                           {containerTypeOptions.map((option) => (
                             <button
                               key={option.value}
@@ -843,6 +910,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                     <div className="relative">
                       <button
                         type="button"
+                        ref={addCurrencyButtonRef}
                         onClick={() => setShowAddCurrencyDropdown((v) => !v)}
                         className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       >
@@ -850,7 +918,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                         <ChevronDown className={`w-4 h-4 transition-transform ${showAddCurrencyDropdown ? 'rotate-180' : ''}`} />
                       </button>
                       {showAddCurrencyDropdown && (
-                        <div className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                        <div ref={addCurrencyDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
                           {currencyOptions.map((option) => (
                             <button
                               key={option.value}
@@ -888,6 +956,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                     <div className="relative">
                       <button
                         type="button"
+                        ref={addIncotermButtonRef}
                         onClick={() => setShowAddIncotermDropdown((v) => !v)}
                         className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       >
@@ -895,7 +964,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                         <ChevronDown className={`w-4 h-4 transition-transform ${showAddIncotermDropdown ? 'rotate-180' : ''}`} />
                       </button>
                       {showAddIncotermDropdown && (
-                        <div className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                        <div ref={addIncotermDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
                           {incotermOptions.map((option) => (
                             <button
                               key={option.value}
@@ -946,6 +1015,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                   <div className="relative">
                     <button
                       type="button"
+                      ref={addStatusButtonRef}
                       onClick={() => setShowAddStatusDropdown((v) => !v)}
                       className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                     >
@@ -953,7 +1023,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                       <ChevronDown className={`w-4 h-4 transition-transform ${showAddStatusDropdown ? 'rotate-180' : ''}`} />
                     </button>
                     {showAddStatusDropdown && (
-                      <div className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                      <div ref={addStatusDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
                         {statusOptions.map((option) => (
                           <button
                             key={option.value}
@@ -1036,6 +1106,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                       <div className="relative">
                         <button
                           type="button"
+                          ref={editTransportModeButtonRef}
                           onClick={() => setShowEditTransportModeDropdown((v) => !v)}
                           className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                         >
@@ -1043,7 +1114,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                           <ChevronDown className={`w-4 h-4 transition-transform ${showEditTransportModeDropdown ? 'rotate-180' : ''}`} />
                         </button>
                         {showEditTransportModeDropdown && (
-                          <div className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                          <div ref={editTransportModeDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
                             {transportModeOptions.map((option) => (
                               <button
                                 key={option.value}
@@ -1115,6 +1186,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                       <div className="relative">
                         <button
                           type="button"
+                          ref={editContainerTypeButtonRef}
                           onClick={() => setShowEditContainerTypeDropdown((v) => !v)}
                           className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                         >
@@ -1122,7 +1194,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                           <ChevronDown className={`w-4 h-4 transition-transform ${showEditContainerTypeDropdown ? 'rotate-180' : ''}`} />
                         </button>
                         {showEditContainerTypeDropdown && (
-                          <div className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                          <div ref={editContainerTypeDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
                             {containerTypeOptions.map((option) => (
                               <button
                                 key={option.value}
@@ -1148,6 +1220,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                       <div className="relative">
                         <button
                           type="button"
+                          ref={editCurrencyButtonRef}
                           onClick={() => setShowEditCurrencyDropdown((v) => !v)}
                           className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                         >
@@ -1155,7 +1228,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                           <ChevronDown className={`w-4 h-4 transition-transform ${showEditCurrencyDropdown ? 'rotate-180' : ''}`} />
                         </button>
                         {showEditCurrencyDropdown && (
-                          <div className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                          <div ref={editCurrencyDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
                             {currencyOptions.map((option) => (
                               <button
                                 key={option.value}
@@ -1214,6 +1287,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                       <div className="relative">
                         <button
                           type="button"
+                          ref={editIncotermButtonRef}
                           onClick={() => setShowEditIncotermDropdown((v) => !v)}
                           className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                         >
@@ -1221,7 +1295,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                           <ChevronDown className={`w-4 h-4 transition-transform ${showEditIncotermDropdown ? 'rotate-180' : ''}`} />
                         </button>
                         {showEditIncotermDropdown && (
-                          <div className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                          <div ref={editIncotermDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
                             {incotermOptions.map((option) => (
                               <button
                                 key={option.value}
@@ -1305,6 +1379,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                     <div className="relative">
                       <button
                         type="button"
+                        ref={editStatusButtonRef}
                         onClick={() => setShowEditStatusDropdown((v) => !v)}
                         className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       >
@@ -1312,7 +1387,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                         <ChevronDown className={`w-4 h-4 transition-transform ${showEditStatusDropdown ? 'rotate-180' : ''}`} />
                       </button>
                       {showEditStatusDropdown && (
-                        <div className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                        <div ref={editStatusDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
                           {statusOptions.map((option) => (
                             <button
                               key={option.value}
