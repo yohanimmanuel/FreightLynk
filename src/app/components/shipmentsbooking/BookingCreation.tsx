@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ChevronDown, ChevronUp, Package, Users, Truck, MapPin, Target, Scale, FileText, Tag, MessageSquare, Save, Send, Info, Plus, X, Edit, Trash2 } from 'lucide-react';
 import POManagementTable, { 
   PurchaseOrder, 
@@ -65,6 +65,56 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
   const containerTypeDropdownContentRef = useRef<HTMLDivElement>(null);
   const incotermsDropdownContentRef = useRef<HTMLDivElement>(null);
   const packageTypeDropdownContentRef = useRef<HTMLDivElement>(null);
+
+  // Use refs for all inputs to make them completely independent of React re-renders
+  const shipmentNameRef = useRef<HTMLInputElement>(null);
+  const originLocationRef = useRef<HTMLInputElement>(null);
+  const originPortRef = useRef<HTMLInputElement>(null);
+  const cargoReadyDateRef = useRef<HTMLInputElement>(null);
+  const destinationLocationRef = useRef<HTMLInputElement>(null);
+  const destinationPortRef = useRef<HTMLInputElement>(null);
+  const targetDeliveryDateRef = useRef<HTMLInputElement>(null);
+  const weightRef = useRef<HTMLInputElement>(null);
+  const volumeRef = useRef<HTMLInputElement>(null);
+  const additionalNotesRef = useRef<HTMLTextAreaElement>(null);
+  const productNameRef = useRef<HTMLInputElement>(null);
+  const hsCodeRef = useRef<HTMLInputElement>(null);
+  const goodsDescriptionRef = useRef<HTMLTextAreaElement>(null);
+  const poNumberRef = useRef<HTMLInputElement>(null);
+  const skuNumberRef = useRef<HTMLInputElement>(null);
+  const specialInstructionsRef = useRef<HTMLTextAreaElement>(null);
+
+  // Individual state variables for ALL form elements to prevent any interference
+  const [shipmentName, setShipmentName] = useState('Shipment Name');
+  const [shipper, setShipper] = useState('');
+  const [consignee, setConsignee] = useState('');
+  const [transportMode, setTransportMode] = useState('sea');
+  const [shipmentType, setShipmentType] = useState('fcl');
+  const [containerType, setContainerType] = useState('');
+  const [incoterms, setIncoterms] = useState('');
+  const [originLocation, setOriginLocation] = useState('');
+  const [originPort, setOriginPort] = useState('');
+  const [cargoReadyDate, setCargoReadyDate] = useState('');
+  const [destinationLocation, setDestinationLocation] = useState('');
+  const [destinationPort, setDestinationPort] = useState('');
+  const [targetDeliveryDate, setTargetDeliveryDate] = useState('');
+  const [weight, setWeight] = useState('');
+  const [volume, setVolume] = useState('');
+  const [packageType, setPackageType] = useState('');
+  const [additionalNotes, setAdditionalNotes] = useState('');
+  const [productName, setProductName] = useState('');
+  const [goodsDescription, setGoodsDescription] = useState('');
+  const [hsCode, setHsCode] = useState('');
+  const [poNumber, setPoNumber] = useState('');
+  const [skuNumber, setSkuNumber] = useState('');
+  const [specialInstructions, setSpecialInstructions] = useState('');
+
+  // Individual checkbox states
+  const [originCustoms, setOriginCustoms] = useState(false);
+  const [originTrucking, setOriginTrucking] = useState(false);
+  const [destinationCustoms, setDestinationCustoms] = useState(false);
+  const [destinationTrucking, setDestinationTrucking] = useState(false);
+  const [dangerousGoods, setDangerousGoods] = useState(false);
 
   function formatDateForInput(displayDate: string): string {
     if (!displayDate || displayDate === '--') return '';
@@ -289,37 +339,6 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
     );
   };
 
-  const [formData, setFormData] = useState({
-    shipmentName: 'PO 1057, PO 1055',
-    shipper: '',
-    consignee: '',
-    transportMode: 'sea',
-    shipmentType: 'fcl',
-    containerType: '',
-    incoterms: '',
-    originLocation: '',
-    originPort: '',
-    originCustoms: false,
-    cargoReadyDate: '',
-    originTrucking: false,
-    destinationLocation: '',
-    destinationPort: '',
-    destinationCustoms: false,
-    targetDeliveryDate: '',
-    destinationTrucking: false,
-    weight: '',
-    volume: '',
-    packageType: '',
-    additionalNotes: '',
-    productName: '',
-    goodsDescription: '',
-    hsCode: '',
-    dangerousGoods: false,
-    poNumber: '',
-    skuNumber: '',
-    specialInstructions: ''
-  });
-
   const [expandedSections, setExpandedSections] = useState({
     prefill: true,
     po: true,
@@ -339,21 +358,14 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
     { id: 'SH002', name: 'PO 1002 - Textiles', date: '2024-01-20' }
   ]);
 
-  const toggleSection = (section: string) => {
+  const toggleSection = useCallback((section: string) => {
     setExpandedSections(prev => ({
       ...prev,
       [section]: !prev[section as keyof typeof prev]
     }));
-  };
+  }, []);
 
-  const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const handlePrefillShipment = (shipmentId: string) => {
+  const handlePrefillShipment = useCallback((shipmentId: string) => {
     // Mock prefill logic
     const mockData = {
       shipper: 'Studio Apparel',
@@ -363,8 +375,13 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
       originLocation: 'Shanghai, China',
       destinationLocation: 'Los Angeles, CA'
     };
-    setFormData(prev => ({ ...prev, ...mockData }));
-  };
+    setShipper(mockData.shipper);
+    setConsignee(mockData.consignee);
+    setTransportMode(mockData.transportMode);
+    setShipmentType(mockData.shipmentType);
+    setOriginLocation(mockData.originLocation);
+    setDestinationLocation(mockData.destinationLocation);
+  }, []);
 
   const SectionHeader = ({ title, icon: Icon, section, required = false }: {
       title: string;
@@ -401,57 +418,82 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
   // Generalized outside click handler for all dropdowns
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
+      const target = event.target as HTMLElement;
+      
+      // Don't close dropdowns if clicking on input elements, textareas, or select elements
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
+        return;
+      }
+      
       // Prefill
       if (showPrefillDropdown && prefillDropdownRef.current && prefillDropdownContentRef.current &&
-        !prefillDropdownRef.current.contains(event.target as Node) &&
-        !prefillDropdownContentRef.current.contains(event.target as Node)) {
+        !prefillDropdownRef.current.contains(target) &&
+        !prefillDropdownContentRef.current.contains(target)) {
         setShowPrefillDropdown(false);
       }
       // Shipper
       if (showShipperDropdown && shipperDropdownRef.current && shipperDropdownContentRef.current &&
-        !shipperDropdownRef.current.contains(event.target as Node) &&
-        !shipperDropdownContentRef.current.contains(event.target as Node)) {
+        !shipperDropdownRef.current.contains(target) &&
+        !shipperDropdownContentRef.current.contains(target)) {
         setShowShipperDropdown(false);
       }
       // Consignee
       if (showConsigneeDropdown && consigneeDropdownRef.current && consigneeDropdownContentRef.current &&
-        !consigneeDropdownRef.current.contains(event.target as Node) &&
-        !consigneeDropdownContentRef.current.contains(event.target as Node)) {
+        !consigneeDropdownRef.current.contains(target) &&
+        !consigneeDropdownContentRef.current.contains(target)) {
         setShowConsigneeDropdown(false);
       }
       // Transport Mode
       if (showTransportModeDropdown && transportModeDropdownRef.current && transportModeDropdownContentRef.current &&
-        !transportModeDropdownRef.current.contains(event.target as Node) &&
-        !transportModeDropdownContentRef.current.contains(event.target as Node)) {
+        !transportModeDropdownRef.current.contains(target) &&
+        !transportModeDropdownContentRef.current.contains(target)) {
         setShowTransportModeDropdown(false);
       }
       // Shipment Type
       if (showShipmentTypeDropdown && shipmentTypeDropdownRef.current && shipmentTypeDropdownContentRef.current &&
-        !shipmentTypeDropdownRef.current.contains(event.target as Node) &&
-        !shipmentTypeDropdownContentRef.current.contains(event.target as Node)) {
+        !shipmentTypeDropdownRef.current.contains(target) &&
+        !shipmentTypeDropdownContentRef.current.contains(target)) {
         setShowShipmentTypeDropdown(false);
       }
       // Container Type
       if (showContainerTypeDropdown && containerTypeDropdownRef.current && containerTypeDropdownContentRef.current &&
-        !containerTypeDropdownRef.current.contains(event.target as Node) &&
-        !containerTypeDropdownContentRef.current.contains(event.target as Node)) {
+        !containerTypeDropdownRef.current.contains(target) &&
+        !containerTypeDropdownContentRef.current.contains(target)) {
         setShowContainerTypeDropdown(false);
       }
       // Incoterms
       if (showIncotermsDropdown && incotermsDropdownRef.current && incotermsDropdownContentRef.current &&
-        !incotermsDropdownRef.current.contains(event.target as Node) &&
-        !incotermsDropdownContentRef.current.contains(event.target as Node)) {
+        !incotermsDropdownRef.current.contains(target) &&
+        !incotermsDropdownContentRef.current.contains(target)) {
         setShowIncotermsDropdown(false);
       }
       // Package Type
       if (showPackageTypeDropdown && packageTypeDropdownRef.current && packageTypeDropdownContentRef.current &&
-        !packageTypeDropdownRef.current.contains(event.target as Node) &&
-        !packageTypeDropdownContentRef.current.contains(event.target as Node)) {
+        !packageTypeDropdownRef.current.contains(target) &&
+        !packageTypeDropdownContentRef.current.contains(target)) {
         setShowPackageTypeDropdown(false);
       }
     }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+
+    function handleScroll() {
+      // Close all dropdowns when scrolling
+      setShowPrefillDropdown(false);
+      setShowShipperDropdown(false);
+      setShowConsigneeDropdown(false);
+      setShowTransportModeDropdown(false);
+      setShowShipmentTypeDropdown(false);
+      setShowContainerTypeDropdown(false);
+      setShowIncotermsDropdown(false);
+      setShowPackageTypeDropdown(false);
+    }
+
+    document.addEventListener('click', handleClickOutside);
+    document.addEventListener('scroll', handleScroll, true); // Use capture phase to catch all scroll events
+    
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('scroll', handleScroll, true);
+    };
   }, [showPrefillDropdown, showShipperDropdown, showConsigneeDropdown, showTransportModeDropdown, showShipmentTypeDropdown, showContainerTypeDropdown, showIncotermsDropdown, showPackageTypeDropdown]);
 
   const handleShipperDropdown = () => {
@@ -521,7 +563,7 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
         <p className="text-gray-600 text-sm">Fill in the details below to create a new freight booking</p>
       </div>
 
-      <form
+      <div
         className="space-y-2 -mt-2"
         onSubmit={e => {
           e.preventDefault();
@@ -549,7 +591,17 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                       <ChevronDown className={`w-4 h-4 transition-transform ${showPrefillDropdown ? 'rotate-180' : ''}`} />
                     </button>
                     {showPrefillDropdown && prefillDropdownPos && ReactDOM.createPortal(
-                      <div ref={prefillDropdownContentRef} style={{position: 'absolute', top: prefillDropdownPos.top, left: prefillDropdownPos.left, width: prefillDropdownPos.width, zIndex: 9999}} className="bg-white rounded-lg shadow-lg border border-gray-200">
+                      <div 
+                        ref={prefillDropdownContentRef} 
+                        style={{
+                          position: 'fixed', 
+                          top: prefillDropdownPos.top, 
+                          left: prefillDropdownPos.left, 
+                          width: prefillDropdownPos.width, 
+                          zIndex: 1000
+                        }} 
+                        className="bg-white rounded-lg shadow-lg border border-gray-200"
+                      >
                         <div className="p-2 max-h-64 overflow-y-auto">
                           <div className="space-y-1">
                             {previousShipments.map(shipment => (
@@ -609,10 +661,10 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
               </label>
               <input
                 type="text"
-                value={formData.shipmentName}
-                onChange={(e) => handleInputChange('shipmentName', e.target.value)}
-                className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg"
+                defaultValue="Shipment Name"
+                className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Enter shipment name for easy recognition"
+                ref={shipmentNameRef}
               />
             </div>
           </FormSection>
@@ -660,11 +712,21 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                         onClick={handleShipperDropdown}
                         className="flex items-center justify-between w-full px-3 py-3 border border-gray-300 text-xs text-gray-900 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       >
-                        {formData.shipper || 'Select shipper'}
+                        {shipper || 'Select shipper'}
                         <ChevronDown className={`w-4 h-4 transition-transform ${showShipperDropdown ? 'rotate-180' : ''}`} />
                       </button>
                       {showShipperDropdown && shipperDropdownPos && ReactDOM.createPortal(
-                        <div ref={shipperDropdownContentRef} style={{position: 'absolute', top: shipperDropdownPos.top, left: shipperDropdownPos.left, width: shipperDropdownPos.width, zIndex: 9999}} className="bg-white rounded-lg shadow-lg border border-gray-200">
+                        <div 
+                          ref={shipperDropdownContentRef} 
+                          style={{
+                            position: 'fixed', 
+                            top: shipperDropdownPos.top, 
+                            left: shipperDropdownPos.left, 
+                            width: shipperDropdownPos.width, 
+                            zIndex: 1000
+                          }} 
+                          className="bg-white rounded-lg shadow-lg border border-gray-200"
+                        >
                           <div className="p-2 max-h-64 overflow-y-auto">
                             <div className="space-y-1">
                               {["studio-apparel", "global-trade"].map((option) => (
@@ -672,11 +734,11 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                                   key={option}
                                   type="button"
                                   onClick={() => {
-                                    handleInputChange('shipper', option);
+                                    setShipper(option);
                                     setShowShipperDropdown(false);
                                   }}
                                   className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${
-                                    formData.shipper === option ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                                    shipper === option ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
                                   }`}
                                 >
                                   {option === 'studio-apparel' ? 'Studio Apparel' : 'Global Trade Co'}
@@ -709,11 +771,21 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                         onClick={handleConsigneeDropdown}
                         className="flex items-center justify-between w-full px-3 py-3 border border-gray-300 text-xs text-gray-900 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       >
-                        {formData.consignee || 'Select consignee'}
+                        {consignee || 'Select consignee'}
                         <ChevronDown className={`w-4 h-4 transition-transform ${showConsigneeDropdown ? 'rotate-180' : ''}`} />
                       </button>
                       {showConsigneeDropdown && consigneeDropdownPos && ReactDOM.createPortal(
-                        <div ref={consigneeDropdownContentRef} style={{position: 'absolute', top: consigneeDropdownPos.top, left: consigneeDropdownPos.left, width: consigneeDropdownPos.width, zIndex: 9999}} className="bg-white rounded-lg shadow-lg border border-gray-200">
+                        <div 
+                          ref={consigneeDropdownContentRef} 
+                          style={{
+                            position: 'fixed', 
+                            top: consigneeDropdownPos.top, 
+                            left: consigneeDropdownPos.left, 
+                            width: consigneeDropdownPos.width, 
+                            zIndex: 1000
+                          }} 
+                          className="bg-white rounded-lg shadow-lg border border-gray-200"
+                        >
                           <div className="p-2 max-h-64 overflow-y-auto">
                             <div className="space-y-1">
                               {["forward-supply", "logistics-hub"].map((option) => (
@@ -721,11 +793,11 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                                   key={option}
                                   type="button"
                                   onClick={() => {
-                                    handleInputChange('consignee', option);
+                                    setConsignee(option);
                                     setShowConsigneeDropdown(false);
                                   }}
                                   className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${
-                                    formData.consignee === option ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                                    consignee === option ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
                                   }`}
                                 >
                                   {option === 'forward-supply' ? 'Forward Supply Co' : 'Logistics Hub'}
@@ -767,11 +839,21 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                     onClick={handleTransportModeDropdown}
                     className="flex items-center justify-between w-full px-3 py-3 border border-gray-300 text-xs text-gray-900 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                   >
-                    {formData.transportMode === 'sea' ? 'Sea Freight' : formData.transportMode === 'air' ? 'Air Freight' : formData.transportMode === 'land' ? 'Land Transport' : 'Select mode'}
+                    {transportMode === 'sea' ? 'Sea Freight' : transportMode === 'air' ? 'Air Freight' : transportMode === 'land' ? 'Land Transport' : 'Select mode'}
                     <ChevronDown className={`w-4 h-4 transition-transform ${showTransportModeDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   {showTransportModeDropdown && transportModeDropdownPos && ReactDOM.createPortal(
-                    <div ref={transportModeDropdownContentRef} style={{position: 'absolute', top: transportModeDropdownPos.top, left: transportModeDropdownPos.left, width: transportModeDropdownPos.width, zIndex: 9999}} className="bg-white rounded-lg shadow-lg border border-gray-200">
+                    <div 
+                      ref={transportModeDropdownContentRef} 
+                      style={{
+                        position: 'fixed', 
+                        top: transportModeDropdownPos.top, 
+                        left: transportModeDropdownPos.left, 
+                        width: transportModeDropdownPos.width, 
+                        zIndex: 1000
+                      }} 
+                      className="bg-white rounded-lg shadow-lg border border-gray-200"
+                    >
                       <div className="p-2 max-h-64 overflow-y-auto">
                         <div className="space-y-1">
                           {[
@@ -783,11 +865,11 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                               key={option.value}
                               type="button"
                               onClick={() => {
-                                handleInputChange('transportMode', option.value);
+                                setTransportMode(option.value);
                                 setShowTransportModeDropdown(false);
                               }}
                               className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${
-                                formData.transportMode === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                                transportMode === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
                               }`}
                             >
                               {option.label}
@@ -810,11 +892,21 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                     onClick={handleShipmentTypeDropdown}
                     className="flex items-center justify-between w-full px-3 py-3 border border-gray-300 text-xs text-gray-900 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                   >
-                    {formData.shipmentType === 'fcl' ? 'FCL (Full Container Load)' : formData.shipmentType === 'lcl' ? 'LCL (Less Container Load)' : formData.shipmentType === 'breakbulk' ? 'Breakbulk' : 'Select type'}
+                    {shipmentType === 'fcl' ? 'FCL (Full Container Load)' : shipmentType === 'lcl' ? 'LCL (Less Container Load)' : shipmentType === 'breakbulk' ? 'Breakbulk' : 'Select type'}
                     <ChevronDown className={`w-4 h-4 transition-transform ${showShipmentTypeDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   {showShipmentTypeDropdown && shipmentTypeDropdownPos && ReactDOM.createPortal(
-                    <div ref={shipmentTypeDropdownContentRef} style={{position: 'absolute', top: shipmentTypeDropdownPos.top, left: shipmentTypeDropdownPos.left, width: shipmentTypeDropdownPos.width, zIndex: 9999}} className="bg-white rounded-lg shadow-lg border border-gray-200">
+                    <div 
+                      ref={shipmentTypeDropdownContentRef} 
+                      style={{
+                        position: 'fixed', 
+                        top: shipmentTypeDropdownPos.top, 
+                        left: shipmentTypeDropdownPos.left, 
+                        width: shipmentTypeDropdownPos.width, 
+                        zIndex: 1000
+                      }} 
+                      className="bg-white rounded-lg shadow-lg border border-gray-200"
+                    >
                       <div className="p-2 max-h-64 overflow-y-auto">
                         <div className="space-y-1">
                           {[
@@ -826,11 +918,11 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                               key={option.value}
                               type="button"
                               onClick={() => {
-                                handleInputChange('shipmentType', option.value);
+                                setShipmentType(option.value);
                                 setShowShipmentTypeDropdown(false);
                               }}
                               className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${
-                                formData.shipmentType === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                                shipmentType === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
                               }`}
                             >
                               {option.label}
@@ -851,11 +943,21 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                     onClick={handleContainerTypeDropdown}
                     className="flex items-center justify-between w-full px-3 py-3 border border-gray-300 text-xs text-gray-900 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                   >
-                    {formData.containerType === '20ft' ? '20ft Standard' : formData.containerType === '40ft' ? '40ft Standard' : formData.containerType === '40ft-hc' ? '40ft High Cube' : formData.containerType === '45ft' ? '45ft High Cube' : 'Select container type'}
+                    {containerType === '20ft' ? '20ft Standard' : containerType === '40ft' ? '40ft Standard' : containerType === '40ft-hc' ? '40ft High Cube' : containerType === '45ft' ? '45ft High Cube' : 'Select container type'}
                     <ChevronDown className={`w-4 h-4 transition-transform ${showContainerTypeDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   {showContainerTypeDropdown && containerTypeDropdownPos && ReactDOM.createPortal(
-                    <div ref={containerTypeDropdownContentRef} style={{position: 'absolute', top: containerTypeDropdownPos.top, left: containerTypeDropdownPos.left, width: containerTypeDropdownPos.width, zIndex: 9999}} className="bg-white rounded-lg shadow-lg border border-gray-200">
+                    <div 
+                      ref={containerTypeDropdownContentRef} 
+                      style={{
+                        position: 'fixed', 
+                        top: containerTypeDropdownPos.top, 
+                        left: containerTypeDropdownPos.left, 
+                        width: containerTypeDropdownPos.width, 
+                        zIndex: 1000
+                      }} 
+                      className="bg-white rounded-lg shadow-lg border border-gray-200"
+                    >
                       <div className="p-2 max-h-64 overflow-y-auto">
                         <div className="space-y-1">
                           {[
@@ -868,11 +970,11 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                               key={option.value}
                               type="button"
                               onClick={() => {
-                                handleInputChange('containerType', option.value);
+                                setContainerType(option.value);
                                 setShowContainerTypeDropdown(false);
                               }}
                               className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${
-                                formData.containerType === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                                containerType === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
                               }`}
                             >
                               {option.label}
@@ -893,11 +995,21 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                     onClick={handleIncotermsDropdown}
                     className="flex items-center justify-between w-full px-3 py-3 border border-gray-300 text-xs text-gray-900 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                   >
-                    {formData.incoterms === 'FOB' ? 'FOB - Free on Board' : formData.incoterms === 'EXW' ? 'EXW - Ex Works' : formData.incoterms === 'DDP' ? 'DDP - Delivered Duty Paid' : formData.incoterms === 'CIF' ? 'CIF - Cost, Insurance & Freight' : 'Select incoterms'}
+                    {incoterms === 'FOB' ? 'FOB - Free on Board' : incoterms === 'EXW' ? 'EXW - Ex Works' : incoterms === 'DDP' ? 'DDP - Delivered Duty Paid' : incoterms === 'CIF' ? 'CIF - Cost, Insurance & Freight' : 'Select incoterms'}
                     <ChevronDown className={`w-4 h-4 transition-transform ${showIncotermsDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   {showIncotermsDropdown && incotermsDropdownPos && ReactDOM.createPortal(
-                    <div ref={incotermsDropdownContentRef} style={{position: 'absolute', top: incotermsDropdownPos.top, left: incotermsDropdownPos.left, width: incotermsDropdownPos.width, zIndex: 9999}} className="bg-white rounded-lg shadow-lg border border-gray-200">
+                    <div 
+                      ref={incotermsDropdownContentRef} 
+                      style={{
+                        position: 'fixed', 
+                        top: incotermsDropdownPos.top, 
+                        left: incotermsDropdownPos.left, 
+                        width: incotermsDropdownPos.width, 
+                        zIndex: 1000
+                      }} 
+                      className="bg-white rounded-lg shadow-lg border border-gray-200"
+                    >
                       <div className="p-2 max-h-64 overflow-y-auto">
                         <div className="space-y-1">
                           {[
@@ -910,11 +1022,11 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                               key={option.value}
                               type="button"
                               onClick={() => {
-                                handleInputChange('incoterms', option.value);
+                                setIncoterms(option.value);
                                 setShowIncotermsDropdown(false);
                               }}
                               className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${
-                                formData.incoterms === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                                incoterms === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
                               }`}
                             >
                               {option.label}
@@ -943,10 +1055,10 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                   </label>
                   <input
                     type="text"
-                    value={formData.originLocation}
-                    onChange={(e) => handleInputChange('originLocation', e.target.value)}
-                    placeholder="Enter origin address"
+                    defaultValue=""
                     className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter origin address"
+                    ref={originLocationRef}
                   />
                 </div>
                 <div>
@@ -955,10 +1067,10 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                   </label>
                   <input
                     type="text"
-                    value={formData.originPort}
-                    onChange={(e) => handleInputChange('originPort', e.target.value)}
-                    placeholder="Search ports"
+                    defaultValue=""
                     className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Search ports"
+                    ref={originPortRef}
                   />
                 </div>
               </div>
@@ -969,9 +1081,9 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                   </label>
                   <input
                     type="date"
-                    value={formData.cargoReadyDate}
-                    onChange={(e) => handleInputChange('cargoReadyDate', e.target.value)}
+                    defaultValue=""
                     className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    ref={cargoReadyDateRef}
                   />
                 </div>
               </div>
@@ -979,8 +1091,8 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={formData.originCustoms}
-                    onChange={(e) => handleInputChange('originCustoms', e.target.checked)}
+                    checked={originCustoms}
+                    onChange={e => setOriginCustoms(e.target.checked)}
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <span className="text-xs text-gray-700">Export customs service required</span>
@@ -988,8 +1100,8 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={formData.originTrucking}
-                    onChange={(e) => handleInputChange('originTrucking', e.target.checked)}
+                    checked={originTrucking}
+                    onChange={e => setOriginTrucking(e.target.checked)}
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <span className="text-xs text-gray-700">Trucking required from origin to port</span>
@@ -1011,10 +1123,10 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                   </label>
                   <input
                     type="text"
-                    value={formData.destinationLocation}
-                    onChange={(e) => handleInputChange('destinationLocation', e.target.value)}
-                    placeholder="Enter destination address"
+                    defaultValue=""
                     className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter destination address"
+                    ref={destinationLocationRef}
                   />
                 </div>
                 <div>
@@ -1023,10 +1135,10 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                   </label>
                   <input
                     type="text"
-                    value={formData.destinationPort}
-                    onChange={(e) => handleInputChange('destinationPort', e.target.value)}
-                    placeholder="Search ports"
+                    defaultValue=""
                     className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Search ports"
+                    ref={destinationPortRef}
                   />
                 </div>
               </div>
@@ -1037,9 +1149,9 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                   </label>
                   <input
                     type="date"
-                    value={formData.targetDeliveryDate}
-                    onChange={(e) => handleInputChange('targetDeliveryDate', e.target.value)}
+                    defaultValue=""
                     className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    ref={targetDeliveryDateRef}
                   />
                 </div>
               </div>
@@ -1047,8 +1159,8 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={formData.destinationCustoms}
-                    onChange={(e) => handleInputChange('destinationCustoms', e.target.checked)}
+                    checked={destinationCustoms}
+                    onChange={e => setDestinationCustoms(e.target.checked)}
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <span className="text-xs text-gray-700">Import customs service required</span>
@@ -1056,8 +1168,8 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={formData.destinationTrucking}
-                    onChange={(e) => handleInputChange('destinationTrucking', e.target.checked)}
+                    checked={destinationTrucking}
+                    onChange={e => setDestinationTrucking(e.target.checked)}
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <span className="text-xs text-gray-700">Trucking required from port to destination</span>
@@ -1078,10 +1190,10 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                 </label>
                 <input
                   type="number"
-                  value={formData.weight}
-                  onChange={(e) => handleInputChange('weight', e.target.value)}
-                  placeholder="0"
+                  defaultValue=""
                   className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="0"
+                  ref={weightRef}
                 />
               </div>
               <div>
@@ -1091,10 +1203,10 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                 <input
                   type="number"
                   step="0.01"
-                  value={formData.volume}
-                  onChange={(e) => handleInputChange('volume', e.target.value)}
-                  placeholder="0.00"
+                  defaultValue=""
                   className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="0.00"
+                  ref={volumeRef}
                 />
               </div>
               <div>
@@ -1105,11 +1217,21 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                     onClick={handlePackageTypeDropdown}
                     className="flex items-center justify-between w-full px-3 py-3 border border-gray-300 text-xs text-gray-900 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                   >
-                    {formData.packageType === 'pallet' ? 'Pallet' : formData.packageType === 'box' ? 'Box' : formData.packageType === 'crate' ? 'Crate' : formData.packageType === 'carton' ? 'Carton' : 'Select package type'}
+                    {packageType === 'pallet' ? 'Pallet' : packageType === 'box' ? 'Box' : packageType === 'crate' ? 'Crate' : packageType === 'carton' ? 'Carton' : 'Select package type'}
                     <ChevronDown className={`w-4 h-4 transition-transform ${showPackageTypeDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   {showPackageTypeDropdown && packageTypeDropdownPos && ReactDOM.createPortal(
-                    <div ref={packageTypeDropdownContentRef} style={{position: 'absolute', top: packageTypeDropdownPos.top, left: packageTypeDropdownPos.left, width: packageTypeDropdownPos.width, zIndex: 9999}} className="bg-white rounded-lg shadow-lg border border-gray-200">
+                    <div 
+                      ref={packageTypeDropdownContentRef} 
+                      style={{
+                        position: 'fixed', 
+                        top: packageTypeDropdownPos.top, 
+                        left: packageTypeDropdownPos.left, 
+                        width: packageTypeDropdownPos.width, 
+                        zIndex: 1000
+                      }} 
+                      className="bg-white rounded-lg shadow-lg border border-gray-200"
+                    >
                       <div className="p-2 max-h-64 overflow-y-auto">
                         <div className="space-y-1">
                           {[
@@ -1122,11 +1244,11 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                               key={option.value}
                               type="button"
                               onClick={() => {
-                                handleInputChange('packageType', option.value);
+                                setPackageType(option.value);
                                 setShowPackageTypeDropdown(false);
                               }}
                               className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${
-                                formData.packageType === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                                packageType === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
                               }`}
                             >
                               {option.label}
@@ -1143,11 +1265,11 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-2">Additional Notes</label>
               <textarea
-                value={formData.additionalNotes}
-                onChange={(e) => handleInputChange('additionalNotes', e.target.value)}
+                defaultValue=""
                 rows={3}
-                placeholder="Any additional cargo specifications or handling requirements"
                 className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Any additional cargo specifications or handling requirements"
+                ref={additionalNotesRef}
               />
             </div>
           </FormSection>
@@ -1165,10 +1287,10 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                   </label>
                   <input
                     type="text"
-                    value={formData.productName}
-                    onChange={(e) => handleInputChange('productName', e.target.value)}
-                    placeholder="Enter product name"
+                    defaultValue=""
                     className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter product name"
+                    ref={productNameRef}
                   />
                 </div>
                 <div>
@@ -1177,10 +1299,10 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                   </label>
                   <input
                     type="text"
-                    value={formData.hsCode}
-                    onChange={(e) => handleInputChange('hsCode', e.target.value)}
-                    placeholder="Enter HS code"
+                    defaultValue=""
                     className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter HS code"
+                    ref={hsCodeRef}
                   />
                 </div>
               </div>
@@ -1189,19 +1311,19 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                   Goods Description <span className="text-red-500">*</span>
                 </label>
                 <textarea
-                  value={formData.goodsDescription}
-                  onChange={(e) => handleInputChange('goodsDescription', e.target.value)}
+                  defaultValue=""
                   rows={3}
-                  placeholder="Detailed description of goods (English and Chinese)"
                   className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Detailed description of goods (English and Chinese)"
+                  ref={goodsDescriptionRef}
                 />
               </div>
               <div>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={formData.dangerousGoods}
-                    onChange={(e) => handleInputChange('dangerousGoods', e.target.checked)}
+                    checked={dangerousGoods}
+                    onChange={e => setDangerousGoods(e.target.checked)}
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <span className="text-xs text-gray-700">This shipment contains dangerous goods</span>
@@ -1236,10 +1358,10 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                   </label>
                   <input
                     type="text"
-                    value={formData.poNumber}
-                    onChange={(e) => handleInputChange('poNumber', e.target.value)}
-                    placeholder="Enter PO number"
+                    defaultValue=""
                     className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter PO number"
+                    ref={poNumberRef}
                   />
                 </div>
                 <div>
@@ -1248,10 +1370,10 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                   </label>
                   <input
                     type="text"
-                    value={formData.skuNumber}
-                    onChange={(e) => handleInputChange('skuNumber', e.target.value)}
-                    placeholder="Enter SKU number"
+                    defaultValue=""
                     className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter SKU number"
+                    ref={skuNumberRef}
                   />
                 </div>
               </div>
@@ -1266,11 +1388,11 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-2">Any special instructions?</label>
               <textarea
-                value={formData.specialInstructions}
-                onChange={(e) => handleInputChange('specialInstructions', e.target.value)}
+                defaultValue=""
                 rows={4}
-                placeholder="Any additional information, handling notes, or special alerts for this shipment"
                 className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Any additional information, handling notes, or special alerts for this shipment"
+                ref={specialInstructionsRef}
               />
             </div>
           </FormSection>
@@ -1291,7 +1413,7 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
             Submit Booking
           </button>
         </div>
-      </form>
+      </div>
 
       {showPOSelection && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

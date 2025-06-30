@@ -47,6 +47,54 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
   const modeDropdownRef = useRef<HTMLDivElement>(null);
   const modeButtonRef = useRef<HTMLButtonElement>(null);
 
+  const [addTransportMode, setAddTransportMode] = useState('ocean');
+  const [showAddTransportModeDropdown, setShowAddTransportModeDropdown] = useState(false);
+  const [addContainerType, setAddContainerType] = useState('20ft');
+  const [showAddContainerTypeDropdown, setShowAddContainerTypeDropdown] = useState(false);
+  const [addCurrency, setAddCurrency] = useState('USD');
+  const [showAddCurrencyDropdown, setShowAddCurrencyDropdown] = useState(false);
+  const [addIncoterm, setAddIncoterm] = useState('FOB');
+  const [showAddIncotermDropdown, setShowAddIncotermDropdown] = useState(false);
+  const [addStatus, setAddStatus] = useState('draft');
+  const [showAddStatusDropdown, setShowAddStatusDropdown] = useState(false);
+
+  const [showEditTransportModeDropdown, setShowEditTransportModeDropdown] = useState(false);
+  const [showEditContainerTypeDropdown, setShowEditContainerTypeDropdown] = useState(false);
+  const [showEditCurrencyDropdown, setShowEditCurrencyDropdown] = useState(false);
+  const [showEditIncotermDropdown, setShowEditIncotermDropdown] = useState(false);
+  const [showEditStatusDropdown, setShowEditStatusDropdown] = useState(false);
+
+  const transportModeOptions = [
+    { value: 'ocean', label: 'Ocean' },
+    { value: 'air', label: 'Air' },
+    { value: 'truck', label: 'Truck' },
+  ];
+  const containerTypeOptions = [
+    { value: '20ft', label: '20ft' },
+    { value: '40ft', label: '40ft' },
+    { value: '40ft HC', label: '40ft HC' },
+    { value: '45ft', label: '45ft' },
+  ];
+  const currencyOptions = [
+    { value: 'USD', label: 'USD' },
+    { value: 'EUR', label: 'EUR' },
+    { value: 'GBP', label: 'GBP' },
+    { value: 'CNY', label: 'CNY' },
+  ];
+  const incotermOptions = [
+    { value: 'FOB', label: 'FOB' },
+    { value: 'CIF', label: 'CIF' },
+    { value: 'EXW', label: 'EXW' },
+    { value: 'DAP', label: 'DAP' },
+    { value: 'CIP', label: 'CIP' },
+  ];
+  const statusOptions = [
+    { value: 'draft', label: 'Draft' },
+    { value: 'active', label: 'Active' },
+    { value: 'expired', label: 'Expired' },
+    { value: 'archived', label: 'Archived' },
+  ];
+
   // Update your useEffect for click outside handling
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -445,6 +493,29 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
   // Full Management View
   return (
     <div className="bg-white">
+
+      {/* Header */}
+       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-2 md:gap-0">
+        <h2 className="text-2xl font-semibold text-gray-900">Rate Management</h2>
+        <div className="flex flex-col md:flex-row gap-2 md:gap-3 w-full md:w-auto mt-2 md:mt-0">
+          <button className="w-full md:w-auto flex items-center text-sm text-gray-900 gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-200">
+            <Upload className="w-4 h-4" />
+            Import CSV
+          </button>
+          <button className="w-full md:w-auto flex items-center text-sm text-gray-900 gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-200">
+            <Download className="w-4 h-4" />
+            Export CSV
+          </button>
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="w-full md:w-auto flex items-center px-4 py-2 text-sm font-semibold text-white bg-[#007bff] rounded-md hover:bg-blue-700 transition-colors"
+          >
+            <Plus size={16} className="mr-2" />
+            Add New Rate
+          </button>
+        </div>
+      </div>
+      
       {/* Search and Filters */}
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-md">
@@ -687,11 +758,33 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">Transport Mode</label>
-                    <select className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                      <option value="ocean">Ocean</option>
-                      <option value="air">Air</option>
-                      <option value="truck">Truck</option>
-                    </select>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddTransportModeDropdown((v) => !v)}
+                        className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      >
+                        {transportModeOptions.find(opt => opt.value === addTransportMode)?.label || 'Select mode'}
+                        <ChevronDown className={`w-4 h-4 transition-transform ${showAddTransportModeDropdown ? 'rotate-180' : ''}`} />
+                      </button>
+                      {showAddTransportModeDropdown && (
+                        <div className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                          {transportModeOptions.map((option) => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => {
+                                setAddTransportMode(option.value);
+                                setShowAddTransportModeDropdown(false);
+                              }}
+                              className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${addTransportMode === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">Carrier</label>
@@ -717,21 +810,63 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">Container Type</label>
-                    <select className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                      <option value="20ft">20ft</option>
-                      <option value="40ft">40ft</option>
-                      <option value="40ft HC">40ft HC</option>
-                      <option value="45ft">45ft</option>
-                    </select>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddContainerTypeDropdown((v) => !v)}
+                        className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      >
+                        {containerTypeOptions.find(opt => opt.value === addContainerType)?.label || 'Select container type'}
+                        <ChevronDown className={`w-4 h-4 transition-transform ${showAddContainerTypeDropdown ? 'rotate-180' : ''}`} />
+                      </button>
+                      {showAddContainerTypeDropdown && (
+                        <div className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                          {containerTypeOptions.map((option) => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => {
+                                setAddContainerType(option.value);
+                                setShowAddContainerTypeDropdown(false);
+                              }}
+                              className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${addContainerType === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">Currency</label>
-                    <select className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                      <option value="USD">USD</option>
-                      <option value="EUR">EUR</option>
-                      <option value="GBP">GBP</option>
-                      <option value="CNY">CNY</option>
-                    </select>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddCurrencyDropdown((v) => !v)}
+                        className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      >
+                        {currencyOptions.find(opt => opt.value === addCurrency)?.label || 'Select currency'}
+                        <ChevronDown className={`w-4 h-4 transition-transform ${showAddCurrencyDropdown ? 'rotate-180' : ''}`} />
+                      </button>
+                      {showAddCurrencyDropdown && (
+                        <div className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                          {currencyOptions.map((option) => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => {
+                                setAddCurrency(option.value);
+                                setShowAddCurrencyDropdown(false);
+                              }}
+                              className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${addCurrency === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">Price Range</label>
@@ -750,13 +885,33 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">Incoterm</label>
-                    <select className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                      <option value="FOB">FOB</option>
-                      <option value="CIF">CIF</option>
-                      <option value="EXW">EXW</option>
-                      <option value="DAP">DAP</option>
-                      <option value="CIP">CIP</option>
-                    </select>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddIncotermDropdown((v) => !v)}
+                        className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      >
+                        {incotermOptions.find(opt => opt.value === addIncoterm)?.label || 'Select incoterm'}
+                        <ChevronDown className={`w-4 h-4 transition-transform ${showAddIncotermDropdown ? 'rotate-180' : ''}`} />
+                      </button>
+                      {showAddIncotermDropdown && (
+                        <div className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                          {incotermOptions.map((option) => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => {
+                                setAddIncoterm(option.value);
+                                setShowAddIncotermDropdown(false);
+                              }}
+                              className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${addIncoterm === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
                 
@@ -788,12 +943,33 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
 
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">Status</label>
-                  <select className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    <option value="draft">Draft</option>
-                    <option value="active">Active</option>
-                    <option value="expired">Expired</option>
-                    <option value="archived">Archived</option>
-                  </select>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddStatusDropdown((v) => !v)}
+                      className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    >
+                      {statusOptions.find(opt => opt.value === addStatus)?.label || 'Select status'}
+                      <ChevronDown className={`w-4 h-4 transition-transform ${showAddStatusDropdown ? 'rotate-180' : ''}`} />
+                    </button>
+                    {showAddStatusDropdown && (
+                      <div className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                        {statusOptions.map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => {
+                              setAddStatus(option.value);
+                              setShowAddStatusDropdown(false);
+                            }}
+                            className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${addStatus === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -857,16 +1033,36 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Transport Mode</label>
-                      <select 
-                        name="mode"
-                        value={currentRate.mode}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="ocean">Ocean</option>
-                        <option value="air">Air</option>
-                        <option value="truck">Truck</option>
-                      </select>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setShowEditTransportModeDropdown((v) => !v)}
+                          className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        >
+                          {transportModeOptions.find(opt => opt.value === currentRate.mode)?.label || 'Select mode'}
+                          <ChevronDown className={`w-4 h-4 transition-transform ${showEditTransportModeDropdown ? 'rotate-180' : ''}`} />
+                        </button>
+                        {showEditTransportModeDropdown && (
+                          <div className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                            {transportModeOptions.map((option) => (
+                              <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => {
+                                  setCurrentRate(prev => ({
+                                    ...prev!,
+                                    mode: option.value as 'ocean' | 'air' | 'truck'
+                                  }));
+                                  setShowEditTransportModeDropdown(false);
+                                }}
+                                className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${currentRate.mode === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                              >
+                                {option.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Carrier</label>
@@ -916,23 +1112,69 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                   <div className="grid grid-cols-3 gap-4">
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Container Type</label>
-                      <input 
-                        type="text" 
-                        name="containertype"
-                        value={currentRate.containertype}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                      />
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setShowEditContainerTypeDropdown((v) => !v)}
+                          className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        >
+                          {containerTypeOptions.find(opt => opt.value === currentRate.containertype)?.label || 'Select container type'}
+                          <ChevronDown className={`w-4 h-4 transition-transform ${showEditContainerTypeDropdown ? 'rotate-180' : ''}`} />
+                        </button>
+                        {showEditContainerTypeDropdown && (
+                          <div className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                            {containerTypeOptions.map((option) => (
+                              <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => {
+                                  setCurrentRate(prev => ({
+                                    ...prev!,
+                                    containertype: option.value
+                                  }));
+                                  setShowEditContainerTypeDropdown(false);
+                                }}
+                                className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${currentRate.containertype === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                              >
+                                {option.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Currency</label>
-                      <input 
-                        type="text" 
-                        name="currency"
-                        value={currentRate.currency}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                      />
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setShowEditCurrencyDropdown((v) => !v)}
+                          className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        >
+                          {currencyOptions.find(opt => opt.value === currentRate.currency)?.label || 'Select currency'}
+                          <ChevronDown className={`w-4 h-4 transition-transform ${showEditCurrencyDropdown ? 'rotate-180' : ''}`} />
+                        </button>
+                        {showEditCurrencyDropdown && (
+                          <div className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                            {currencyOptions.map((option) => (
+                              <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => {
+                                  setCurrentRate(prev => ({
+                                    ...prev!,
+                                    currency: option.value
+                                  }));
+                                  setShowEditCurrencyDropdown(false);
+                                }}
+                                className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${currentRate.currency === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                              >
+                                {option.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Price Range</label>
@@ -969,18 +1211,36 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Incoterm</label>
-                      <select 
-                        name="incoterm"
-                        value={currentRate.incoterm}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="FOB">FOB</option>
-                        <option value="CIF">CIF</option>
-                        <option value="EXW">EXW</option>
-                        <option value="DAP">DAP</option>
-                        <option value="CIP">CIP</option>
-                      </select>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setShowEditIncotermDropdown((v) => !v)}
+                          className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        >
+                          {incotermOptions.find(opt => opt.value === currentRate.incoterm)?.label || 'Select incoterm'}
+                          <ChevronDown className={`w-4 h-4 transition-transform ${showEditIncotermDropdown ? 'rotate-180' : ''}`} />
+                        </button>
+                        {showEditIncotermDropdown && (
+                          <div className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                            {incotermOptions.map((option) => (
+                              <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => {
+                                  setCurrentRate(prev => ({
+                                    ...prev!,
+                                    incoterm: option.value
+                                  }));
+                                  setShowEditIncotermDropdown(false);
+                                }}
+                                className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${currentRate.incoterm === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                              >
+                                {option.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                   
@@ -1042,17 +1302,36 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
 
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">Status</label>
-                    <select 
-                      name="status"
-                      value={currentRate.status}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="draft">Draft</option>
-                      <option value="active">Active</option>
-                      <option value="expired">Expired</option>
-                      <option value="archived">Archived</option>
-                    </select>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setShowEditStatusDropdown((v) => !v)}
+                        className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      >
+                        {statusOptions.find(opt => opt.value === currentRate.status)?.label || 'Select status'}
+                        <ChevronDown className={`w-4 h-4 transition-transform ${showEditStatusDropdown ? 'rotate-180' : ''}`} />
+                      </button>
+                      {showEditStatusDropdown && (
+                        <div className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                          {statusOptions.map((option) => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => {
+                                setCurrentRate(prev => ({
+                                  ...prev!,
+                                  status: option.value
+                                }));
+                                setShowEditStatusDropdown(false);
+                              }}
+                              className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${currentRate.status === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>             
                 <div className="p-4 border-t border-gray-200 flex justify-end gap-3">
