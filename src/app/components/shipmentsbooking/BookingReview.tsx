@@ -63,13 +63,13 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h4 className="text-xs font-medium text-gray-500 mb-2">Incoterms</h4>
-                  <div className="text-xs text-gray-900 bg-gray-50 p-3 rounded">
+                  <div className="text-xs text-gray-900 p-3 rounded">
                     Incoterms data will be shown here
                   </div>
                 </div>
                 <div>
                   <h4 className="text-xs font-medium text-gray-500 mb-2">Export customs services</h4>
-                  <div className="text-xs text-gray-900 bg-gray-50 p-3 rounded">
+                  <div className="text-xs text-gray-900 p-3 rounded">
                     Export customs service status will be shown here
                   </div>
                 </div>
@@ -95,7 +95,7 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
                   </div>
                   Pickup from
                 </h4>
-                <div className="ml-8 bg-gray-50 p-4 rounded-lg">
+                <div className="ml-8 p-4 rounded-lg">
                   <div className="text-xs font-medium text-gray-900 mb-1">
                     Shipper company name data will be shown here
                   </div>
@@ -108,7 +108,7 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
               {/* Selected ports */}
               <div>
                 <h4 className="text-xs font-medium text-gray-900 mb-3">Selected ports</h4>
-                <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-lg">
+                <div className="flex items-center gap-4 p-4 rounded-lg">
                   <div className="text-center">
                     <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center mb-1">
                       <div className="w-2 h-2 bg-white rounded-full"></div>
@@ -139,7 +139,7 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
                   </div>
                   Deliver to
                 </h4>
-                <div className="ml-8 bg-gray-50 p-4 rounded-lg">
+                <div className="ml-8 p-4 rounded-lg">
                   <div className="text-xs font-medium text-gray-900 mb-1">
                     Consignee company name data will be shown here
                   </div>
@@ -161,19 +161,19 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
             </div>
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <div className="text-center p-4 rounded-lg">
                   <div className="text-sm font-bold text-gray-900 mb-1">
                     Weight data will be shown here
                   </div>
                   <div className="text-xs text-gray-600">Total Weight (kg)</div>
                 </div>
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <div className="text-center p-4 rounded-lg">
                   <div className="text-sm font-bold text-gray-900 mb-1">
                     Volume data will be shown here
                   </div>
                   <div className="text-xs text-gray-600">Total Volume (cbm)</div>
                 </div>
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <div className="text-center p-4 rounded-lg">
                   <div className="text-sm font-bold text-gray-900 mb-1">
                     Package count will be shown here
                   </div>
@@ -184,7 +184,7 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
               <div className="space-y-4">
                 <div>
                   <h4 className="text-xs font-medium text-gray-900 mb-2">Product Description</h4>
-                  <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded">
+                  <div className="text-xs text-gray-600 p-3 rounded">
                     Goods description data will be shown here
                   </div>
                 </div>
@@ -192,13 +192,13 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <h4 className="text-xs font-medium text-gray-900 mb-2">HS Code</h4>
-                    <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded">
+                    <div className="text-xs text-gray-600 p-3 rounded">
                       HS Code data will be shown here
                     </div>
                   </div>
                   <div>
                     <h4 className="text-xs font-medium text-gray-900 mb-2">Package Type</h4>
-                    <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded">
+                    <div className="text-xs text-gray-600 p-3 rounded">
                       Package type data will be shown here
                     </div>
                   </div>
@@ -216,7 +216,7 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
               </h2>
             </div>
             <div className="p-6">
-              <div className="text-xs text-gray-600 bg-gray-50 p-4 rounded">
+              <div className="text-xs text-gray-600 p-4 rounded">
                 Shipment tags data will be shown here (PO numbers, SKU numbers, etc.)
               </div>
             </div>
@@ -324,7 +324,7 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
               </h3>
             </div>
             <div className="p-4">
-              <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded">
+              <div className="text-xs text-gray-600 p-3 rounded">
                 Special instructions data will be shown here
               </div>
             </div>

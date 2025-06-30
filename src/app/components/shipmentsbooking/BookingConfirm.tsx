@@ -314,7 +314,7 @@ const BookingReview = () => {
                 {activeTab === 'activity' && (
                   <div>
                     {/* Visibility Control */}
-                    <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="mb-4 p-4 rounded-lg border border-gray-200">
                       <div className="flex items-center gap-2">
                         <MessageSquare className="w-4 h-4 text-gray-500" />
                         <span className="text-sm text-gray-700">Messages on linked orders</span>
