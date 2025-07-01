@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Dispatch, SetStateAction } from 'react';
 import { 
   MapPin, 
   Package, 
@@ -15,9 +15,16 @@ import {
   Send,
   Truck,
   Ship,
-  Plane
+  Plane,
+  Maximize2,
+  X
 } from 'lucide-react';
 import BookingConfirmPopUp from './BookingConfirmPopUp';
+
+// Move zoom handlers outside so both components can use them
+type ZoomSetter = Dispatch<SetStateAction<number>>;
+const handleZoomIn = (setter: ZoomSetter) => setter((z: number) => Math.min(z + 0.2, 2.5));
+const handleZoomOut = (setter: ZoomSetter) => setter((z: number) => Math.max(z - 0.2, 1));
 
 const BookingReview = () => {
   const [activeTab, setActiveTab] = useState('activity');
@@ -27,12 +34,27 @@ const BookingReview = () => {
   const [tempTitle, setTempTitle] = useState(title);
   const [pricingReady, setPricingReady] = useState(false);
   const [showPopup, setShowPopup] = useState(true);
+  const [showMapModal, setShowMapModal] = useState(false);
+  const [mapZoom, setMapZoom] = useState(1);
+  const [showStatusBar, setShowStatusBar] = useState(true);
+  const [headerData, setHeaderData] = useState<{ shipmentId: string; shipmentName: string; shipmentTags: { hasTags: boolean; poNumber: string; skuNumber: string } } | null>(null);
+  const [shipmentName, setShipmentName] = useState('');
+  const [bookingFormData, setBookingFormData] = useState<any>(null);
+  const [generatedFLNumber, setGeneratedFLNumber] = useState('');
 
   // Load booking data from sessionStorage (from BookingCreation form)
   useEffect(() => {
+    const name = sessionStorage.getItem('shipmentName') || '';
+    setShipmentName(name);
+    const formData = sessionStorage.getItem('bookingFormData');
+    if (formData) setBookingFormData(JSON.parse(formData));
     const savedBookingData = sessionStorage.getItem('bookingData');
     if (savedBookingData) {
       setBookingData(JSON.parse(savedBookingData));
+    }
+    // Generate FL-number if not present
+    if (!formData || !JSON.parse(formData).flNumber) {
+      setGeneratedFLNumber('FL-' + Math.floor(10000 + Math.random() * 90000));
     }
   }, []);
 
@@ -178,7 +200,7 @@ const BookingReview = () => {
           <div>
             <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
               <Package className="w-4 h-4" />
-              <span>FL-10816</span>
+              <span>{bookingFormData?.flNumber || generatedFLNumber || 'FL-XXXXX'}</span>
             </div>
             <div className="flex items-center gap-4">
               {isEditingTitle ? (
@@ -210,7 +232,7 @@ const BookingReview = () => {
                 </>
               ) : (
                 <>
-                  <h1 className="text-2xl font-bold text-gray-900 mb-1">{title}</h1>
+                  <h1 className="text-2xl font-bold text-gray-900 mb-1">{shipmentName || title}</h1>
                   <button
                     className="text-blue-600 hover:text-blue-800"
                     onClick={() => setIsEditingTitle(true)}
@@ -220,7 +242,17 @@ const BookingReview = () => {
                 </>
               )}
             </div>
-            <p className="text-sm text-gray-600">No shipment tags</p>
+            {/* Shipment Tags */}
+            <div className="mt-1">
+              {bookingFormData?.requireShipmentTags ? (
+                <div className="text-sm text-gray-600">
+                  <div>PO number: {bookingFormData.poNumber}</div>
+                  <div>SKU Number: #{bookingFormData.skuNumber}</div>
+                </div>
+              ) : (
+                <div className="text-sm text-gray-600">No shipment tags</div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -232,18 +264,89 @@ const BookingReview = () => {
           <div className="flex-1 min-w-0">
              
              {/* Route Map Placeholder */}
-             <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-              <div className="h-100 bg-blue-50 rounded-lg flex items-center justify-center">
-                <div className="text-center">
-                  <MapPin className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600">Shipment Route Map</p>
-                  <p className="text-xs text-gray-400">Shanghai → Los Angeles</p>
+             <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4 relative">
+              <div className="h-100 bg-blue-50 rounded-lg overflow-hidden relative flex items-center justify-center">
+                <img
+                  src="/map.png"
+                  alt="Shipment Map Preview"
+                  className="object-cover w-full h-full rounded-lg transition-transform duration-200"
+                  style={{ transform: `scale(${mapZoom})`, minHeight: '100%', minWidth: '100%' }}
+                />
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <div className="text-center pointer-events-auto">
+                    <MapPin className="w-8 h-8 text-blue-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-600">Shipment Route Map</p>
+                    <p className="text-xs text-gray-400">Shanghai → Los Angeles</p>
+                  </div>
+                </div>
+                {/* Map Controls - bottom right */}
+                <div className="absolute bottom-2 right-2 flex flex-row gap-2 z-10">
+                  <button
+                    className="bg-white/90 backdrop-blur-sm text-[#007bff] px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-200 shadow-sm transition-colors"
+                    title="Zoom In"
+                    onClick={() => handleZoomIn(setMapZoom)}
+                  >
+                    +
+                  </button>
+                  <button
+                    className="bg-white/90 backdrop-blur-sm text-[#007bff] px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-200 shadow-sm transition-colors"
+                    title="Zoom Out"
+                    onClick={() => handleZoomOut(setMapZoom)}
+                  >
+                    -
+                  </button>
+                  <button
+                    className="bg-white/90 backdrop-blur-sm text-[#007bff] p-3 border border-gray-300 rounded-md hover:bg-gray-200 shadow-sm transition-colors"
+                    title="Expand Map"
+                    onClick={() => setShowMapModal(true)}
+                  >
+                    <Maximize2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             </div>
 
-            {/* Progress Indicator */}
-            <StepIndicator steps={progressSteps} />
+            {/* Map Modal Popup */}
+            {showMapModal && (
+              <MapModal onClose={() => setShowMapModal(false)} />
+            )}
+
+            {/* Booking Statuses Section */}
+            {showStatusBar && (
+              <div className="bg-[#f8fafc] border border-gray-200 rounded-lg px-6 py-4 flex items-center justify-between mt-2 mb-4">
+                <div className="flex items-center flex-1 min-w-0">
+                  {/* Step 1: Booking */}
+                  <div className="flex flex-col items-center min-w-[120px]">
+                    <div className="w-6 h-6 rounded-full bg-[#222] flex items-center justify-center mb-1">
+                      <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M4 8.5l3 3 5-5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </div>
+                    <span className="text-sm font-semibold text-gray-900">Booking</span>
+                    <span className="text-xs text-gray-500 mt-1 text-center">Completed by Sharon Johnston on Mar 12, 2021</span>
+                  </div>
+                  {/* Line */}
+                  <div className="flex-1 h-0.5 bg-[#e5eaf1] mx-4" />
+                  {/* Step 2: Pricing */}
+                  <div className="flex flex-col items-center min-w-[120px]">
+                    <div className="w-6 h-6 rounded-full border-2 border-[#b6c3d1] bg-white flex items-center justify-center mb-1">
+                      <div className="w-3 h-3 bg-[#b6c3d1] rounded-full" />
+                    </div>
+                    <span className="text-sm font-semibold text-gray-900">Pricing</span>
+                    <span className="text-xs text-gray-500 mt-1 text-center">FreightLynk to provide pricing in 24 to 48 hours</span>
+                  </div>
+                  {/* Line */}
+                  <div className="flex-1 h-0.5 bg-[#e5eaf1] mx-4" />
+                  {/* Step 3: Authorization */}
+                  <div className="flex flex-col items-center min-w-[120px]">
+                    <div className="w-6 h-6 rounded-full border-2 border-[#b6c3d1] bg-white flex items-center justify-center mb-1" />
+                    <span className="text-sm font-semibold text-gray-900">Authorization</span>
+                  </div>
+                </div>
+                {/* Close Button */}
+                <button className="ml-4 text-gray-400 hover:text-gray-600" title="Close" onClick={() => setShowStatusBar(false)}>
+                  <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><path d="M6 6l8 8M14 6l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                </button>
+              </div>
+            )}
 
             {/* Tasks Section */}
             <div className="bg-white rounded-lg border border-gray-200 mb-4">
@@ -421,6 +524,54 @@ const BookingReview = () => {
               </div>
             </div>
 
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// MapModal component for expanded map view
+const MapModal = ({ onClose }: { onClose: () => void }) => {
+  const [zoom, setZoom] = useState(1);
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Modal Header */}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center px-4 sm:px-6 py-3 sm:py-4 border-b gap-2 sm:gap-0">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-800">Shipment Route Map</h2>
+          <button 
+            onClick={onClose}
+            className="flex items-center text-gray-500 hover:text-gray-700 p-1 rounded flex-shrink-0"
+            title="Close"
+          >
+            <X className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
+        </div>
+        {/* Modal Map */}
+        <div className="relative flex-1 bg-gray-200 min-h-[400px] sm:min-h-[500px] overflow-hidden rounded-b-lg">
+          <img
+            src="/map.png"
+            alt="Shipment Map - Expanded View"
+            className="object-cover w-full h-full rounded-b-lg transition-transform duration-200"
+            style={{ transform: `scale(${zoom})`, minHeight: '400px', minWidth: '100%' }}
+          />
+          {/* Zoom Controls */}
+          <div className="absolute bottom-4 right-4 flex flex-col gap-2 z-10">
+            <button
+              className="bg-white/90 backdrop-blur-sm text-[#007bff] p-2 border border-gray-300 rounded-md hover:bg-gray-200 shadow-sm transition-colors"
+              title="Zoom In"
+              onClick={() => handleZoomIn(setZoom)}
+            >
+              +
+            </button>
+            <button
+              className="bg-white/90 backdrop-blur-sm text-[#007bff] p-2 border border-gray-300 rounded-md hover:bg-gray-200 shadow-sm transition-colors"
+              title="Zoom Out"
+              onClick={() => handleZoomOut(setZoom)}
+            >
+              -
+            </button>
           </div>
         </div>
       </div>
