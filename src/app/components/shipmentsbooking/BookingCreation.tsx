@@ -6,6 +6,7 @@ import POManagementTable, {
   purchaseOrdersData, 
   poDetailsData, 
 } from '../purchasesorders/POManagementTable';
+import POSummaryTable from '../purchasesorders/POSummaryTable';
 import { useRouter } from 'next/navigation';
 import ReactDOM from 'react-dom';
 
@@ -209,15 +210,6 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
     console.log('selectedPOs state:', selectedPOs);
   }, [selectedPOs]);
 
-  // Reset PO data when component unmounts (user navigates away)
-  useEffect(() => {
-    return () => {
-      // Clear PO data from session storage when leaving the page
-      sessionStorage.removeItem('bookingData');
-      console.log('PO data cleared from session storage - user navigated away from booking creation');
-    };
-  }, []);
-
   // Helper function to format date for input
   const formatDateForInput = (displayDate: string): string => {
     if (!displayDate || displayDate === '--') return '';
@@ -296,162 +288,6 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
       .filter((data): data is NonNullable<typeof data> => data !== null && data.items.length > 0);
     console.log('getSelectedPODetails:', details);
     return details;
-  };
-
-  // Render PO review section
-  const renderPOReview = () => {
-    const selectedData = getSelectedPODetails();
-    
-    if (!showPOReview && selectedData.length === 0) {
-      return (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-sm font-medium text-gray-900">Selected Purchase Orders</h3>
-            <button
-              onClick={() => setShowPOSelection(true)}
-              className="px-3 py-1 text-xs text-[#007bff] hover:text-blue-700"
-            >
-              Add PO
-            </button>
-          </div>
-          <div className="text-center py-12 text-gray-500">
-            No purchase orders found
-          </div>
-        </div>
-      );
-    }
-
-    const poDetailsForSummary = selectedData.flatMap(({ items, po }) =>
-      items.map(item => ({
-        ...item,
-        poOrderNumber: typeof item.poOrderNumber === 'number' ? item.poOrderNumber : parseInt(po.id.replace('PO', '')),
-        booked: Number(item.booked) || 0
-      }))
-    );
-    
-    const purchaseOrdersForSummary = Array.from(
-      new Set(
-        poDetailsForSummary
-          .map(item => purchaseOrdersData.find(po => po.id === `PO${item.poOrderNumber}`))
-          .filter((po): po is PurchaseOrder => Boolean(po))
-      )
-    );
-
-    const groupedPOs: Record<string, (typeof poDetailsForSummary)> = poDetailsForSummary.reduce((acc, item) => {
-      const poKey = `PO${item.poOrderNumber}`;
-      if (!acc[poKey]) acc[poKey] = [];
-      acc[poKey].push(item);
-      return acc;
-    }, {} as Record<string, typeof poDetailsForSummary>);
-
-    if (poDetailsForSummary.length === 0) {
-      return (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-sm font-medium text-gray-900">Selected Purchase Orders</h3>
-            <button
-              onClick={() => setShowPOSelection(true)}
-              className="px-3 py-1 text-xs text-[#007bff] hover:text-blue-700"
-            >
-              Add PO
-            </button>
-          </div>
-          <div className="text-center py-12 text-gray-500">
-            No booked purchase orders found
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h3 className="text-sm font-medium text-gray-900">Selected Purchase Orders</h3>
-          <button
-            onClick={() => setShowPOSelection(true)}
-            className="px-3 py-1 text-xs text-[#007bff] hover:text-blue-700"
-          >
-            {selectedData.length > 0 ? 'Add More' : 'Add PO'}
-          </button>
-        </div>
-        <div className="space-y-2">
-          {purchaseOrdersForSummary.map((po) => (
-            <div key={po.id} className="bg-white rounded-lg border border-gray-200">
-              <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                <div className="flex items-center gap-3">
-                  <div className="text-sm font-medium text-blue-600">{po.id}</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`text-xs px-2 py-1 rounded ${
-                    po.status === 'Open' 
-                      ? 'bg-green-100 text-green-800' 
-                      : po.status === 'Closed' 
-                        ? 'bg-gray-100 text-gray-800' 
-                        : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {po.status}
-                  </span>
-                  <button
-                    onClick={() => {
-                      setSelectedPOs(prev => {
-                        const updated = prev.filter(sel => sel.poId !== po.id);
-                        sessionStorage.setItem('bookingData', JSON.stringify(updated));
-                        return updated;
-                      });
-                    }}
-                    className="p-1 text-gray-400 hover:text-red-600 rounded-full focus:outline-none"
-                    title="Remove PO"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Currency</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Cost</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requested</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booked</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {groupedPOs[po.id]?.map((item, index) => (
-                      <tr key={item.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-4 text-xs text-gray-900">{index + 1}</td>
-                        <td className="px-4 py-4">
-                          <div className="text-xs font-medium text-gray-900">{item.productCode}</div>
-                          <div className="text-xs text-gray-500">{item.productName}</div>
-                        </td>
-                        <td className="px-4 py-4 text-xs text-gray-900">{item.currency}</td>
-                        <td className="px-4 py-4 text-xs text-gray-900">{item.unitCost}</td>
-                        <td className="px-4 py-4 text-xs text-gray-900">{item.requested}</td>
-                        <td className="px-4 py-4 text-xs text-gray-900">{item.booked}</td>
-                        <td className="px-4 py-4 text-xs text-gray-900">
-                          <div className="w-full bg-gray-200 rounded-full h-1.5">
-                            <div 
-                              className="bg-blue-600 h-1.5 rounded-full" 
-                              style={{ width: `${(item.booked / item.requested) * 100}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-xs text-gray-500 mt-1">
-                            {Math.round((item.booked / item.requested) * 100)}%
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
   };
 
   // Validation for required fields
@@ -547,11 +383,30 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
 
         {/* Orders */}
         <div className="bg-white rounded-lg p-4 border border-gray-200">
-          <div className="mb-4 font-semibold text-sm text-gray-900 border-b border-gray-200 pb-2">Purchase Orders</div>
+          <div className="mb-4 font-medium text-sm text-gray-900 border-b border-gray-200 pb-2 flex justify-between items-center">
+            <span className="text-gray-900 font-semibold">Purchase Orders</span>
+            <button
+              onClick={() => setShowPOSelection(true)}
+              className="px-3 py-1 text-xs text-[#007bff] hover:bg-blue-50 border border-[#007bff] rounded"
+            >
+              + Add PO
+            </button>
+          </div>
           {hasSubmitted && errors.selectedPOs && (
             <div className="text-xs text-red-500 mb-2">{errors.selectedPOs}</div>
           )}
-          {renderPOReview()}
+          <POSummaryTable
+            selectedPOs={selectedPOs}
+            purchaseOrdersData={purchaseOrdersData}
+            poDetailsData={poDetailsData}
+            onRemovePO={(poId) => {
+              setSelectedPOs(prev => {
+                const updated = prev.filter(sel => sel.poId !== poId);
+                sessionStorage.setItem('bookingData', JSON.stringify(updated));
+                return updated;
+              });
+            }}
+          />
         </div>
 
         {/* Shipment Name */}

@@ -13,6 +13,8 @@ import {
   Plane,
   Building2
 } from 'lucide-react';
+import POSummaryTable from '../purchasesorders/POSummaryTable';
+import { purchaseOrdersData, poDetailsData } from '../purchasesorders/POManagementTable';
 
 
 interface BookingReviewProps {
@@ -28,6 +30,11 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
     setShipmentName(name);
     const formData = sessionStorage.getItem('bookingFormData');
     if (formData) setBookingFormData(JSON.parse(formData));
+    // Do not clear PO data here; it will be used in the confirmation step
+    // return () => {
+    //   sessionStorage.removeItem('bookingData');
+    //   console.log('PO data cleared from session storage - user navigated away from booking review');
+    // };
   }, []);
 
   // Helper for transport mode icon
@@ -222,9 +229,26 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
               </h2>
             </div>
             <div className="p-4">
-              <div className="text-xs text-gray-600 p-4 rounded">
-                PO data will be shown here
-              </div>
+              {typeof window !== 'undefined' && (() => {
+                const bookingData = sessionStorage.getItem('bookingData');
+                if (bookingData) {
+                  const selectedPOs = JSON.parse(bookingData);
+                  console.log('BookingReview selectedPOs:', selectedPOs);
+                  if (selectedPOs && selectedPOs.length > 0) {
+                    return (
+                      <POSummaryTable
+                        selectedPOs={selectedPOs}
+                        purchaseOrdersData={purchaseOrdersData}
+                        poDetailsData={poDetailsData}
+                      />
+                    );
+                  } else {
+                    return <div className="text-xs text-gray-600 p-4 rounded">No purchase orders selected</div>;
+                  }
+                } else {
+                  return <div className="text-xs text-gray-600 p-4 rounded">No purchase orders selected</div>;
+                }
+              })()}
             </div>
           </div>
 
@@ -334,7 +358,7 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
             </div>
             <div className="p-4">
               <div className="text-xs text-gray-600 p-3 rounded">
-                Special instructions data will be shown here
+                {bookingFormData?.specialInstructions?.trim() ? bookingFormData.specialInstructions : 'No special instructions'}
               </div>
             </div>
           </div>
