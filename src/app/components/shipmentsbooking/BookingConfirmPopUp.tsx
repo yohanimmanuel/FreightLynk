@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Check, 
   Copy, 
@@ -18,6 +18,15 @@ interface BookingConfirmProps {
 
 const BookingConfirm: React.FC<BookingConfirmProps> = ({ onClose = () => {} }) => {
   const [selectedNextAction, setSelectedNextAction] = useState<string>('');
+  const [bookingFormData, setBookingFormData] = useState<any>(null);
+  const [bookingData, setBookingData] = useState<any[]>([]);
+
+  useEffect(() => {
+    const formData = sessionStorage.getItem('bookingFormData');
+    if (formData) setBookingFormData(JSON.parse(formData));
+    const poData = sessionStorage.getItem('bookingData');
+    if (poData) setBookingData(JSON.parse(poData));
+  }, []);
 
   const handleActionSelect = (action: string) => {
     setSelectedNextAction(action);
@@ -60,7 +69,7 @@ const BookingConfirm: React.FC<BookingConfirmProps> = ({ onClose = () => {} }) =
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 mb-1">Booking Reference</h3>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-mono font-bold text-[#007bff]">FL-10816</span>
+                  <span className="text-sm font-mono font-bold text-[#007bff]">{bookingFormData?.flNumber || 'FL-XXXXX'}</span>
                   <button className="text-gray-400 hover:text-gray-600">
                     <Copy className="w-4 h-4" />
                   </button>
@@ -68,7 +77,7 @@ const BookingConfirm: React.FC<BookingConfirmProps> = ({ onClose = () => {} }) =
               </div>
               <div className="text-right">
                 <div className="text-xs text-gray-500 mb-1">Purchase Orders</div>
-                <div className="text-xs font-medium text-gray-900">PO 1057, PO 1055</div>
+                <div className="text-xs font-medium text-gray-900">{bookingData && bookingData.length > 0 ? bookingData.map(po => `PO ${po.poId.replace(/^PO ?/, '')}`).join(', ') : '-'}</div>
               </div>
             </div>
             
@@ -76,14 +85,14 @@ const BookingConfirm: React.FC<BookingConfirmProps> = ({ onClose = () => {} }) =
             <div className="flex items-center gap-4 bg-white p-3 rounded border border-gray-200">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-[#007bff] rounded-full"></div>
-                <span className="text-xs font-medium text-gray-900">Shenzhen, China</span>
+                <span className="text-xs font-medium text-gray-900">{bookingFormData?.originPort || '-'}</span>
               </div>
               <div className="flex-1 border-t border-gray-300 relative">
                 <Ship className="w-4 h-4 text-gray-500 absolute left-1/2 top-0 transform -translate-x-1/2 -translate-y-1/2 bg-white" />
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-                <span className="text-xs font-medium text-gray-900">Los Angeles, CA</span>
+                <span className="text-xs font-medium text-gray-900">{bookingFormData?.destinationPort || '-'}</span>
               </div>
             </div>
           </div>

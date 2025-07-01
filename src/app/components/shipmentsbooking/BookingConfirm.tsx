@@ -20,6 +20,8 @@ import {
   X
 } from 'lucide-react';
 import BookingConfirmPopUp from './BookingConfirmPopUp';
+import POSummaryTable from '../purchasesorders/POSummaryTable';
+import { purchaseOrdersData, poDetailsData } from '../purchasesorders/POManagementTable';
 
 // Move zoom handlers outside so both components can use them
 type ZoomSetter = Dispatch<SetStateAction<number>>;
@@ -155,35 +157,53 @@ const BookingReview = () => {
       </div>
       <div className="mb-4">
         <h4 className="text-xs font-semibold text-gray-900 mb-2">Cargo Ready Date</h4>
-        <p className="text-xs text-gray-900">Mar 14, 2021</p>
+        <p className="text-xs text-gray-900">{(() => {
+          if (!bookingFormData?.cargoReadyDate) return 'Not specified';
+          const date = new Date(bookingFormData.cargoReadyDate);
+          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        })()}</p>
       </div>
       <div className="space-y-3">
         <div className="flex items-start gap-3">
           <div className="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
           <div>
-            <p className="text-xs font-medium text-gray-900">Shenzhen Forward Supply</p>
-            <p className="text-xs text-gray-600">C Zone 5th, No. 1 Exchange Square, Huanan City, Pinghu Town, Shenzhen, Guangdong, China</p>
+            <p className="text-xs font-medium text-gray-900">{(() => {
+              const map: Record<string, string> = {
+                'studio-apparel': 'Studio Apparel',
+                'global-trade': 'Global Trade Co',
+              };
+              const val = bookingFormData?.shipperValue as string;
+              return val && map[val as keyof typeof map] ? map[val as keyof typeof map] : '';
+            })()}</p>
+            <p className="text-xs text-gray-500">{bookingFormData?.originLocation}</p>
           </div>
         </div>
         <div className="flex items-start gap-3">
           <div className="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
           <div>
-            <p className="text-xs font-medium text-gray-900">Shanghai, China</p>
-            <p className="text-xs text-gray-600">Shanghai, China</p>
+            <p className="text-xs font-medium text-gray-900">{bookingFormData?.originPort}</p>
+            <p className="text-xs text-gray-500">{bookingFormData?.originPort}</p>
           </div>
         </div>
         <div className="flex items-start gap-3">
           <div className="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
           <div>
-            <p className="text-xs font-medium text-gray-900">Los Angeles, CA</p>
-            <p className="text-xs text-gray-600">Los Angeles, CA, United States</p>
+            <p className="text-xs font-medium text-gray-900">{bookingFormData?.destinationPort}</p>
+            <p className="text-xs text-gray-500">{bookingFormData?.destinationPort}</p>
           </div>
         </div>
         <div className="flex items-start gap-3">
           <div className="w-2 h-2 bg-green-400 rounded-full mt-2"></div>
           <div>
-            <p className="text-xs font-medium text-gray-900">Los Angeles Warehouse</p>
-            <p className="text-xs text-gray-600">940 Avila St., Los Angeles, CA, 90012, United States</p>
+            <p className="text-xs font-medium text-gray-900">{(() => {
+              const map: Record<string, string> = {
+                'forward-supply-co': 'Forward Supply Co',
+                'logistics-hub': 'Logistics Hub',
+              };
+              const val = bookingFormData?.consigneeValue as string;
+              return val && map[val as keyof typeof map] ? map[val as keyof typeof map] : '';
+            })()}</p>
+            <p className="text-xs text-gray-500">{bookingFormData?.destinationLocation}</p>
           </div>
         </div>
       </div>
@@ -457,19 +477,19 @@ const BookingReview = () => {
                       <div className="grid grid-cols-2 gap-4 text-xs">
                         <div>
                           <span className="text-gray-500">Origin:</span>
-                          <span className="ml-2 text-gray-900">Your origin data will go here</span>
+                          <span className="ml-2 text-gray-900">{bookingFormData?.originLocation}</span>
                         </div>
                         <div>
                           <span className="text-gray-500">Destination:</span>
-                          <span className="ml-2 text-gray-900">Your destination data will go here</span>
+                          <span className="ml-2 text-gray-900">{bookingFormData?.destinationLocation}</span>
                         </div>
                         <div>
                           <span className="text-gray-500">Weight:</span>
-                          <span className="ml-2 text-gray-900">Your weight data will go here</span>
+                          <span className="ml-2 text-gray-900">{bookingFormData?.weight}</span>
                         </div>
                         <div>
                           <span className="text-gray-500">Volume:</span>
-                          <span className="ml-2 text-gray-900">Your volume data will go here</span>
+                          <span className="ml-2 text-gray-900">{bookingFormData?.volume}</span>
                         </div>
                       </div>
                     </div>
@@ -492,8 +512,11 @@ const BookingReview = () => {
                       <h4 className="text-sm font-semibold text-gray-900">Purchase Orders</h4>
                     </div>
                     <div className="border border-gray-200 rounded-lg p-4">
-                      <p className="text-xs text-gray-600">PO 1057, PO 1055</p>
-                      <p className="text-xs text-gray-500 mt-1">Your PO data values will go here</p>
+                      <POSummaryTable
+                        selectedPOs={bookingData || []}
+                        purchaseOrdersData={purchaseOrdersData}
+                        poDetailsData={poDetailsData}
+                      />
                     </div>
                   </div>
                 )}
@@ -507,19 +530,36 @@ const BookingReview = () => {
             
             {/* Container Details */}
             <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-4">Container Details</h3>
+              <h3 className="text-sm font-semibold text-gray-900 mb-4">Cargo & Shipping Details</h3>
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-xs text-gray-500">Transport Mode:</span>
-                  <span className="text-xs font-medium text-gray-900">Sea Freight</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-xs text-gray-500">Container Type:</span>
-                  <span className="text-xs font-medium text-gray-900">40ft Standard</span>
+                  <span className="text-xs font-medium text-gray-900">{(() => {
+                    const map: Record<string, string> = {
+                      sea: 'Sea Freight',
+                      air: 'Air Freight',
+                      land: 'Land Freight',
+                    };
+                    return map[bookingFormData?.transportModeValue] || bookingFormData?.transportModeValue || '-';
+                  })()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-xs text-gray-500">Shipment Type:</span>
-                  <span className="text-xs font-medium text-gray-900">FCL</span>
+                  <span className="text-xs font-medium text-gray-900">{bookingFormData?.shipmentTypeValue?.toUpperCase() || '-'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-xs text-gray-500">Container Type:</span>
+                  <span className="text-xs font-medium text-gray-900">{(() => {
+                    const type = bookingFormData?.containerTypeValue;
+                    const qty = bookingFormData?.containerQuantity;
+                    if (type && qty) return `${qty} x ${type}`;
+                    if (type) return type;
+                    return '-';
+                  })()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-xs text-gray-500">Incoterm:</span>
+                  <span className="text-xs font-medium text-gray-900">{bookingFormData?.incotermsValue || '-'}</span>
                 </div>
               </div>
             </div>
