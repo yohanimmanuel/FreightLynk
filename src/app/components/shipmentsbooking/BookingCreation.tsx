@@ -150,6 +150,8 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
   }[]>([]);
   const [showPOReview, setShowPOReview] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
   // Form data state
   const [formData, setFormData] = useState({
@@ -183,6 +185,7 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
     containerTypeValue: '',
     incotermsValue: '',
     packageTypeValue: '',
+    packageCount: '',
   });
 
   // Previous shipments data
@@ -203,6 +206,15 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
   useEffect(() => {
     console.log('selectedPOs state:', selectedPOs);
   }, [selectedPOs]);
+
+  // Reset PO data when component unmounts (user navigates away)
+  useEffect(() => {
+    return () => {
+      // Clear PO data from session storage when leaving the page
+      sessionStorage.removeItem('bookingData');
+      console.log('PO data cleared from session storage - user navigated away from booking creation');
+    };
+  }, []);
 
   // Helper function to format date for input
   const formatDateForInput = (displayDate: string): string => {
@@ -440,6 +452,51 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
     );
   };
 
+  // Validation for required fields
+  const validateForm = () => {
+    const newErrors: { [key: string]: string } = {};
+    // PO Data
+    if (!selectedPOs.length) newErrors.selectedPOs = 'At least one purchase order is required.';
+    // Shipment Name
+    if (!formData.shipmentName.trim()) newErrors.shipmentName = 'Shipment name is required.';
+    // Involved Parties
+    if (!formData.shipperValue) newErrors.shipperValue = 'Shipper is required.';
+    if (!formData.consigneeValue) newErrors.consigneeValue = 'Consignee is required.';
+    // Transport Details
+    if (!formData.transportModeValue) newErrors.transportModeValue = 'Transport mode is required.';
+    if (!formData.shipmentTypeValue) newErrors.shipmentTypeValue = 'Shipment type is required.';
+    if (!formData.containerTypeValue) newErrors.containerTypeValue = 'Container type is required.';
+    if (!formData.incotermsValue) newErrors.incotermsValue = 'Incoterms is required.';
+    // Origin
+    if (!formData.originLocation.trim()) newErrors.originLocation = 'Origin location is required.';
+    if (!formData.originPort.trim()) newErrors.originPort = 'Origin port is required.';
+    if (!formData.cargoReadyDate) newErrors.cargoReadyDate = 'Cargo ready date is required.';
+    // Destination
+    if (!formData.destinationLocation.trim()) newErrors.destinationLocation = 'Destination location is required.';
+    if (!formData.destinationPort.trim()) newErrors.destinationPort = 'Destination port is required.';
+    if (!formData.targetDeliveryDate) newErrors.targetDeliveryDate = 'Target delivery date is required.';
+    // Product & Compliance
+    if (!formData.productName.trim()) newErrors.productName = 'Product name is required.';
+    if (!formData.hsCode.trim()) newErrors.hsCode = 'HS code is required.';
+    // Cargo/Load Specs
+    if (!formData.weight.trim()) newErrors.weight = 'Weight is required.';
+    if (!formData.volume.trim()) newErrors.volume = 'Volume is required.';
+    if (!formData.packageCount.trim()) newErrors.packageCount = 'Package count is required.';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Handle form submission
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setHasSubmitted(true);
+    if (validateForm()) {
+      onSubmitBooking();
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-2 bg-white">
       <div className="mb-4 border-b border-gray-200 pb-4">
@@ -482,6 +539,9 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
         {/* Orders */}
         <div className="bg-white rounded-lg p-4 border border-gray-200">
           <div className="mb-4 font-semibold text-sm text-gray-900 border-b border-gray-200 pb-2">Purchase Orders</div>
+          {hasSubmitted && errors.selectedPOs && (
+            <div className="text-xs text-red-500 mb-2">{errors.selectedPOs}</div>
+          )}
           {renderPOReview()}
         </div>
 
@@ -494,9 +554,12 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
             type="text"
             value={formData.shipmentName}
             onChange={(e) => handleInputChange('shipmentName', e.target.value)}
-            className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.shipmentName ? 'border-red-500' : ''}`}
             placeholder="Enter shipment name for easy recognition"
           />
+          {hasSubmitted && errors.shipmentName && (
+            <p className="text-xs text-red-500 mt-1">{errors.shipmentName}</p>
+          )}
         </div>
 
         {/* Involved Parties */}
@@ -521,7 +584,7 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-2">
-                Shipper
+                Shipper <span className="text-red-500">*</span>
               </label>
               <div className="flex gap-2">
                 <div className="flex-1">
@@ -587,10 +650,13 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                   <span>New Shipper</span>
                 </button>
               </div>
+              {hasSubmitted && errors.shipperValue && (
+                <p className="text-xs text-red-500 mt-1">{errors.shipperValue}</p>
+              )}
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-2">
-                Consignee
+                Consignee <span className="text-red-500">*</span>
               </label>
               <div className="flex gap-2">
                 <div className="flex-1">
@@ -615,6 +681,9 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                   <span>New Consignee</span>
                 </button>
               </div>
+              {hasSubmitted && errors.consigneeValue && (
+                <p className="text-xs text-red-500 mt-1">{errors.consigneeValue}</p>
+              )}
             </div>
           </div>
         </div>
@@ -640,6 +709,9 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                 openDropdown={openDropdown}
                 setOpenDropdown={setOpenDropdown}
               />
+              {hasSubmitted && errors.transportModeValue && (
+                <p className="text-xs text-red-500 mt-1">{errors.transportModeValue}</p>
+              )}
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-2">
@@ -658,9 +730,14 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                 openDropdown={openDropdown}
                 setOpenDropdown={setOpenDropdown}
               />
+              {hasSubmitted && errors.shipmentTypeValue && (
+                <p className="text-xs text-red-500 mt-1">{errors.shipmentTypeValue}</p>
+              )}
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-2">Container Type</label>
+              <label className="block text-xs font-medium text-gray-700 mb-2">
+                Container Type <span className="text-red-500">*</span>
+              </label>
               <Dropdown
                 value={formData.containerTypeValue}
                 onChange={(value) => handleInputChange('containerTypeValue', value)}
@@ -675,9 +752,14 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                 openDropdown={openDropdown}
                 setOpenDropdown={setOpenDropdown}
               />
+              {hasSubmitted && errors.containerTypeValue && (
+                <p className="text-xs text-red-500 mt-1">{errors.containerTypeValue}</p>
+              )}
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-2">Incoterms</label>
+              <label className="block text-xs font-medium text-gray-700 mb-2">
+                Incoterms <span className="text-red-500">*</span>
+              </label>
               <Dropdown
                 value={formData.incotermsValue}
                 onChange={(value) => handleInputChange('incotermsValue', value)}
@@ -692,6 +774,9 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                 openDropdown={openDropdown}
                 setOpenDropdown={setOpenDropdown}
               />
+              {hasSubmitted && errors.incotermsValue && (
+                <p className="text-xs text-red-500 mt-1">{errors.incotermsValue}</p>
+              )}
             </div>
           </div>
         </div>
@@ -709,9 +794,12 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                   type="text"
                   value={formData.originLocation}
                   onChange={(e) => handleInputChange('originLocation', e.target.value)}
-                  className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.originLocation ? 'border-red-500' : ''}`}
                   placeholder="Enter origin address"
                 />
+                {hasSubmitted && errors.originLocation && (
+                  <p className="text-xs text-red-500 mt-1">{errors.originLocation}</p>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2">
@@ -721,9 +809,12 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                   type="text"
                   value={formData.originPort}
                   onChange={(e) => handleInputChange('originPort', e.target.value)}
-                  className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.originPort ? 'border-red-500' : ''}`}
                   placeholder="Search ports"
                 />
+                {hasSubmitted && errors.originPort && (
+                  <p className="text-xs text-red-500 mt-1">{errors.originPort}</p>
+                )}
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -735,8 +826,11 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                   type="date"
                   value={formData.cargoReadyDate}
                   onChange={(e) => handleInputChange('cargoReadyDate', e.target.value)}
-                  className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.cargoReadyDate ? 'border-red-500' : ''}`}
                 />
+                {hasSubmitted && errors.cargoReadyDate && (
+                  <p className="text-xs text-red-500 mt-1">{errors.cargoReadyDate}</p>
+                )}
               </div>
             </div>
             <div className="flex flex-wrap gap-6">
@@ -775,9 +869,12 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                   type="text"
                   value={formData.destinationLocation}
                   onChange={(e) => handleInputChange('destinationLocation', e.target.value)}
-                  className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.destinationLocation ? 'border-red-500' : ''}`}
                   placeholder="Enter destination address"
                 />
+                {hasSubmitted && errors.destinationLocation && (
+                  <p className="text-xs text-red-500 mt-1">{errors.destinationLocation}</p>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2">
@@ -787,22 +884,28 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                   type="text"
                   value={formData.destinationPort}
                   onChange={(e) => handleInputChange('destinationPort', e.target.value)}
-                  className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.destinationPort ? 'border-red-500' : ''}`}
                   placeholder="Search ports"
                 />
+                {hasSubmitted && errors.destinationPort && (
+                  <p className="text-xs text-red-500 mt-1">{errors.destinationPort}</p>
+                )}
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2">
-                  Target Delivery Date (MABD) <span className="text-red-500">*</span>
+                  Target Delivery Date <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
                   value={formData.targetDeliveryDate}
                   onChange={(e) => handleInputChange('targetDeliveryDate', e.target.value)}
-                  className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.targetDeliveryDate ? 'border-red-500' : ''}`}
                 />
+                {hasSubmitted && errors.targetDeliveryDate && (
+                  <p className="text-xs text-red-500 mt-1">{errors.targetDeliveryDate}</p>
+                )}
               </div>
             </div>
             <div className="flex flex-wrap gap-6">
@@ -831,31 +934,52 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
         {/* Cargo & Load Specs */}
         <div className="bg-white rounded-lg p-4 border border-gray-200">
           <div className="mb-4 font-semibold text-sm text-gray-900 border-b border-gray-200 pb-2">Cargo & Load Specs</div>
-          <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-2">
-                Weight (kg) <span className="text-red-500">*</span>
+                Weight <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
                 value={formData.weight}
                 onChange={(e) => handleInputChange('weight', e.target.value)}
-                className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.weight ? 'border-red-500' : ''}`}
                 placeholder="0"
               />
+              {hasSubmitted && errors.weight && (
+                <p className="text-xs text-red-500 mt-1">{errors.weight}</p>
+              )}
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-2">
-                Volume (cbm) <span className="text-red-500">*</span>
+                Volume <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
                 step="0.01"
                 value={formData.volume}
                 onChange={(e) => handleInputChange('volume', e.target.value)}
-                className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.volume ? 'border-red-500' : ''}`}
                 placeholder="0.00"
               />
+              {hasSubmitted && errors.volume && (
+                <p className="text-xs text-red-500 mt-1">{errors.volume}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-2">
+                Package Count <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                value={formData.packageCount}
+                onChange={(e) => handleInputChange('packageCount', e.target.value)}
+                className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.packageCount ? 'border-red-500' : ''}`}
+                placeholder="Enter total package count"
+              />
+              {hasSubmitted && errors.packageCount && (
+                <p className="text-xs text-red-500 mt-1">{errors.packageCount}</p>
+              )}
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-2">Package Type</label>
@@ -881,9 +1005,12 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
               value={formData.additionalNotes}
               onChange={(e) => handleInputChange('additionalNotes', e.target.value)}
               rows={3}
-              className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.additionalNotes ? 'border-red-500' : ''}`}
               placeholder="Any additional cargo specifications or handling requirements"
             />
+            {hasSubmitted && errors.additionalNotes && (
+              <p className="text-xs text-red-500 mt-1">{errors.additionalNotes}</p>
+            )}
           </div>
         </div>
 
@@ -900,9 +1027,12 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                   type="text"
                   value={formData.productName}
                   onChange={(e) => handleInputChange('productName', e.target.value)}
-                  className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.productName ? 'border-red-500' : ''}`}
                   placeholder="Enter product name"
                 />
+                {hasSubmitted && errors.productName && (
+                  <p className="text-xs text-red-500 mt-1">{errors.productName}</p>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2">
@@ -912,9 +1042,12 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                   type="text"
                   value={formData.hsCode}
                   onChange={(e) => handleInputChange('hsCode', e.target.value)}
-                  className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.hsCode ? 'border-red-500' : ''}`}
                   placeholder="Enter HS code"
                 />
+                {hasSubmitted && errors.hsCode && (
+                  <p className="text-xs text-red-500 mt-1">{errors.hsCode}</p>
+                )}
               </div>
             </div>
             <div>
@@ -925,9 +1058,12 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                 value={formData.goodsDescription}
                 onChange={(e) => handleInputChange('goodsDescription', e.target.value)}
                 rows={3}
-                className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.goodsDescription ? 'border-red-500' : ''}`}
                 placeholder="Detailed description of goods (English and Chinese)"
               />
+              {hasSubmitted && errors.goodsDescription && (
+                <p className="text-xs text-red-500 mt-1">{errors.goodsDescription}</p>
+              )}
             </div>
             <div>
               <label className="flex items-center gap-2 cursor-pointer">
@@ -968,9 +1104,12 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                   type="text"
                   value={formData.poNumber}
                   onChange={(e) => handleInputChange('poNumber', e.target.value)}
-                  className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.poNumber ? 'border-red-500' : ''}`}
                   placeholder="Enter PO number"
                 />
+                {hasSubmitted && errors.poNumber && (
+                  <p className="text-xs text-red-500 mt-1">{errors.poNumber}</p>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2">
@@ -980,9 +1119,12 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                   type="text"
                   value={formData.skuNumber}
                   onChange={(e) => handleInputChange('skuNumber', e.target.value)}
-                  className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.skuNumber ? 'border-red-500' : ''}`}
                   placeholder="Enter SKU number"
                 />
+                {hasSubmitted && errors.skuNumber && (
+                  <p className="text-xs text-red-500 mt-1">{errors.skuNumber}</p>
+                )}
               </div>
             </div>
           )}
@@ -997,9 +1139,12 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
               value={formData.specialInstructions}
               onChange={(e) => handleInputChange('specialInstructions', e.target.value)}
               rows={4}
-              className="w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.specialInstructions ? 'border-red-500' : ''}`}
               placeholder="Any additional information, handling notes, or special alerts for this shipment"
             />
+            {hasSubmitted && errors.specialInstructions && (
+              <p className="text-xs text-red-500 mt-1">{errors.specialInstructions}</p>
+            )}
           </div>
         </div>
 
@@ -1012,7 +1157,7 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
             Save as Draft
           </button>
           <button
-            onClick={onSubmitBooking}
+            onClick={handleSubmit}
             type="submit"
             className="flex items-center gap-2 px-5 py-3 font-semibold text-sm bg-[#007bff] text-white rounded-lg hover:bg-blue-700 transition-colors"
           >

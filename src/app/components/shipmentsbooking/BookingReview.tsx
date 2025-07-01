@@ -12,6 +12,7 @@ import {
   Info
 } from 'lucide-react';
 
+
 interface BookingReviewProps {
     onConfirmBooking?: () => void;
   }
@@ -37,19 +38,19 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Main Content - Left Column */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4">
           
           {/* Booking Details Section */}
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <div className="bg-gray-50 p-4 border-b border-gray-200">
               <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                 <Package className="w-5 h-5 text-blue-600" />
                 Booking details
               </h2>
             </div>
-            <div className="p-6">
+            <div className="p-4">
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center">
                   <Ship className="w-8 h-8 text-blue-600" />
@@ -79,13 +80,13 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
 
           {/* Origin & Destination Section */}
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <div className="bg-gray-50 p-4 border-b border-gray-200">
               <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-blue-600" />
                 Pickup and delivery
               </h2>
             </div>
-            <div className="p-6 space-y-6">
+            <div className="p-4 space-y-4">
               
               {/* Pickup from */}
               <div>
@@ -151,15 +152,30 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
             </div>
           </div>
 
+          {/* Purchase Order Review Section */}
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="bg-gray-50 p-4 border-b border-gray-200">
+              <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                <Package className="w-5 h-5 text-blue-600" />
+                Purchase Order Review
+              </h2>
+            </div>
+            <div className="p-4">
+              <div className="text-xs text-gray-600 p-4 rounded">
+                PO data will be shown here
+              </div>
+            </div>
+          </div>
+
           {/* Cargo Details Section */}
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <div className="bg-gray-50 p-4 border-b border-gray-200">
               <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                 <Scale className="w-5 h-5 text-blue-600" />
                 Cargo details
               </h2>
             </div>
-            <div className="p-6">
+            <div className="p-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 <div className="text-center p-4 rounded-lg">
                   <div className="text-sm font-bold text-gray-900 mb-1">
@@ -209,13 +225,13 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
 
           {/* Shipment Tags Section */}
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <div className="bg-gray-50 p-4 border-b border-gray-200">
               <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                 <FileText className="w-5 h-5 text-blue-600" />
                 Shipment tags
               </h2>
             </div>
-            <div className="p-6">
+            <div className="p-4">
               <div className="text-xs text-gray-600 p-4 rounded">
                 Shipment tags data will be shown here (PO numbers, SKU numbers, etc.)
               </div>
@@ -225,7 +241,7 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
         </div>
 
         {/* Right Sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* New Shipment Card with Confirm Button */}
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden p-4 flex flex-col gap-2">
             <div className="font-semibold text-sm text-gray-900 mb-2">New Shipment</div>
@@ -243,10 +259,10 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
 
           {/* Selected PO Summary */}
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+            <div className="bg-gray-50 p-4 border-b border-gray-200">
               <h3 className="text-sm font-semibold text-gray-900">Selected Purchase Orders</h3>
             </div>
-            <div className="p-4">
+            <div className="p-3">
               <div className="space-y-3">
                 <div className="text-xs text-gray-600">
                   PO numbers and details will be shown here
@@ -263,7 +279,7 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
 
           {/* Timeline */}
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+            <div className="bg-gray-50 p-4 border-b border-gray-200">
               <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 Important Dates
@@ -289,7 +305,7 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
 
           {/* Additional Services */}
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+            <div className="bg-gray-50 p-4 border-b border-gray-200">
               <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                 <Truck className="w-4 h-4" />
                 Additional Services
@@ -317,7 +333,7 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
 
           {/* Special Instructions */}
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+            <div className="bg-gray-50 p-4 border-b border-gray-200">
               <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                 <Info className="w-4 h-4" />
                 Special Instructions
