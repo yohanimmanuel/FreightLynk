@@ -7,6 +7,9 @@ const ClientUI = () => {
   const router = useRouter();
   
   const handleConfirmBooking = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('showConfetti', 'true');
+    }
     router.push('/bookings/confirmation');
   };
   return (

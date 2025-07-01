@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import POSummaryTable from '../purchasesorders/POSummaryTable';
 import { purchaseOrdersData, poDetailsData } from '../purchasesorders/POManagementTable';
+import { useRouter } from 'next/navigation';
 
 
 interface BookingReviewProps {
@@ -24,8 +25,13 @@ interface BookingReviewProps {
 const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => {} }) => { 
   const [shipmentName, setShipmentName] = useState('');
   const [bookingFormData, setBookingFormData] = useState<any>(null);
+  const router = useRouter();
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && sessionStorage.getItem('bookingSubmitted')) {
+      router.replace('/bookings/submitted');
+      return;
+    }
     const name = sessionStorage.getItem('shipmentName') || '';
     setShipmentName(name);
     const formData = sessionStorage.getItem('bookingFormData');

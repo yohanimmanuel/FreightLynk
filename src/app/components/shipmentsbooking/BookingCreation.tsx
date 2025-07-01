@@ -154,6 +154,7 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [requireFields, setRequireFields] = useState(true);
+  const lastAutoPOString = useRef('');
 
   // Form data state
   const [formData, setFormData] = useState({
@@ -208,6 +209,22 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
   // Debug log for selectedPOs
   useEffect(() => {
     console.log('selectedPOs state:', selectedPOs);
+  }, [selectedPOs]);
+
+  // Auto-fill shipment name with PO numbers when selectedPOs changes
+  useEffect(() => {
+    const poString = selectedPOs.length > 0
+      ? selectedPOs.map(po => `PO ${po.poId.replace(/^PO ?/, '')}`).join(', ')
+      : '';
+    // If shipmentName matches the last auto-generated PO string or is empty, update it
+    if (
+      !formData.shipmentName ||
+      formData.shipmentName === lastAutoPOString.current
+    ) {
+      setFormData(prev => ({ ...prev, shipmentName: poString }));
+    }
+    // Always update the last auto-generated PO string
+    lastAutoPOString.current = poString;
   }, [selectedPOs]);
 
   // Helper function to format date for input
@@ -341,6 +358,12 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('bookingSubmitted');
+    }
+  }, []);
 
   return (
     <div className="max-w-4xl mx-auto p-2 bg-white">

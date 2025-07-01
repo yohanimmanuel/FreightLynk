@@ -20,8 +20,13 @@ const BookingConfirm: React.FC<BookingConfirmProps> = ({ onClose = () => {} }) =
   const [selectedNextAction, setSelectedNextAction] = useState<string>('');
   const [bookingFormData, setBookingFormData] = useState<any>(null);
   const [bookingData, setBookingData] = useState<any[]>([]);
+  const [flNumber, setFlNumber] = useState('');
 
   useEffect(() => {
+    // Generate FL-number on mount and store in sessionStorage
+    const fl = 'FL-' + Math.floor(10000 + Math.random() * 90000);
+    setFlNumber(fl);
+    sessionStorage.setItem('flNumber', fl);
     const formData = sessionStorage.getItem('bookingFormData');
     if (formData) setBookingFormData(JSON.parse(formData));
     const poData = sessionStorage.getItem('bookingData');
@@ -69,7 +74,7 @@ const BookingConfirm: React.FC<BookingConfirmProps> = ({ onClose = () => {} }) =
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 mb-1">Booking Reference</h3>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-mono font-bold text-[#007bff]">{bookingFormData?.flNumber || 'FL-XXXXX'}</span>
+                  <span className="text-sm font-mono font-bold text-[#007bff]">{flNumber}</span>
                   <button className="text-gray-400 hover:text-gray-600">
                     <Copy className="w-4 h-4" />
                   </button>

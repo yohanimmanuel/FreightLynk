@@ -22,6 +22,7 @@ import {
 import BookingConfirmPopUp from './BookingConfirmPopUp';
 import POSummaryTable from '../purchasesorders/POSummaryTable';
 import { purchaseOrdersData, poDetailsData } from '../purchasesorders/POManagementTable';
+import { useRouter } from 'next/navigation';
 
 // Move zoom handlers outside so both components can use them
 type ZoomSetter = Dispatch<SetStateAction<number>>;
@@ -42,10 +43,16 @@ const BookingReview = () => {
   const [headerData, setHeaderData] = useState<{ shipmentId: string; shipmentName: string; shipmentTags: { hasTags: boolean; poNumber: string; skuNumber: string } } | null>(null);
   const [shipmentName, setShipmentName] = useState('');
   const [bookingFormData, setBookingFormData] = useState<any>(null);
-  const [generatedFLNumber, setGeneratedFLNumber] = useState('');
+  const [flNumber, setFlNumber] = useState('');
+  const router = useRouter();
 
   // Load booking data from sessionStorage (from BookingCreation form)
   useEffect(() => {
+    // Redirect if booking already submitted
+    if (typeof window !== 'undefined' && sessionStorage.getItem('bookingSubmitted')) {
+      router.replace('/bookings/submitted');
+      return;
+    }
     const name = sessionStorage.getItem('shipmentName') || '';
     setShipmentName(name);
     const formData = sessionStorage.getItem('bookingFormData');
@@ -54,11 +61,32 @@ const BookingReview = () => {
     if (savedBookingData) {
       setBookingData(JSON.parse(savedBookingData));
     }
-    // Generate FL-number if not present
-    if (!formData || !JSON.parse(formData).flNumber) {
-      setGeneratedFLNumber('FL-' + Math.floor(10000 + Math.random() * 90000));
+    // Read FL-number from sessionStorage
+    const fl = sessionStorage.getItem('flNumber');
+    if (fl) setFlNumber(fl);
+    // Confetti effect if coming from review
+    if (typeof window !== 'undefined' && sessionStorage.getItem('showConfetti')) {
+      console.log('Triggering confetti!');
+      import('canvas-confetti').then((module) => {
+        module.default({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.6 },
+          zIndex: 99999,
+        });
+      });
+      sessionStorage.removeItem('showConfetti');
     }
   }, []);
+
+  // Add function to set bookingSubmitted and clear session data
+  const setBookingSubmittedAndClear = () => {
+    sessionStorage.setItem('bookingSubmitted', 'true');
+    sessionStorage.removeItem('flNumber');
+    sessionStorage.removeItem('bookingFormData');
+    sessionStorage.removeItem('bookingData');
+    sessionStorage.removeItem('shipmentName');
+  };
 
   // Progress steps
   const progressSteps = [
@@ -213,14 +241,14 @@ const BookingReview = () => {
   return (
     <div className="min-h-screen bg-white">
       {/* Booking Confirm PopUp */}
-      {showPopup && <BookingConfirmPopUp onClose={() => setShowPopup(false)} />}
+      {showPopup && <BookingConfirmPopUp onClose={() => { setShowPopup(false); setBookingSubmittedAndClear(); }} />}
       {/* Header */}
       <div className="bg-white p-4">
         <div className="max-w-8xl mx-auto flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
               <Package className="w-4 h-4" />
-              <span>{bookingFormData?.flNumber || generatedFLNumber || 'FL-XXXXX'}</span>
+              <span>{flNumber || 'FL-XXXXX'}</span>
             </div>
             <div className="flex items-center gap-4">
               {isEditingTitle ? (
