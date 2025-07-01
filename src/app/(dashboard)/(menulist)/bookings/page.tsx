@@ -4,9 +4,44 @@ import BookingCalendar from "@/app/components/shipmentsbooking/BookingCalendar";
 import BookingTable from "@/app/components/shipmentsbooking/BookingTable";
 import { Download, Plus, Upload } from "lucide-react";
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
+// Booking type (should match BookingTable)
+type Booking = {
+  id: string;
+  shipmentId?: string;
+  poNumber: string;
+  productName: string;
+  hsCode: string;
+  consignee: string;
+  shipper: string;
+  origin: string;
+  destination: string;
+  shipmentType: string;
+  containerType: string;
+  incoterms: string;
+  cargoReadyDate: string;
+  dangerousGoods: boolean;
+  weight: string;
+  volume: string;
+  pieces: number;
+  status: string;
+  eta: string;
+};
 
 const ClientUI = () => {
   const router = useRouter();
+  const [confirmedBookings, setConfirmedBookings] = useState<Booking[]>([]);
+  
+  // Load confirmed bookings from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const data = localStorage.getItem('confirmedBookings');
+      if (data) {
+        setConfirmedBookings(JSON.parse(data));
+      }
+    }
+  }, []);
   
   const handleExportCSV = () => {
     // In a real app, this would generate and download a CSV file
@@ -54,7 +89,7 @@ const ClientUI = () => {
               </button>
               </div>
           </div>
-          <BookingTable />
+          <BookingTable bookings={confirmedBookings} />
         </div>
         <div className="md:col-span-1 col-span-1 p-0 md:p-2 mt-4 md:mt-0">
           <BookingCalendar />

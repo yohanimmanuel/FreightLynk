@@ -81,6 +81,37 @@ const BookingReview = () => {
 
   // Add function to set bookingSubmitted and clear session data
   const setBookingSubmittedAndClear = () => {
+    // Gather all booking data for the table
+    const bookingFormData = JSON.parse(sessionStorage.getItem('bookingFormData') || '{}');
+    const bookingData = JSON.parse(sessionStorage.getItem('bookingData') || '[]');
+    const shipmentName = sessionStorage.getItem('shipmentName') || '';
+    const flNumber = sessionStorage.getItem('flNumber') || '';
+    // Compose booking object for the table
+    const confirmedBooking = {
+      id: `BK-${Date.now()}`,
+      shipmentId: flNumber,
+      poNumber: bookingData.length > 0 ? bookingData.map((po: any) => po.poId).join(', ') : '',
+      productName: bookingFormData.productName || '',
+      hsCode: bookingFormData.hsCode || '',
+      consignee: bookingFormData.consigneeValue || '',
+      shipper: bookingFormData.shipperValue || '',
+      origin: bookingFormData.originPort || '',
+      destination: bookingFormData.destinationPort || '',
+      shipmentType: bookingFormData.shipmentTypeValue || '',
+      containerType: bookingFormData.containerTypeValue || '',
+      incoterms: bookingFormData.incotermsValue || '',
+      cargoReadyDate: bookingFormData.cargoReadyDate || '',
+      dangerousGoods: !!bookingFormData.dangerousGoods,
+      weight: bookingFormData.weight || '',
+      volume: bookingFormData.volume || '',
+      pieces: bookingFormData.packageCount ? parseInt(bookingFormData.packageCount, 10) || 0 : 0,
+      status: 'Booked',
+      eta: '',
+    };
+    // Save to localStorage
+    const prev = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
+    localStorage.setItem('confirmedBookings', JSON.stringify([...prev, confirmedBooking]));
+    // Mark as submitted and clear session data
     sessionStorage.setItem('bookingSubmitted', 'true');
     sessionStorage.removeItem('flNumber');
     sessionStorage.removeItem('bookingFormData');
@@ -182,6 +213,12 @@ const BookingReview = () => {
         >
           Proceed to Payment
         </button>
+        <button
+          className="mt-2 w-full px-4 py-3 rounded-lg text-xs font-semibold bg-white text-[#007bff] hover:bg-blue-50 border border-[#007bff] transition-colors duration-200"
+          onClick={() => router.push('/bookings')}
+        >
+          {'>> Go to Bookings'}
+        </button>
       </div>
       <div className="mb-4">
         <h4 className="text-xs font-semibold text-gray-900 mb-2">Cargo Ready Date</h4>
@@ -195,14 +232,7 @@ const BookingReview = () => {
         <div className="flex items-start gap-3">
           <div className="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
           <div>
-            <p className="text-xs font-medium text-gray-900">{(() => {
-              const map: Record<string, string> = {
-                'studio-apparel': 'Studio Apparel',
-                'global-trade': 'Global Trade Co',
-              };
-              const val = bookingFormData?.shipperValue as string;
-              return val && map[val as keyof typeof map] ? map[val as keyof typeof map] : '';
-            })()}</p>
+            <p className="text-xs font-medium text-gray-900">{bookingFormData?.shipperValue || ''}</p>
             <p className="text-xs text-gray-500">{bookingFormData?.originLocation}</p>
           </div>
         </div>
@@ -223,14 +253,7 @@ const BookingReview = () => {
         <div className="flex items-start gap-3">
           <div className="w-2 h-2 bg-green-400 rounded-full mt-2"></div>
           <div>
-            <p className="text-xs font-medium text-gray-900">{(() => {
-              const map: Record<string, string> = {
-                'forward-supply-co': 'Forward Supply Co',
-                'logistics-hub': 'Logistics Hub',
-              };
-              const val = bookingFormData?.consigneeValue as string;
-              return val && map[val as keyof typeof map] ? map[val as keyof typeof map] : '';
-            })()}</p>
+            <p className="text-xs font-medium text-gray-900">{bookingFormData?.consigneeValue || ''}</p>
             <p className="text-xs text-gray-500">{bookingFormData?.destinationLocation}</p>
           </div>
         </div>

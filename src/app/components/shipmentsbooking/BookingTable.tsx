@@ -1,155 +1,34 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, Filter, Settings, Eye, EyeOff, Calendar, Package, MapPin, Ship, Clock, AlertTriangle, CheckCircle, XCircle, Minus, Download, Upload, Plus, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronDown } from 'lucide-react';
 
+type Booking = {
+  id: string;
+  shipmentId?: string; // FL-number
+  poNumber: string;
+  productName: string;
+  hsCode: string;
+  consignee: string;
+  shipper: string;
+  origin: string;
+  destination: string;
+  shipmentType: string;
+  containerType: string;
+  incoterms: string;
+  cargoReadyDate: string;
+  dangerousGoods: boolean;
+  weight: string;
+  volume: string;
+  pieces: number;
+  status: string;
+  eta: string;
+};
+
 interface BookingTableProps {
+  bookings: Booking[];
   onSubmitBooking?: () => void;
 }
 
-const BookingTable: React.FC<BookingTableProps> = ({ onSubmitBooking = () => {} }) => { 
-  // Sample booking data (now with 8 entries)
-  const [bookings] = useState<Booking[]>([
-    {
-      id: 'BK-2025-001',
-      poNumber: 'PO-24-1001',
-      productName: 'Electronic Components',
-      hsCode: '8542.31.0000',
-      buyer: 'TechCorp Ltd',
-      seller: 'ManufactureCo',
-      origin: 'Shenzhen, CN',
-      destination: 'Los Angeles, US',
-      shipmentType: 'FCL',
-      containerType: '20ft Standard',
-      incoterms: 'FOB',
-      cargoReadyDate: '2025-07-15',
-      dangerousGoods: false,
-      weight: '15,240 kg',
-      volume: '28.3 m³',
-      pieces: 1240,
-      status: 'In Transit',
-      eta: '2025-07-28'
-    },
-    {
-      id: 'BK-2025-002',
-      poNumber: 'PO-24-1002',
-      productName: 'Textile Materials',
-      hsCode: '6302.21.0000',
-      buyer: 'Fashion House Inc',
-      seller: 'TextilePro',
-      origin: 'Mumbai, IN',
-      destination: 'Hamburg, DE',
-      shipmentType: 'LCL',
-      containerType: '40ft HC',
-      incoterms: 'CIF',
-      cargoReadyDate: '2025-07-20',
-      dangerousGoods: false,
-      weight: '8,750 kg',
-      volume: '45.2 m³',
-      pieces: 2100,
-      status: 'Booked',
-      eta: '2025-08-05'
-    },
-    {
-      id: 'BK-2025-003',
-      poNumber: 'PO-24-1003',
-      productName: 'Chemical Reagents',
-      hsCode: '2942.00.0000',
-      buyer: 'PharmaLab Corp',
-      seller: 'ChemSupply',
-      origin: 'Rotterdam, NL',
-      destination: 'Singapore, SG',
-      shipmentType: 'FCL',
-      containerType: '20ft Reefer',
-      incoterms: 'DAP',
-      cargoReadyDate: '2025-07-25',
-      dangerousGoods: true,
-      weight: '12,500 kg',
-      volume: '22.1 m³',
-      pieces: 840,
-      status: 'Pending',
-      eta: '2025-08-12'
-    },
-    {
-      id: 'BK-2025-004',
-      poNumber: 'PO-24-1004',
-      productName: 'Automotive Parts',
-      hsCode: '8708.29.0000',
-      buyer: 'AutoMotive Inc',
-      seller: 'PartsMaker',
-      origin: 'Yokohama, JP',
-      destination: 'Long Beach, US',
-      shipmentType: 'FCL',
-      containerType: '40ft Standard',
-      incoterms: 'EXW',
-      cargoReadyDate: '2025-07-30',
-      dangerousGoods: false,
-      weight: '18,900 kg',
-      volume: '67.8 m³',
-      pieces: 1580,
-      status: 'Delivered',
-      eta: '2025-08-15'
-    },
-    {
-      id: 'BK-2025-005',
-      poNumber: 'PO-24-1005',
-      productName: 'Industrial Pumps',
-      hsCode: '8413.70.0000',
-      buyer: 'WaterWorks Inc',
-      seller: 'PumpMasters',
-      origin: 'Berlin, DE',
-      destination: 'Toronto, CA',
-      shipmentType: 'FCL',
-      containerType: '40ft Standard',
-      incoterms: 'CIP',
-      cargoReadyDate: '2025-08-05',
-      dangerousGoods: false,
-      weight: '22,100 kg',
-      volume: '58.6 m³',
-      pieces: 320,
-      status: 'Booked',
-      eta: '2025-08-20'
-    },
-    {
-      id: 'BK-2025-006',
-      poNumber: 'PO-24-1006',
-      productName: 'Medical Equipment',
-      hsCode: '9018.90.0000',
-      buyer: 'HealthPlus Ltd',
-      seller: 'MediTech',
-      origin: 'Boston, US',
-      destination: 'Sydney, AU',
-      shipmentType: 'LCL',
-      containerType: '20ft Standard',
-      incoterms: 'DDP',
-      cargoReadyDate: '2025-08-10',
-      dangerousGoods: false,
-      weight: '7,800 kg',
-      volume: '18.9 m³',
-      pieces: 150,
-      status: 'Pending',
-      eta: '2025-08-25'
-    },
-    {
-      id: 'BK-2025-007',
-      poNumber: 'PO-24-1007',
-      productName: 'Solar Panels',
-      hsCode: '8541.40.0000',
-      buyer: 'GreenEnergy Corp',
-      seller: 'SunPower',
-      origin: 'Shanghai, CN',
-      destination: 'Dubai, AE',
-      shipmentType: 'FCL',
-      containerType: '40ft HC',
-      incoterms: 'FCA',
-      cargoReadyDate: '2025-08-15',
-      dangerousGoods: false,
-      weight: '14,500 kg',
-      volume: '62.3 m³',
-      pieces: 480,
-      status: 'In Transit',
-      eta: '2025-08-30'
-    }
-  ]);
-
+const BookingTable: React.FC<BookingTableProps> = ({ bookings, onSubmitBooking = () => {} }) => {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
@@ -157,11 +36,12 @@ const BookingTable: React.FC<BookingTableProps> = ({ onSubmitBooking = () => {} 
   // All available columns
   const allColumns = [
     { key: 'id', label: 'Booking ID', mandatory: true, width: '140px' },
+    { key: 'shipmentId', label: 'Shipment ID', mandatory: false, width: '120px' },
     { key: 'poNumber', label: 'PO Number', mandatory: false, width: '130px' },
     { key: 'productName', label: 'Product Name', mandatory: false, width: '180px' },
     { key: 'hsCode', label: 'HS Code', mandatory: false, width: '140px' },
-    { key: 'buyer', label: 'Buyer', mandatory: false, width: '160px' },
-    { key: 'seller', label: 'Seller', mandatory: false, width: '140px' },
+    { key: 'shipper', label: 'Shipper', mandatory: false, width: '160px' },
+    { key: 'consignee', label: 'Consignee', mandatory: false, width: '140px' },
     { key: 'origin', label: 'Origin', mandatory: false, width: '140px' },
     { key: 'destination', label: 'Destination', mandatory: false, width: '140px' },
     { key: 'shipmentType', label: 'Shipment Type', mandatory: false, width: '120px' },
@@ -177,7 +57,7 @@ const BookingTable: React.FC<BookingTableProps> = ({ onSubmitBooking = () => {} 
   ];
 
   // Default visible columns
-  const defaultVisibleColumns = ['id', 'poNumber', 'productName', 'buyer', 'origin', 'destination', 'shipmentType', 'status', 'eta'];
+  const defaultVisibleColumns = ['id', 'shipmentId', 'poNumber', 'productName', 'shipper', 'consignee', 'origin', 'destination', 'shipmentType', 'status', 'eta'];
   
   const [visibleColumns, setVisibleColumns] = useState(defaultVisibleColumns);
   const [searchTerm, setSearchTerm] = useState('');
@@ -310,33 +190,14 @@ const BookingTable: React.FC<BookingTableProps> = ({ onSubmitBooking = () => {} 
     );
   };
 
-  // Define booking type
-  type Booking = {
-    id: string;
-    poNumber: string;
-    productName: string;
-    hsCode: string;
-    buyer: string;
-    seller: string;
-    origin: string;
-    destination: string;
-    shipmentType: string;
-    containerType: string;
-    incoterms: string;
-    cargoReadyDate: string;
-    dangerousGoods: boolean;
-    weight: string;
-    volume: string;
-    pieces: number;
-    status: string;
-    eta: string;
-  };
-
   // Render cell content based on column type
   const renderCellContent = (booking: Booking, columnKey: string) => {
     switch (columnKey) {
+      case 'shipmentId':
+        // Show FL-number or placeholder
+        return booking.shipmentId || 'FL-XXXXX';
       case 'status':
-        return <StatusBadge status={booking[columnKey]} />;
+        return <StatusBadge status={booking[columnKey] as string} />;
       case 'dangerousGoods':
         return booking[columnKey] ? (
           <span className="flex items-center text-red-600">
@@ -351,14 +212,14 @@ const BookingTable: React.FC<BookingTableProps> = ({ onSubmitBooking = () => {} 
         return (
           <span className="flex items-center">
             <MapPin className="w-3 h-3 mr-1 text-gray-400" />
-            {booking[columnKey]}
+            {booking[columnKey] as string}
           </span>
         );
       case 'shipmentType':
         return (
           <span className="flex items-center">
             <Package className="w-3 h-3 mr-1 text-gray-400" />
-            {booking[columnKey]}
+            {booking[columnKey] as string}
           </span>
         );
       case 'cargoReadyDate':
@@ -366,11 +227,11 @@ const BookingTable: React.FC<BookingTableProps> = ({ onSubmitBooking = () => {} 
         return (
           <span className="flex items-center">
             <Calendar className="w-3 h-3 mr-1 text-gray-400" />
-            {booking[columnKey]}
+            {booking[columnKey] as string}
           </span>
         );
       default:
-        return booking[columnKey as keyof Booking];
+        return booking[columnKey as keyof Booking] as string;
     }
   };
 

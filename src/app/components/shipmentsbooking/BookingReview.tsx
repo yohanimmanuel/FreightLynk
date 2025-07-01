@@ -160,14 +160,7 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
                   </div>
                   <div className="flex-1 min-h-0">
                     <div className="font-semibold text-sm text-gray-900 leading-tight mb-1">
-                      {(() => {
-                        const map: Record<string, string> = {
-                          'studio-apparel': 'Studio Apparel',
-                          'global-trade': 'Global Trade Co',
-                        };
-                        const val = bookingFormData?.shipperValue as string;
-                        return val && map[val as keyof typeof map] ? map[val as keyof typeof map] : 'Not specified';
-                      })()}
+                      {bookingFormData?.shipperValue || 'Not specified'}
                     </div>
                     <div className="text-xs text-gray-600 leading-tight mb-2">
                       {bookingFormData?.originLocation || 'Not specified'}
@@ -204,14 +197,7 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
                   </div>
                   <div className="flex-1 min-h-0">
                     <div className="font-semibold text-sm text-gray-900 leading-tight mb-1">
-                      {(() => {
-                        const map: Record<string, string> = {
-                          'forward-supply': 'Forward Supply Co',
-                          'logistics-hub': 'Logistics Hub',
-                        };
-                        const val = bookingFormData?.consigneeValue as string;
-                        return val && map[val as keyof typeof map] ? map[val as keyof typeof map] : 'Not specified';
-                      })()}
+                      {bookingFormData?.consigneeValue || 'Not specified'}
                     </div>
                     <div className="text-xs text-gray-600 leading-tight mb-2">
                       {bookingFormData?.destinationLocation || 'Not specified'}

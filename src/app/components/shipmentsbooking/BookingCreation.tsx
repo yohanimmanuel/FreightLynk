@@ -452,122 +452,83 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
         {/* Involved Parties */}
         <div className="bg-white rounded-lg p-4 border border-gray-200">
           <div className="mb-4 font-semibold text-sm text-gray-900 border-b border-gray-200 pb-2">Involved Parties</div>
-          <div className="flex gap-4 mb-4">
+          <div className="flex gap-2 mb-4">
             <button
               type="button"
               onClick={() => setTradeRole('shipper')}
-              className={`px-4 py-2 text-xs border rounded-lg ${tradeRole === 'shipper' ? 'bg-[#007bff] text-white border-[#007bff]' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
+              className={`px-5 py-2 text-xs border rounded-lg ${tradeRole === 'shipper' ? 'bg-[#007bff] text-white border-[#007bff]' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
             >
               Shipper
             </button>
             <button
               type="button"
               onClick={() => setTradeRole('consignee')}
-              className={`px-4 py-2 text-xs border rounded-lg ${tradeRole === 'consignee' ? 'bg-[#007bff] text-white border-[#007bff]' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
+              className={`px-5 py-2 text-xs border rounded-lg ${tradeRole === 'consignee' ? 'bg-[#007bff] text-white border-[#007bff]' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
             >
               Consignee
             </button>
           </div>
-          <div className="grid grid-cols-1 gap-4">
-            <div>
+          <div className="flex gap-4">
+            <div className="flex-1">
               <label className="block text-xs font-medium text-gray-700 mb-2">
                 Shipper <span className="text-red-500">*</span>
               </label>
               <div className="flex gap-2">
-                <div className="flex-1">
-                  {/* Inline Shipper Dropdown (RateTable pattern) */}
-                  {(() => {
-                    const [isShipperDropdownOpen, setIsShipperDropdownOpen] = useState(false);
-                    const shipperDropdownRef = useRef<HTMLDivElement>(null);
-                    useEffect(() => {
-                      const handleClick = (e: MouseEvent) => {
-                        if (shipperDropdownRef.current && !shipperDropdownRef.current.contains(e.target as Node)) {
-                          setIsShipperDropdownOpen(false);
-                        }
-                      };
-                      if (isShipperDropdownOpen) {
-                        document.addEventListener('mousedown', handleClick);
-                      }
-                      return () => document.removeEventListener('mousedown', handleClick);
-                    }, [isShipperDropdownOpen]);
-                    const options = [
-                      { value: 'studio-apparel', label: 'Studio Apparel' },
-                      { value: 'global-trade', label: 'Global Trade Co' }
-                    ];
-                    const selectedOption = options.find(opt => opt.value === formData.shipperValue);
-                    return (
-                      <div className="relative" ref={shipperDropdownRef}>
-                        <button
-                          type="button"
-                          className={`flex items-center justify-between w-full pl-3 pr-8 py-3 text-xs text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${!selectedOption ? 'text-gray-500' : ''}`}
-                          onClick={() => setIsShipperDropdownOpen(v => !v)}
-                        >
-                          {selectedOption ? selectedOption.label : 'Select shipper'}
-                          <ChevronDown
-                            className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 transition-transform ${isShipperDropdownOpen ? 'rotate-180' : ''}`}
-                          />
-                        </button>
-                        {isShipperDropdownOpen && (
-                          <div className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 transition-all duration-200 opacity-100 scale-100 w-full min-w-[120px]">
-                            <div className="py-1 max-h-60 overflow-auto">
-                              {options.map((option) => (
-                                <button
-                                  key={option.value}
-                                  onClick={() => {
-                                    handleInputChange('shipperValue', option.value);
-                                    setIsShipperDropdownOpen(false);
-                                  }}
-                                  className={`block w-full text-left px-4 py-3 text-xs ${formData.shipperValue === option.value ? 'bg-blue-100 text-blue-800' : 'text-gray-700 hover:bg-gray-100'}`}
-                                >
-                                  {option.label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
-                </div>
+                <input
+                  list="shipper-options"
+                  type="text"
+                  value={formData.shipperValue}
+                  onChange={e => handleInputChange('shipperValue', e.target.value)}
+                  className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.shipperValue ? 'border-red-500' : ''}`}
+                  placeholder="Select or enter shipper company"
+                />
                 <button
                   type="button"
-                  className="px-4 py-2 text-xs bg-[#007bff] text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center justify-center gap-1"
+                  className="w-40 px-4 py-3 text-xs bg-[#007bff] text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center justify-center gap-1"
+                  // onClick={...} // Placeholder for add new shipper logic
                 >
                   <Plus className="w-3 h-3" />
                   <span>New Shipper</span>
                 </button>
               </div>
+              <datalist id="shipper-options">
+                <option value="Studio Apparel" />
+                <option value="Global Trade Co" />
+                <option value="Forward Supply Co" />
+                <option value="Logistics Hub" />
+              </datalist>
               {hasSubmitted && errors.shipperValue && (
                 <p className="text-xs text-red-500 mt-1">{errors.shipperValue}</p>
               )}
             </div>
-            <div>
+            <div className="flex-1">
               <label className="block text-xs font-medium text-gray-700 mb-2">
                 Consignee <span className="text-red-500">*</span>
               </label>
               <div className="flex gap-2">
-                <div className="flex-1">
-                  <Dropdown
-                    value={formData.consigneeValue}
-                    onChange={(value) => handleInputChange('consigneeValue', value)}
-                    options={[
-                      { value: 'forward-supply', label: 'Forward Supply Co' },
-                      { value: 'logistics-hub', label: 'Logistics Hub' }
-                    ]}
-                    placeholder="Select consignee"
-                    dropdownKey="consignee"
-                    openDropdown={openDropdown}
-                    setOpenDropdown={setOpenDropdown}
-                  />
-                </div>
+                <input
+                  list="consignee-options"
+                  type="text"
+                  value={formData.consigneeValue}
+                  onChange={e => handleInputChange('consigneeValue', e.target.value)}
+                  className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.consigneeValue ? 'border-red-500' : ''}`}
+                  placeholder="Select or enter consignee company"
+                />
                 <button
                   type="button"
-                  className="px-4 py-2 text-xs bg-[#007bff] text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center justify-center gap-1"
+                  className="w-50 px-4 py-3 text-xs bg-[#007bff] text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center justify-center gap-1"
+                  // onClick={...} // Placeholder for add new consignee logic
                 >
                   <Plus className="w-3 h-3" />
                   <span>New Consignee</span>
                 </button>
               </div>
+              <datalist id="consignee-options">
+                <option value="Studio Apparel" />
+                <option value="Global Trade Co" />
+                <option value="Forward Supply Co" />
+                <option value="Logistics Hub" />
+              </datalist>
               {hasSubmitted && errors.consigneeValue && (
                 <p className="text-xs text-red-500 mt-1">{errors.consigneeValue}</p>
               )}
