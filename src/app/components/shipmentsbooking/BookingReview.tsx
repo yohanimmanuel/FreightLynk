@@ -37,10 +37,7 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
     const formData = sessionStorage.getItem('bookingFormData');
     if (formData) setBookingFormData(JSON.parse(formData));
     // Do not clear PO data here; it will be used in the confirmation step
-    // return () => {
-    //   sessionStorage.removeItem('bookingData');
-    //   console.log('PO data cleared from session storage - user navigated away from booking review');
-    // };
+    // (No cleanup function here)
   }, []);
 
   // Helper for transport mode icon

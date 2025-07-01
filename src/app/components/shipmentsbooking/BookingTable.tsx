@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, Filter, Settings, Eye, EyeOff, Calendar, Package, MapPin, Ship, Clock, AlertTriangle, CheckCircle, XCircle, Minus, Download, Upload, Plus, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronDown } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 type Booking = {
   id: string;
@@ -79,6 +80,9 @@ const BookingTable: React.FC<BookingTableProps> = ({ bookings, onSubmitBooking =
     { value: 'in transit', label: 'In Transit' },
     { value: 'delivered', label: 'Delivered' }
   ];
+
+  const router = useRouter();
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -299,6 +303,27 @@ const BookingTable: React.FC<BookingTableProps> = ({ bookings, onSubmitBooking =
   const goToPreviousPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
   const goToNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
 
+  // Handle row selection
+  const handleSelect = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [id]);
+  };
+
+  // Truncate Booking ID
+  const truncateId = (id: string) => id.length > 8 ? id.slice(0, 8) + '...' : id;
+
+  // Bulk action bar (single select only)
+  const selectedBooking = bookings.find(b => b.id === selectedIds[0]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('bookingFormData');
+      sessionStorage.removeItem('bookingData');
+      sessionStorage.removeItem('shipmentName');
+      sessionStorage.removeItem('bookingSubmitted');
+      sessionStorage.removeItem('flNumber');
+    }
+  }, []);
+
   return (
     <div className="flex flex-col h-full bg-white">
       <div className="">
@@ -342,6 +367,26 @@ const BookingTable: React.FC<BookingTableProps> = ({ bookings, onSubmitBooking =
             {renderColumnDropdown()}
           </div>
         </div>
+        {/* Bulk Action Bar (single select only) */}
+        {selectedIds.length === 1 && selectedBooking && (
+          <div className="flex items-center border border-blue-200 bg-white rounded-lg px-4 py-2 mb-2 mt-4">
+            <span className="bg-blue-100 text-gray-900 rounded-full px-4 py-2 text-sm font-medium">
+              {truncateId(selectedBooking.id)}
+            </span>
+            <div className="flex-1" />
+            <button
+              className="px-4 py-2 bg-[#007bff] text-white rounded-lg text-sm font-semibold hover:bg-blue-700"
+              onClick={() => {
+                // Save booking data to sessionStorage and redirect
+                sessionStorage.setItem('bookingFormData', JSON.stringify(selectedBooking));
+                sessionStorage.removeItem('bookingSubmitted');
+                router.push('/bookings/confirmation');
+              }}
+            >
+              View Booking Details
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Table Container */}
@@ -375,7 +420,11 @@ const BookingTable: React.FC<BookingTableProps> = ({ bookings, onSubmitBooking =
               </tr>
             ) : (
               currentBookings.map((booking) => (
-                <tr key={booking.id} className="hover:bg-gray-50 h-[40px]">
+                <tr
+                  key={booking.id}
+                  className={`h-[40px] cursor-pointer ${selectedIds.includes(booking.id) ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
+                  onClick={() => handleSelect(booking.id)}
+                >
                   {displayColumns.map((column) => (
                     <td
                       key={column.key}
