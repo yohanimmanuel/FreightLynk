@@ -152,6 +152,7 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [requireFields, setRequireFields] = useState(true);
 
   // Form data state
   const [formData, setFormData] = useState({
@@ -186,6 +187,7 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
     incotermsValue: '',
     packageTypeValue: '',
     packageCount: '',
+    containerQuantity: '',
   });
 
   // Previous shipments data
@@ -454,6 +456,10 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
 
   // Validation for required fields
   const validateForm = () => {
+    if (!requireFields) {
+      setErrors({});
+      return true;
+    }
     const newErrors: { [key: string]: string } = {};
     // PO Data
     if (!selectedPOs.length) newErrors.selectedPOs = 'At least one purchase order is required.';
@@ -482,6 +488,7 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
     if (!formData.weight.trim()) newErrors.weight = 'Weight is required.';
     if (!formData.volume.trim()) newErrors.volume = 'Volume is required.';
     if (!formData.packageCount.trim()) newErrors.packageCount = 'Package count is required.';
+    if (formData.shipmentTypeValue === 'fcl' && !formData.containerQuantity.trim()) newErrors.containerQuantity = 'Container quantity is required.';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -491,6 +498,8 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
     e.preventDefault();
     setHasSubmitted(true);
     if (validateForm()) {
+      sessionStorage.setItem('shipmentName', formData.shipmentName);
+      sessionStorage.setItem('bookingFormData', JSON.stringify(formData));
       onSubmitBooking();
     } else {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -581,7 +590,7 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
               Consignee
             </button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-2">
                 Shipper <span className="text-red-500">*</span>
@@ -691,71 +700,89 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
         {/* Transportation Details */}
         <div className="bg-white rounded-lg p-4 border border-gray-200">
           <div className="mb-4 font-semibold text-sm text-gray-900 border-b border-gray-200 pb-2">Transportation Details</div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
+            {/* Freight Method */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-2">
-                Transport Mode <span className="text-red-500">*</span>
+                Freight Method <span className="text-red-500">*</span>
               </label>
-              <Dropdown
-                value={formData.transportModeValue}
-                onChange={(value) => handleInputChange('transportModeValue', value)}
-                options={[
-                  { value: 'sea', label: 'Sea Freight' },
-                  { value: 'air', label: 'Air Freight' },
-                  { value: 'land', label: 'Land Transport' }
-                ]}
-                placeholder="Select mode"
-                dropdownKey="transportMode"
-                openDropdown={openDropdown}
-                setOpenDropdown={setOpenDropdown}
-              />
+              <div className="flex gap-2">
+                {['sea', 'air', 'land'].map((method) => (
+                  <button
+                    key={method}
+                    type="button"
+                    className={`flex-1 px-4 py-3 text-xs border rounded-lg transition-colors
+                      ${formData.transportModeValue === method ? 'bg-blue-50 border-blue-500 text-blue-700 font-semibold' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                    onClick={() => handleInputChange('transportModeValue', method)}
+                  >
+                    {method === 'sea' && 'Ocean Freight'}
+                    {method === 'air' && 'Air Freight'}
+                    {method === 'land' && 'Truck'}
+                  </button>
+                ))}
+              </div>
               {hasSubmitted && errors.transportModeValue && (
                 <p className="text-xs text-red-500 mt-1">{errors.transportModeValue}</p>
               )}
             </div>
+            {/* Shipment Type */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-2">
                 Shipment Type <span className="text-red-500">*</span>
               </label>
-              <Dropdown
-                value={formData.shipmentTypeValue}
-                onChange={(value) => handleInputChange('shipmentTypeValue', value)}
-                options={[
-                  { value: 'fcl', label: 'FCL (Full Container Load)' },
-                  { value: 'lcl', label: 'LCL (Less Container Load)' },
-                  { value: 'breakbulk', label: 'Breakbulk' }
-                ]}
-                placeholder="Select type"
-                dropdownKey="shipmentType"
-                openDropdown={openDropdown}
-                setOpenDropdown={setOpenDropdown}
-              />
+              <div className="flex gap-2">
+                {['fcl', 'lcl'].map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    className={`flex-1 px-4 py-3 text-xs border rounded-lg transition-colors
+                      ${formData.shipmentTypeValue === type ? 'bg-blue-50 border-blue-500 text-blue-700 font-semibold' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                    onClick={() => handleInputChange('shipmentTypeValue', type)}
+                  >
+                    {type === 'fcl' ? 'FCL' : 'LCL'}
+                  </button>
+                ))}
+              </div>
               {hasSubmitted && errors.shipmentTypeValue && (
                 <p className="text-xs text-red-500 mt-1">{errors.shipmentTypeValue}</p>
               )}
             </div>
+            {/* Container Type */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-2">
                 Container Type <span className="text-red-500">*</span>
               </label>
-              <Dropdown
-                value={formData.containerTypeValue}
-                onChange={(value) => handleInputChange('containerTypeValue', value)}
-                options={[
-                  { value: '20ft', label: '20ft Standard' },
-                  { value: '40ft', label: '40ft Standard' },
-                  { value: '40ft-hc', label: '40ft High Cube' },
-                  { value: '45ft', label: '45ft High Cube' }
-                ]}
-                placeholder="Select container type"
-                dropdownKey="containerType"
-                openDropdown={openDropdown}
-                setOpenDropdown={setOpenDropdown}
-              />
-              {hasSubmitted && errors.containerTypeValue && (
-                <p className="text-xs text-red-500 mt-1">{errors.containerTypeValue}</p>
+              <div className="flex gap-2 items-center">
+                {formData.shipmentTypeValue === 'fcl' && (
+                  <input
+                    type="number"
+                    min="1"
+                    value={formData.containerQuantity}
+                    onChange={(e) => handleInputChange('containerQuantity', e.target.value)}
+                    className={`w-20 p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.containerQuantity ? 'border-red-500' : ''}`}
+                    placeholder="Qty"
+                  />
+                )}
+                {['20ft', '40ft', '40ft-hc', '45ft-hc'].map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    className={`flex-1 px-4 py-3 text-xs border rounded-lg transition-colors
+                      ${formData.containerTypeValue === type ? 'bg-blue-50 border-blue-500 text-blue-700 font-semibold' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                    onClick={() => handleInputChange('containerTypeValue', type)}
+                  >
+                    {type === '20ft' && '20 ft'}
+                    {type === '40ft' && '40 ft'}
+                    {type === '40ft-hc' && '40 ft HC'}
+                    {type === '45ft-hc' && '45 ft HC'}
+                  </button>
+                ))}
+              </div>
+              {formData.shipmentTypeValue === 'fcl' && hasSubmitted && errors.containerQuantity && (
+                <p className="text-xs text-red-500 mt-1">{errors.containerQuantity}</p>
               )}
             </div>
+            {/* Incoterms (dropdown) */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-2">
                 Incoterms <span className="text-red-500">*</span>
@@ -767,7 +794,15 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                   { value: 'FOB', label: 'FOB - Free on Board' },
                   { value: 'EXW', label: 'EXW - Ex Works' },
                   { value: 'DDP', label: 'DDP - Delivered Duty Paid' },
-                  { value: 'CIF', label: 'CIF - Cost, Insurance & Freight' }
+                  { value: 'CIF', label: 'CIF - Cost, Insurance & Freight' },
+                  { value: 'DAP', label: 'DAP - Delivered at Place' },
+                  { value: 'DPU', label: 'DPU - Delivered at Place Unloaded' },
+                  { value: 'FCA', label: 'FCA - Free Carrier' },
+                  { value: 'CPT', label: 'CPT - Carriage Paid To' },
+                  { value: 'CIP', label: 'CIP - Carriage and Insurance Paid To' },
+                  { value: 'CFR', label: 'CFR - Cost and Freight' },
+                  { value: 'DDU', label: 'DDU - Delivered Duty Unpaid' },
+                  { value: 'Other', label: 'Other' },
                 ]}
                 placeholder="Select incoterms"
                 dropdownKey="incoterms"
@@ -785,7 +820,7 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
         <div className="bg-white rounded-lg p-4 border border-gray-200">
           <div className="mb-4 font-semibold text-sm text-gray-900 border-b border-gray-200 pb-2">Origin</div>
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2">
                   Origin Location <span className="text-red-500">*</span>
@@ -817,7 +852,7 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                 )}
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2">
                   Cargo Ready Date <span className="text-red-500">*</span>
@@ -860,7 +895,7 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
         <div className="bg-white rounded-lg p-4 border border-gray-200">
           <div className="mb-4 font-semibold text-sm text-gray-900 border-b border-gray-200 pb-2">Destination</div>
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2">
                   Destination Location <span className="text-red-500">*</span>
@@ -892,7 +927,7 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                 )}
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2">
                   Target Delivery Date <span className="text-red-500">*</span>
@@ -934,10 +969,10 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
         {/* Cargo & Load Specs */}
         <div className="bg-white rounded-lg p-4 border border-gray-200">
           <div className="mb-4 font-semibold text-sm text-gray-900 border-b border-gray-200 pb-2">Cargo & Load Specs</div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-1 gap-4 mb-4">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-2">
-                Weight <span className="text-red-500">*</span>
+                Weight (kg) <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -952,7 +987,7 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-2">
-                Volume <span className="text-red-500">*</span>
+                Volume (cbm) <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -1018,7 +1053,7 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
         <div className="bg-white rounded-lg p-4 border border-gray-200">
           <div className="mb-4 font-semibold text-sm text-gray-900 border-b border-gray-200 pb-2">Product & Compliance</div>
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2">
                   Product Name <span className="text-red-500">*</span>
@@ -1073,7 +1108,7 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                   onChange={(e) => handleInputChange('dangerousGoods', e.target.checked)}
                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
-                <span className="text-xs text-gray-700">This shipment contains dangerous goods</span>
+                <span className="text-xs text-gray-700">This shipment contains dangerous/hazardous goods</span>
               </label>
             </div>
           </div>
@@ -1095,18 +1130,21 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
           </div>
 
           {formData.requireShipmentTags && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2">
                   Product PO Number
                 </label>
-                <input
-                  type="text"
-                  value={formData.poNumber}
-                  onChange={(e) => handleInputChange('poNumber', e.target.value)}
-                  className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.poNumber ? 'border-red-500' : ''}`}
-                  placeholder="Enter PO number"
-                />
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500 font-semibold">PO</span>
+                  <input
+                    type="text"
+                    value={formData.poNumber}
+                    onChange={(e) => handleInputChange('poNumber', e.target.value)}
+                    className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.poNumber ? 'border-red-500' : ''}`}
+                    placeholder="Enter PO number"
+                  />
+                </div>
                 {hasSubmitted && errors.poNumber && (
                   <p className="text-xs text-red-500 mt-1">{errors.poNumber}</p>
                 )}
@@ -1115,13 +1153,16 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                 <label className="block text-xs font-medium text-gray-700 mb-2">
                   SKU Number
                 </label>
-                <input
-                  type="text"
-                  value={formData.skuNumber}
-                  onChange={(e) => handleInputChange('skuNumber', e.target.value)}
-                  className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.skuNumber ? 'border-red-500' : ''}`}
-                  placeholder="Enter SKU number"
-                />
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500 font-semibold">#</span>
+                  <input
+                    type="text"
+                    value={formData.skuNumber}
+                    onChange={(e) => handleInputChange('skuNumber', e.target.value)}
+                    className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.skuNumber ? 'border-red-500' : ''}`}
+                    placeholder="Enter SKU number"
+                  />
+                </div>
                 {hasSubmitted && errors.skuNumber && (
                   <p className="text-xs text-red-500 mt-1">{errors.skuNumber}</p>
                 )}
@@ -1218,6 +1259,14 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
           </div>
         </div>
       )}
+
+      <button
+        type="button"
+        className={`mb-4 px-4 py-2 rounded text-sm font-semibold border ${requireFields ? 'bg-red-100 text-red-700 border-red-300' : 'bg-green-100 text-green-700 border-green-300'}`}
+        onClick={() => setRequireFields(v => !v)}
+      >
+        {requireFields ? 'Turn Off Required Fields' : 'Turn On Required Fields'}
+      </button>
     </div>
   );
 };

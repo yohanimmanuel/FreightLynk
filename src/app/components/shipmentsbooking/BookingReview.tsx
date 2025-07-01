@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Edit, 
   Save, 
@@ -9,7 +9,9 @@ import {
   Truck, 
   FileText, 
   Scale, 
-  Info
+  Info,
+  Plane,
+  Building2
 } from 'lucide-react';
 
 
@@ -18,13 +20,49 @@ interface BookingReviewProps {
   }
 
 const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => {} }) => { 
+  const [shipmentName, setShipmentName] = useState('');
+  const [bookingFormData, setBookingFormData] = useState<any>(null);
+
+  useEffect(() => {
+    const name = sessionStorage.getItem('shipmentName') || '';
+    setShipmentName(name);
+    const formData = sessionStorage.getItem('bookingFormData');
+    if (formData) setBookingFormData(JSON.parse(formData));
+  }, []);
+
+  // Helper for transport mode icon
+  const renderTransportIcon = (mode: string) => {
+    if (mode === 'air') return <Plane className="w-8 h-8 text-[#007bff]" />;
+    if (mode === 'sea') return <Ship className="w-8 h-8 text-[#007bff]" />;
+    if (mode === 'land') return <Truck className="w-8 h-8 text-[#007bff]" />;
+    return null;
+  };
+
+  // Helper for container type/quantity
+  const renderContainerType = (type: string, qty: string, shipmentType: string) => {
+    if (!type) return null;
+    if (shipmentType === 'fcl') {
+      return `FCL, ${qty || 1} x ${type.replace('ft', ' ft').replace('-hc', ' HC')}`;
+    } else if (shipmentType === 'lcl') {
+      return `LCL, ${type.replace('ft', ' ft').replace('-hc', ' HC')}`;
+    }
+    return type;
+  };
+
+  // Helper for date formatting
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
   return (
     <div className="max-w-8xl mx-auto p-4 bg-white min-h-screen">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-2">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Review and book</h1>
-          <p className="text-sm text-gray-600">PO 1057, PO 1055</p>
+          <p className="text-sm text-gray-600">{shipmentName}</p>
         </div>
         <div className="flex gap-2 mt-2 md:mt-0">
           <button className="px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-200 flex items-center gap-2">
@@ -53,25 +91,38 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
             <div className="p-4">
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Ship className="w-8 h-8 text-blue-600" />
+                  {bookingFormData ? renderTransportIcon(bookingFormData.transportModeValue) : <Ship className="w-8 h-8 text-blue-600" />}
                 </div>
                 <div>
-                  <div className="text-xs text-gray-900">Container type and quantity data will be shown here</div>
-                  <div className="text-xs text-gray-900 mt-1">Cargo ready date data will be shown here</div>
+                  <div className="text-xs text-gray-900">
+                    {bookingFormData ? renderContainerType(bookingFormData.containerTypeValue, bookingFormData.containerQuantity, bookingFormData.shipmentTypeValue) : 'Container type and quantity data will be shown here'}
+                  </div>
+                  <div className="text-xs text-gray-900 mt-1">
+                    {bookingFormData ? (
+                      <>
+                        <span className="font-semibold">Cargo Ready Date: </span>{formatDate(bookingFormData.cargoReadyDate)}
+                      </>
+                    ) : 'Cargo ready date data will be shown here'}
+                  </div>
                 </div>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <h4 className="text-xs font-medium text-gray-500 mb-2">Incoterms</h4>
                   <div className="text-xs text-gray-900 p-3 rounded">
-                    Incoterms data will be shown here
+                    {bookingFormData ? bookingFormData.incotermsValue : 'Incoterms data will be shown here'}
                   </div>
                 </div>
                 <div>
                   <h4 className="text-xs font-medium text-gray-500 mb-2">Export customs services</h4>
                   <div className="text-xs text-gray-900 p-3 rounded">
-                    Export customs service status will be shown here
+                    {bookingFormData ? (bookingFormData.originCustoms ? 'Yes' : 'No') : 'Export customs service status will be shown here'}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-xs font-medium text-gray-500 mb-2">Import customs services</h4>
+                  <div className="text-xs text-gray-900 p-3 rounded">
+                    {bookingFormData ? (bookingFormData.destinationCustoms ? 'Yes' : 'No') : 'Import customs service status will be shown here'}
                   </div>
                 </div>
               </div>
@@ -87,65 +138,75 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
               </h2>
             </div>
             <div className="p-4 space-y-4">
-              
               {/* Pickup from */}
               <div>
-                <h4 className="text-xs font-medium text-gray-900 mb-2 flex items-center gap-2">
-                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                    <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                <div className="text-xs font-medium text-gray-600 mb-1">Pickup from</div>
+                <div className="flex items-center gap-2 border border-gray-200 rounded-lg p-2">
+                  <div className="w-14 h-14 bg-blue-100 rounded flex items-center justify-center">
+                    <Building2 className="w-7 h-7 text-[#007bff]" />
                   </div>
-                  Pickup from
-                </h4>
-                <div className="ml-8 p-4 rounded-lg">
-                  <div className="text-xs font-medium text-gray-900 mb-1">
-                    Shipper company name data will be shown here
-                  </div>
-                  <div className="text-xs text-gray-600">
-                    Origin location address data will be shown here
+                  <div className="flex-1 min-h-0">
+                    <div className="font-semibold text-sm text-gray-900 leading-tight mb-1">
+                      {(() => {
+                        const map: Record<string, string> = {
+                          'studio-apparel': 'Studio Apparel',
+                          'global-trade': 'Global Trade Co',
+                        };
+                        const val = bookingFormData?.shipperValue as string;
+                        return val && map[val] ? map[val] : 'Not specified';
+                      })()}
+                    </div>
+                    <div className="text-xs text-gray-600 leading-tight mb-2">
+                      {bookingFormData?.originLocation || 'Not specified'}
+                    </div>
+                    <div className="text-xs text-gray-600 leading-tight">
+                      <span className="font-medium">Trucking: </span>
+                      {bookingFormData ? (bookingFormData.originTrucking ? 'Trucking required' : 'No trucking') : 'Trucking status will be shown here'}
+                    </div>
                   </div>
                 </div>
               </div>
-
               {/* Selected ports */}
               <div>
-                <h4 className="text-xs font-medium text-gray-900 mb-3">Selected ports</h4>
-                <div className="flex items-center gap-4 p-4 rounded-lg">
-                  <div className="text-center">
-                    <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center mb-1">
-                      <div className="w-2 h-2 bg-white rounded-full"></div>
-                    </div>
-                    <div className="text-xs font-medium text-gray-900">
-                      Origin port data will be shown here
-                    </div>
+                <div className="text-xs font-medium text-gray-600 mb-1">Selected ports</div>
+                <div className="flex items-center gap-2 border border-gray-200 rounded-lg p-2">
+                  <div className="w-14 h-14 bg-blue-100 rounded flex items-center justify-center">
+                    <Ship className="w-7 h-7 text-[#007bff]" />
                   </div>
-                  <div className="flex-1 border-t border-gray-300 relative">
-                    <Ship className="w-5 h-5 text-gray-500 absolute left-1/2 top-0 transform -translate-x-1/2 -translate-y-1/2 bg-gray-50" />
-                  </div>
-                  <div className="text-center">
-                    <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center mb-1">
-                      <div className="w-2 h-2 bg-white rounded-full"></div>
-                    </div>
-                    <div className="text-xs font-medium text-gray-900">
-                      Destination port data will be shown here
+                  <div className="flex-1 min-h-0">
+                    <div className="flex items-center gap-2 text-sm text-gray-900 font-semibold leading-tight">
+                      <span>{bookingFormData?.originPort || 'Not specified'}</span>
+                      <span className="mx-1">→</span>
+                      <span>{bookingFormData?.destinationPort || 'Not specified'}</span>
                     </div>
                   </div>
                 </div>
               </div>
-
               {/* Deliver to */}
               <div>
-                <h4 className="text-xs font-medium text-gray-900 mb-3 flex items-center gap-2">
-                  <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                    <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+                <div className="text-xs font-medium text-gray-600 mb-1">Delivery to</div>
+                <div className="flex items-center gap-2 border border-gray-200 rounded-lg p-2">
+                  <div className="w-14 h-14 bg-blue-100 rounded flex items-center justify-center">
+                    <Building2 className="w-7 h-7 text-[#007bff]" />
                   </div>
-                  Deliver to
-                </h4>
-                <div className="ml-8 p-4 rounded-lg">
-                  <div className="text-xs font-medium text-gray-900 mb-1">
-                    Consignee company name data will be shown here
-                  </div>
-                  <div className="text-xs text-gray-600">
-                    Destination location address data will be shown here
+                  <div className="flex-1 min-h-0">
+                    <div className="font-semibold text-sm text-gray-900 leading-tight mb-1">
+                      {(() => {
+                        const map: Record<string, string> = {
+                          'forward-supply': 'Forward Supply Co',
+                          'logistics-hub': 'Logistics Hub',
+                        };
+                        const val = bookingFormData?.consigneeValue as string;
+                        return val && map[val] ? map[val] : 'Not specified';
+                      })()}
+                    </div>
+                    <div className="text-xs text-gray-600 leading-tight mb-2">
+                      {bookingFormData?.destinationLocation || 'Not specified'}
+                    </div>
+                    <div className="text-xs text-gray-600 leading-tight">
+                      <span className="font-medium">Trucking: </span>
+                      {bookingFormData ? (bookingFormData.destinationTrucking ? 'Trucking required' : 'No trucking') : 'Trucking status will be shown here'}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -172,52 +233,47 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
             <div className="bg-gray-50 p-4 border-b border-gray-200">
               <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                 <Scale className="w-5 h-5 text-blue-600" />
-                Cargo details
+                Product & Cargo Details
               </h2>
             </div>
             <div className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                <div className="text-center p-4 rounded-lg">
-                  <div className="text-sm font-bold text-gray-900 mb-1">
-                    Weight data will be shown here
-                  </div>
-                  <div className="text-xs text-gray-600">Total Weight (kg)</div>
+              {/* Top block: Product name, description, HS code, hazardous info */}
+              <div className="mb-6">
+                <div className="font-semibold text-sm text-gray-900 mb-1">
+                  {bookingFormData?.productName || 'Product name will be shown here'}
                 </div>
-                <div className="text-center p-4 rounded-lg">
-                  <div className="text-sm font-bold text-gray-900 mb-1">
-                    Volume data will be shown here
-                  </div>
-                  <div className="text-xs text-gray-600">Total Volume (cbm)</div>
+                <div className="text-xs text-gray-600 mb-1">
+                  {bookingFormData?.goodsDescription?.trim() ? bookingFormData.goodsDescription : 'No description'}
                 </div>
-                <div className="text-center p-4 rounded-lg">
-                  <div className="text-sm font-bold text-gray-900 mb-1">
-                    Package count will be shown here
-                  </div>
-                  <div className="text-xs text-gray-600">Total Packages</div>
+                <div className="text-xs text-gray-600 mb-1">
+                  HS Code: {bookingFormData?.hsCode || 'N/A'}
+                </div>
+                <div className="text-xs text-gray-600">
+                  Hazardous goods: {bookingFormData ? (bookingFormData.dangerousGoods ? 'Yes' : 'No') : 'N/A'}
                 </div>
               </div>
-              
-              <div className="space-y-4">
+              {/* Bottom row: Weight, Volume, Pieces */}
+              <div className="border-t border-gray-200 pt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-gray-900">
                 <div>
-                  <h4 className="text-xs font-medium text-gray-900 mb-2">Product Description</h4>
-                  <div className="text-xs text-gray-600 p-3 rounded">
-                    Goods description data will be shown here
+                  <div className="text-xs font-medium text-gray-600 mb-1">Total weight</div>
+                  <div className="text-sm font-semibold">{bookingFormData?.weight ? `${bookingFormData.weight} kg` : 'N/A'}</div>
+                </div>
+                <div>
+                  <div className="text-xs font-medium text-gray-600 mb-1">Total volume</div>
+                  <div className="text-sm font-semibold">{bookingFormData?.volume ? `${bookingFormData.volume} cbm` : 'N/A'}</div>
+                </div>
+                <div>
+                  <div className="text-xs font-medium text-gray-600 mb-1">Pieces</div>
+                  <div className="text-sm font-semibold">
+                    {bookingFormData?.packageCount ? `${bookingFormData.packageCount} ${bookingFormData?.packageTypeValue || ''}`.trim() : 'N/A'}
                   </div>
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="text-xs font-medium text-gray-900 mb-2">HS Code</h4>
-                    <div className="text-xs text-gray-600 p-3 rounded">
-                      HS Code data will be shown here
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-medium text-gray-900 mb-2">Package Type</h4>
-                    <div className="text-xs text-gray-600 p-3 rounded">
-                      Package type data will be shown here
-                    </div>
-                  </div>
+              </div>
+              {/* Additional Notes Section */}
+              <div className="mt-4 w-full">
+                <div className="text-xs font-medium text-gray-600 mb-1">Additional Notes</div>
+                <div className="text-xs text-gray-900 rounded-lg border border-gray-200 p-3 min-h-[40px]">
+                  {bookingFormData?.additionalNotes?.trim() ? bookingFormData.additionalNotes : 'No additional notes'}
                 </div>
               </div>
             </div>
@@ -232,9 +288,20 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
               </h2>
             </div>
             <div className="p-4">
-              <div className="text-xs text-gray-600 p-4 rounded">
-                Shipment tags data will be shown here (PO numbers, SKU numbers, etc.)
-              </div>
+              {bookingFormData?.requireShipmentTags ? (
+                <div className="space-y-2">
+                  <div className="text-xs text-gray-600">
+                    <span className="font-medium">PO Number:</span> <span className="text-gray-900 font-semibold">PO</span>{bookingFormData.poNumber ? ` ${bookingFormData.poNumber}` : ' N/A'}
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    <span className="font-medium">SKU Number:</span> <span className="text-gray-900 font-semibold">#</span>{bookingFormData.skuNumber ? ` ${bookingFormData.skuNumber}` : ' N/A'}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-xs text-gray-900">
+                  No shipment tags required
+                </div>
+              )}
             </div>
           </div>
 
@@ -255,80 +322,6 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
               <input type="checkbox" className="rounded" />
               Create template
             </label>
-          </div>
-
-          {/* Selected PO Summary */}
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="bg-gray-50 p-4 border-b border-gray-200">
-              <h3 className="text-sm font-semibold text-gray-900">Selected Purchase Orders</h3>
-            </div>
-            <div className="p-3">
-              <div className="space-y-3">
-                <div className="text-xs text-gray-600">
-                  PO numbers and details will be shown here
-                </div>
-                <div className="text-xs text-gray-600">
-                  Selected items count will be shown here
-                </div>
-                <div className="text-xs text-gray-600">
-                  Total booking value will be shown here
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Timeline */}
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="bg-gray-50 p-4 border-b border-gray-200">
-              <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                Important Dates
-              </h3>
-            </div>
-            <div className="p-4 space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                <div>
-                  <div className="text-xs font-medium text-gray-900">Cargo Ready Date</div>
-                  <div className="text-xs text-gray-600">Cargo ready date data will be shown here</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-green-600 rounded-full"></div>
-                <div>
-                  <div className="text-xs font-medium text-gray-900">Target Delivery</div>
-                  <div className="text-xs text-gray-600">Target delivery date data will be shown here</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Additional Services */}
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="bg-gray-50 p-4 border-b border-gray-200">
-              <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                <Truck className="w-4 h-4" />
-                Additional Services
-              </h3>
-            </div>
-            <div className="p-4 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-600">Origin Trucking</span>
-                <span className="text-gray-900">Trucking status will be shown here</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-600">Export Customs</span>
-                <span className="text-gray-900">Customs status will be shown here</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-600">Import Customs</span>
-                <span className="text-gray-900">Customs status will be shown here</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-600">Destination Trucking</span>
-                <span className="text-gray-900">Trucking status will be shown here</span>
-              </div>
-            </div>
           </div>
 
           {/* Special Instructions */}
