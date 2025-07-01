@@ -335,7 +335,7 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
     setHasSubmitted(true);
     if (validateForm()) {
       sessionStorage.setItem('shipmentName', formData.shipmentName);
-      sessionStorage.setItem('bookingFormData', JSON.stringify(formData));
+      sessionStorage.setItem('bookingFormData', JSON.stringify({ ...formData, tradeRole }));
       onSubmitBooking();
     } else {
       window.scrollTo({ top: 0, behavior: 'smooth' });

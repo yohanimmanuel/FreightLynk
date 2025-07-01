@@ -113,22 +113,22 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
                   </div>
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3">
                 <div>
                   <h4 className="text-xs font-medium text-gray-500 mb-2">Incoterms</h4>
-                  <div className="text-xs text-gray-900 p-3 rounded">
+                  <div className="text-xs text-gray-900">
                     {bookingFormData ? bookingFormData.incotermsValue : 'Incoterms data will be shown here'}
                   </div>
                 </div>
                 <div>
                   <h4 className="text-xs font-medium text-gray-500 mb-2">Export customs services</h4>
-                  <div className="text-xs text-gray-900 p-3 rounded">
+                  <div className="text-xs text-gray-900">
                     {bookingFormData ? (bookingFormData.originCustoms ? 'Yes' : 'No') : 'Export customs service status will be shown here'}
                   </div>
                 </div>
                 <div>
                   <h4 className="text-xs font-medium text-gray-500 mb-2">Import customs services</h4>
-                  <div className="text-xs text-gray-900 p-3 rounded">
+                  <div className="text-xs text-gray-900">
                     {bookingFormData ? (bookingFormData.destinationCustoms ? 'Yes' : 'No') : 'Import customs service status will be shown here'}
                   </div>
                 </div>
@@ -160,7 +160,7 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
                           'global-trade': 'Global Trade Co',
                         };
                         const val = bookingFormData?.shipperValue as string;
-                        return val && map[val] ? map[val] : 'Not specified';
+                        return val && map[val as keyof typeof map] ? map[val as keyof typeof map] : 'Not specified';
                       })()}
                     </div>
                     <div className="text-xs text-gray-600 leading-tight mb-2">
@@ -204,7 +204,7 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
                           'logistics-hub': 'Logistics Hub',
                         };
                         const val = bookingFormData?.consigneeValue as string;
-                        return val && map[val] ? map[val] : 'Not specified';
+                        return val && map[val as keyof typeof map] ? map[val as keyof typeof map] : 'Not specified';
                       })()}
                     </div>
                     <div className="text-xs text-gray-600 leading-tight mb-2">
@@ -215,6 +215,15 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
                       {bookingFormData ? (bookingFormData.destinationTrucking ? 'Trucking required' : 'No trucking') : 'Trucking status will be shown here'}
                     </div>
                   </div>
+                </div>
+              </div>
+              <div className="mt-4 border-t border-gray-200 pt-4">
+                <h4 className="text-xs font-medium text-gray-500 mb-2">Are you a Shipper or Consignee?</h4>
+                <div className="text-xs text-gray-900">
+                  {(() => {
+                    const tradeRole = bookingFormData?.tradeRole || 'shipper';
+                    return tradeRole === 'shipper' ? 'Shipper' : 'Consignee';
+                  })()}
                 </div>
               </div>
             </div>
