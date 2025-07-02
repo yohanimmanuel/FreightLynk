@@ -11,6 +11,7 @@ import {
   Ship,
   X
 } from 'lucide-react';
+import { useBookingStore } from '@/store/bookingStore';
 
 interface BookingConfirmProps {
   onClose?: () => void;
@@ -18,28 +19,27 @@ interface BookingConfirmProps {
 
 const BookingConfirm: React.FC<BookingConfirmProps> = ({ onClose = () => {} }) => {
   const [selectedNextAction, setSelectedNextAction] = useState<string>('');
-  const [bookingFormData, setBookingFormData] = useState<any>(null);
-  const [bookingData, setBookingData] = useState<any[]>([]);
-  const [flNumber, setFlNumber] = useState('');
+  const formData = useBookingStore(state => state.formData);
+  const selectedPOs = useBookingStore(state => state.selectedPOs);
+  const flNumber = useBookingStore(state => state.flNumber);
+  const setBookingSubmitted = useBookingStore(state => state.setBookingSubmitted);
 
   useEffect(() => {
-    // Generate FL-number on mount and store in sessionStorage
-    const fl = 'FL-' + Math.floor(10000 + Math.random() * 90000);
-    setFlNumber(fl);
-    sessionStorage.setItem('flNumber', fl);
-    const formData = sessionStorage.getItem('bookingFormData');
-    if (formData) setBookingFormData(JSON.parse(formData));
-    const poData = sessionStorage.getItem('bookingData');
-    if (poData) setBookingData(JSON.parse(poData));
+    import('canvas-confetti').then((module) => {
+      module.default({
+        particleCount: 120,
+        spread: 80,
+        origin: { y: 0.6 },
+        zIndex: 99999,
+      });
+    });
   }, []);
 
   const handleActionSelect = (action: string) => {
     setSelectedNextAction(action);
   };
 
-  const handleGoToDashboard = () => {
-    // This would navigate to dashboard in a real app
-    console.log('Navigate to dashboard');
+  const handleClose = () => {
     onClose();
   };
 
@@ -50,7 +50,7 @@ const BookingConfirm: React.FC<BookingConfirmProps> = ({ onClose = () => {} }) =
         <div className="flex items-center justify-between p-4">
           <h2 className="text-lg font-bold text-gray-900">Booking submitted</h2>
           <button 
-            onClick={onClose}
+            onClick={handleClose}
             className="text-gray-400 hover:text-gray-600"
           >
             <X className="w-6 h-6" />
@@ -82,22 +82,21 @@ const BookingConfirm: React.FC<BookingConfirmProps> = ({ onClose = () => {} }) =
               </div>
               <div className="text-right">
                 <div className="text-xs text-gray-500 mb-1">Purchase Orders</div>
-                <div className="text-xs font-medium text-gray-900">{bookingData && bookingData.length > 0 ? bookingData.map(po => `PO ${po.poId.replace(/^PO ?/, '')}`).join(', ') : '-'}</div>
+                <div className="text-xs font-medium text-gray-900">{selectedPOs && selectedPOs.length > 0 ? selectedPOs.map(po => `PO ${po.poId.replace(/^PO ?/, '')}`).join(', ') : '-'}</div>
               </div>
             </div>
-            
             {/* Route Summary */}
             <div className="flex items-center gap-4 bg-white p-3 rounded border border-gray-200">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-[#007bff] rounded-full"></div>
-                <span className="text-xs font-medium text-gray-900">{bookingFormData?.originPort || '-'}</span>
+                <span className="text-xs font-medium text-gray-900">{formData?.originPort || '-'}</span>
               </div>
               <div className="flex-1 border-t border-gray-300 relative">
                 <Ship className="w-4 h-4 text-gray-500 absolute left-1/2 top-0 transform -translate-x-1/2 -translate-y-1/2 bg-white" />
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-                <span className="text-xs font-medium text-gray-900">{bookingFormData?.destinationPort || '-'}</span>
+                <span className="text-xs font-medium text-gray-900">{formData?.destinationPort || '-'}</span>
               </div>
             </div>
           </div>

@@ -16,29 +16,36 @@ import {
 import POSummaryTable from '../purchasesorders/POSummaryTable';
 import { purchaseOrdersData, poDetailsData } from '../purchasesorders/POManagementTable';
 import { useRouter } from 'next/navigation';
-
+import { useBookingStore } from '@/store/bookingStore';
 
 interface BookingReviewProps {
-    onConfirmBooking?: () => void;
-  }
+  onConfirmBooking?: () => void;
+}
 
-const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => {} }) => { 
-  const [shipmentName, setShipmentName] = useState('');
-  const [bookingFormData, setBookingFormData] = useState<any>(null);
+const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking }) => { 
   const router = useRouter();
+  const formData = useBookingStore(state => state.formData);
+  const setFormData = useBookingStore(state => state.setFormData);
+  const selectedPOs = useBookingStore(state => state.selectedPOs);
+  const setSelectedPOs = useBookingStore(state => state.setSelectedPOs);
+  const tradeRole = useBookingStore(state => state.tradeRole);
+  const setTradeRole = useBookingStore(state => state.setTradeRole);
+  const flNumber = useBookingStore(state => state.flNumber);
+  const setFlNumber = useBookingStore(state => state.setFlNumber);
+  const bookingSubmitted = useBookingStore(state => state.bookingSubmitted);
+
+  const [shipmentName, setShipmentName] = useState('');
 
   useEffect(() => {
+    if (bookingSubmitted) {
+      router.replace('/bookings/submitted');
+    }
     if (typeof window !== 'undefined' && sessionStorage.getItem('bookingSubmitted')) {
       router.replace('/bookings/submitted');
       return;
     }
-    const name = sessionStorage.getItem('shipmentName') || '';
-    setShipmentName(name);
-    const formData = sessionStorage.getItem('bookingFormData');
-    if (formData) setBookingFormData(JSON.parse(formData));
-    // Do not clear PO data here; it will be used in the confirmation step
-    // (No cleanup function here)
-  }, []);
+    setShipmentName(formData.shipmentName || '');
+  }, [formData.shipmentName, bookingSubmitted, router]);
 
   // Helper for transport mode icon
   const renderTransportIcon = (mode: string) => {
@@ -101,16 +108,16 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
             <div className="p-4">
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center">
-                  {bookingFormData ? renderTransportIcon(bookingFormData.transportModeValue) : <Ship className="w-8 h-8 text-blue-600" />}
+                  {formData ? renderTransportIcon(formData.transportModeValue) : <Ship className="w-8 h-8 text-blue-600" />}
                 </div>
                 <div>
                   <div className="text-xs text-gray-900">
-                    {bookingFormData ? renderContainerType(bookingFormData.containerTypeValue, bookingFormData.containerQuantity, bookingFormData.shipmentTypeValue) : 'Container type and quantity data will be shown here'}
+                    {formData ? renderContainerType(formData.containerTypeValue, formData.containerQuantity, formData.shipmentTypeValue) : 'Container type and quantity data will be shown here'}
                   </div>
                   <div className="text-xs text-gray-900 mt-1">
-                    {bookingFormData ? (
+                    {formData ? (
                       <>
-                        <span className="font-semibold">Cargo Ready Date: </span>{formatDate(bookingFormData.cargoReadyDate)}
+                        <span className="font-semibold">Cargo Ready Date: </span>{formatDate(formData.cargoReadyDate)}
                       </>
                     ) : 'Cargo ready date data will be shown here'}
                   </div>
@@ -120,19 +127,19 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
                 <div>
                   <h4 className="text-xs font-medium text-gray-500 mb-2">Incoterms</h4>
                   <div className="text-xs text-gray-900">
-                    {bookingFormData ? bookingFormData.incotermsValue : 'Incoterms data will be shown here'}
+                    {formData ? formData.incotermsValue : 'Incoterms data will be shown here'}
                   </div>
                 </div>
                 <div>
                   <h4 className="text-xs font-medium text-gray-500 mb-2">Export customs services</h4>
                   <div className="text-xs text-gray-900">
-                    {bookingFormData ? (bookingFormData.originCustoms ? 'Yes' : 'No') : 'Export customs service status will be shown here'}
+                    {formData ? (formData.originCustoms ? 'Yes' : 'No') : 'Export customs service status will be shown here'}
                   </div>
                 </div>
                 <div>
                   <h4 className="text-xs font-medium text-gray-500 mb-2">Import customs services</h4>
                   <div className="text-xs text-gray-900">
-                    {bookingFormData ? (bookingFormData.destinationCustoms ? 'Yes' : 'No') : 'Import customs service status will be shown here'}
+                    {formData ? (formData.destinationCustoms ? 'Yes' : 'No') : 'Import customs service status will be shown here'}
                   </div>
                 </div>
               </div>
@@ -157,14 +164,14 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
                   </div>
                   <div className="flex-1 min-h-0">
                     <div className="font-semibold text-sm text-gray-900 leading-tight mb-1">
-                      {bookingFormData?.shipperValue || 'Not specified'}
+                      {formData?.shipperValue || 'Not specified'}
                     </div>
                     <div className="text-xs text-gray-600 leading-tight mb-2">
-                      {bookingFormData?.originLocation || 'Not specified'}
+                      {formData?.originLocation || 'Not specified'}
                     </div>
                     <div className="text-xs text-gray-600 leading-tight">
                       <span className="font-medium">Trucking: </span>
-                      {bookingFormData ? (bookingFormData.originTrucking ? 'Trucking required' : 'No trucking') : 'Trucking status will be shown here'}
+                      {formData ? (formData.originTrucking ? 'Trucking required' : 'No trucking') : 'Trucking status will be shown here'}
                     </div>
                   </div>
                 </div>
@@ -178,9 +185,9 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
                   </div>
                   <div className="flex-1 min-h-0">
                     <div className="flex items-center gap-2 text-sm text-gray-900 font-semibold leading-tight">
-                      <span>{bookingFormData?.originPort || 'Not specified'}</span>
+                      <span>{formData?.originPort || 'Not specified'}</span>
                       <span className="mx-1">→</span>
-                      <span>{bookingFormData?.destinationPort || 'Not specified'}</span>
+                      <span>{formData?.destinationPort || 'Not specified'}</span>
                     </div>
                   </div>
                 </div>
@@ -194,14 +201,14 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
                   </div>
                   <div className="flex-1 min-h-0">
                     <div className="font-semibold text-sm text-gray-900 leading-tight mb-1">
-                      {bookingFormData?.consigneeValue || 'Not specified'}
+                      {formData?.consigneeValue || 'Not specified'}
                     </div>
                     <div className="text-xs text-gray-600 leading-tight mb-2">
-                      {bookingFormData?.destinationLocation || 'Not specified'}
+                      {formData?.destinationLocation || 'Not specified'}
                     </div>
                     <div className="text-xs text-gray-600 leading-tight">
                       <span className="font-medium">Trucking: </span>
-                      {bookingFormData ? (bookingFormData.destinationTrucking ? 'Trucking required' : 'No trucking') : 'Trucking status will be shown here'}
+                      {formData ? (formData.destinationTrucking ? 'Trucking required' : 'No trucking') : 'Trucking status will be shown here'}
                     </div>
                   </div>
                 </div>
@@ -209,10 +216,7 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
               <div className="mt-4 border-t border-gray-200 pt-4">
                 <h4 className="text-xs font-medium text-gray-500 mb-2">Are you a Shipper or Consignee?</h4>
                 <div className="text-xs text-gray-900">
-                  {(() => {
-                    const tradeRole = bookingFormData?.tradeRole || 'shipper';
-                    return tradeRole === 'shipper' ? 'Shipper' : 'Consignee';
-                  })()}
+                  {tradeRole === 'shipper' ? 'Shipper' : 'Consignee'}
                 </div>
               </div>
             </div>
@@ -227,26 +231,11 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
               </h2>
             </div>
             <div className="p-4">
-              {typeof window !== 'undefined' && (() => {
-                const bookingData = sessionStorage.getItem('bookingData');
-                if (bookingData) {
-                  const selectedPOs = JSON.parse(bookingData);
-                  console.log('BookingReview selectedPOs:', selectedPOs);
-                  if (selectedPOs && selectedPOs.length > 0) {
-                    return (
-                      <POSummaryTable
-                        selectedPOs={selectedPOs}
-                        purchaseOrdersData={purchaseOrdersData}
-                        poDetailsData={poDetailsData}
-                      />
-                    );
-                  } else {
-                    return <div className="text-xs text-gray-600 p-4 rounded">No purchase orders selected</div>;
-                  }
-                } else {
-                  return <div className="text-xs text-gray-600 p-4 rounded">No purchase orders selected</div>;
-                }
-              })()}
+              <POSummaryTable
+                selectedPOs={selectedPOs}
+                purchaseOrdersData={purchaseOrdersData}
+                poDetailsData={poDetailsData}
+              />
             </div>
           </div>
 
@@ -260,34 +249,34 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
             </div>
             <div className="p-4">
               {/* Top block: Product name, description, HS code, hazardous info */}
-              <div className="mb-6">
+              <div className="mb-2">
                 <div className="font-semibold text-sm text-gray-900 mb-1">
-                  {bookingFormData?.productName || 'Product name will be shown here'}
+                  {formData?.productName || 'Product name will be shown here'}
                 </div>
                 <div className="text-xs text-gray-600 mb-1">
-                  {bookingFormData?.goodsDescription?.trim() ? bookingFormData.goodsDescription : 'No description'}
+                  {formData?.goodsDescription?.trim() ? formData.goodsDescription : 'No description'}
                 </div>
-                <div className="text-xs text-gray-600 mb-1">
-                  HS Code: {bookingFormData?.hsCode || 'N/A'}
+                <div className="text-xs text-gray-600 mb-4">
+                  HS Code: {formData?.hsCode || 'N/A'}
                 </div>
                 <div className="text-xs text-gray-600">
-                  Hazardous goods: {bookingFormData ? (bookingFormData.dangerousGoods ? 'Yes' : 'No') : 'N/A'}
+                  Hazardous goods: {formData ? (formData.dangerousGoods ? 'Yes' : 'No') : 'N/A'}
                 </div>
               </div>
               {/* Bottom row: Weight, Volume, Pieces */}
               <div className="border-t border-gray-200 pt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-gray-900">
                 <div>
                   <div className="text-xs font-medium text-gray-600 mb-1">Total weight</div>
-                  <div className="text-sm font-semibold">{bookingFormData?.weight ? `${bookingFormData.weight} kg` : 'N/A'}</div>
+                  <div className="text-sm font-semibold">{formData?.weight ? `${formData.weight} kg` : 'N/A'}</div>
                 </div>
                 <div>
                   <div className="text-xs font-medium text-gray-600 mb-1">Total volume</div>
-                  <div className="text-sm font-semibold">{bookingFormData?.volume ? `${bookingFormData.volume} cbm` : 'N/A'}</div>
+                  <div className="text-sm font-semibold">{formData?.volume ? `${formData.volume} cbm` : 'N/A'}</div>
                 </div>
                 <div>
                   <div className="text-xs font-medium text-gray-600 mb-1">Pieces</div>
                   <div className="text-sm font-semibold">
-                    {bookingFormData?.packageCount ? `${bookingFormData.packageCount} ${bookingFormData?.packageTypeValue || ''}`.trim() : 'N/A'}
+                    {formData?.packageCount ? `${formData.packageCount} ${formData?.packageTypeValue || ''}`.trim() : 'N/A'}
                   </div>
                 </div>
               </div>
@@ -295,7 +284,7 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
               <div className="mt-4 w-full">
                 <div className="text-xs font-medium text-gray-600 mb-1">Additional Notes</div>
                 <div className="text-xs text-gray-900 rounded-lg border border-gray-200 p-3 min-h-[40px]">
-                  {bookingFormData?.additionalNotes?.trim() ? bookingFormData.additionalNotes : 'No additional notes'}
+                  {formData?.additionalNotes?.trim() ? formData.additionalNotes : 'No additional notes'}
                 </div>
               </div>
             </div>
@@ -310,13 +299,13 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
               </h2>
             </div>
             <div className="p-4">
-              {bookingFormData?.requireShipmentTags ? (
+              {formData?.requireShipmentTags ? (
                 <div className="space-y-2">
                   <div className="text-xs text-gray-600">
-                    <span className="font-medium">PO Number:</span> <span className="text-gray-900 font-semibold">PO</span>{bookingFormData.poNumber ? ` ${bookingFormData.poNumber}` : ' N/A'}
+                    <span className="font-medium">PO Number:</span> <span className="text-gray-900 font-semibold">PO</span>{formData.poNumber ? ` ${formData.poNumber}` : ' N/A'}
                   </div>
                   <div className="text-xs text-gray-600">
-                    <span className="font-medium">SKU Number:</span> <span className="text-gray-900 font-semibold">#</span>{bookingFormData.skuNumber ? ` ${bookingFormData.skuNumber}` : ' N/A'}
+                    <span className="font-medium">SKU Number:</span> <span className="text-gray-900 font-semibold">#</span>{formData.skuNumber ? ` ${formData.skuNumber}` : ' N/A'}
                   </div>
                 </div>
               ) : (
@@ -335,8 +324,14 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden p-4 flex flex-col gap-2">
             <div className="font-semibold text-sm text-gray-900 mb-2">New Shipment</div>
             <button 
-              onClick={onConfirmBooking}
               className="w-full px-6 py-3 text-sm bg-[#007bff] text-white font-semibold rounded-lg hover:bg-blue-700 mb-2"
+              onClick={() => {
+                if (!flNumber) {
+                  const fl = 'FL-' + Math.floor(10000 + Math.random() * 90000);
+                  setFlNumber(fl);
+                }
+                onConfirmBooking && onConfirmBooking();
+              }}
             >
               Confirm Booking
             </button>
@@ -356,7 +351,7 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking = () => 
             </div>
             <div className="p-4">
               <div className="text-xs text-gray-600 p-3 rounded">
-                {bookingFormData?.specialInstructions?.trim() ? bookingFormData.specialInstructions : 'No special instructions'}
+                {formData?.specialInstructions?.trim() ? formData.specialInstructions : 'No special instructions'}
               </div>
             </div>
           </div>

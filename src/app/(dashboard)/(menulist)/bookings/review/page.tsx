@@ -1,15 +1,12 @@
 'use client';
 
+import React, { useEffect, useState } from 'react';
 import BookingReview from "@/app/components/shipmentsbooking/BookingReview";
 import { useRouter } from "next/navigation";
 
 const ClientUI = () => {
   const router = useRouter();
-  
   const handleConfirmBooking = () => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('showConfetti', 'true');
-    }
     router.push('/bookings/confirmation');
   };
   return (

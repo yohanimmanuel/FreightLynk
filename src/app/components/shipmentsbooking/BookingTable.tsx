@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, Filter, Settings, Eye, EyeOff, Calendar, Package, MapPin, Ship, Clock, AlertTriangle, CheckCircle, XCircle, Minus, Download, Upload, Plus, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useBookingStore } from '@/store/bookingStore';
 
 type Booking = {
   id: string;
@@ -27,9 +28,10 @@ type Booking = {
 interface BookingTableProps {
   bookings: Booking[];
   onSubmitBooking?: () => void;
+  onRemoveBookings?: (ids: string[]) => void;
 }
 
-const BookingTable: React.FC<BookingTableProps> = ({ bookings, onSubmitBooking = () => {} }) => {
+const BookingTable: React.FC<BookingTableProps> = ({ bookings, onSubmitBooking = () => {}, onRemoveBookings = () => {} }) => {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
@@ -83,6 +85,8 @@ const BookingTable: React.FC<BookingTableProps> = ({ bookings, onSubmitBooking =
 
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [showRemoveModal, setShowRemoveModal] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -105,6 +109,18 @@ const BookingTable: React.FC<BookingTableProps> = ({ bookings, onSubmitBooking =
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // Close modal on outside click
+  useEffect(() => {
+    if (!showRemoveModal) return;
+    const handleClick = (e: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
+        setShowRemoveModal(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showRemoveModal]);
 
   // Get visible column configuration
   const displayColumns = useMemo(() => {
@@ -303,26 +319,16 @@ const BookingTable: React.FC<BookingTableProps> = ({ bookings, onSubmitBooking =
   const goToPreviousPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
   const goToNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
 
-  // Handle row selection
+  // Handle row selection (multi-select)
   const handleSelect = (id: string) => {
-    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [id]);
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
   // Truncate Booking ID
   const truncateId = (id: string) => id.length > 8 ? id.slice(0, 8) + '...' : id;
 
-  // Bulk action bar (single select only)
-  const selectedBooking = bookings.find(b => b.id === selectedIds[0]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.removeItem('bookingFormData');
-      sessionStorage.removeItem('bookingData');
-      sessionStorage.removeItem('shipmentName');
-      sessionStorage.removeItem('bookingSubmitted');
-      sessionStorage.removeItem('flNumber');
-    }
-  }, []);
+  // Bulk action bar (multi-select)
+  const selectedBookings = bookings.filter(b => selectedIds.includes(b.id));
 
   return (
     <div className="flex flex-col h-full bg-white">
@@ -367,24 +373,34 @@ const BookingTable: React.FC<BookingTableProps> = ({ bookings, onSubmitBooking =
             {renderColumnDropdown()}
           </div>
         </div>
-        {/* Bulk Action Bar (single select only) */}
-        {selectedIds.length === 1 && selectedBooking && (
+        {/* Bulk Action Bar (multi-select) */}
+        {selectedIds.length > 0 && (
           <div className="flex items-center border border-blue-200 bg-white rounded-lg px-4 py-2 mb-2 mt-4">
             <span className="bg-blue-100 text-gray-900 rounded-full px-4 py-2 text-sm font-medium">
-              {truncateId(selectedBooking.id)}
+              {selectedIds.length === 1
+                ? truncateId(selectedBookings[0]?.id || '')
+                : `${selectedIds.length} selected`}
             </span>
             <div className="flex-1" />
             <button
-              className="px-4 py-2 bg-[#007bff] text-white rounded-lg text-sm font-semibold hover:bg-blue-700"
-              onClick={() => {
-                // Save booking data to sessionStorage and redirect
-                sessionStorage.setItem('bookingFormData', JSON.stringify(selectedBooking));
-                sessionStorage.removeItem('bookingSubmitted');
-                router.push('/bookings/confirmation');
-              }}
+              className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-semibold hover:bg-red-700 mr-2"
+              onClick={() => setShowRemoveModal(true)}
             >
-              View Booking Details
+              Remove
             </button>
+            {selectedIds.length === 1 && selectedBookings[0] && (
+              <button
+                className="px-4 py-2 bg-[#007bff] text-white rounded-lg text-sm font-semibold hover:bg-blue-700"
+                onClick={() => {
+                  sessionStorage.setItem('bookingFormData', JSON.stringify(selectedBookings[0]));
+                  sessionStorage.removeItem('bookingSubmitted');
+                  useBookingStore.getState().setBookingSubmitted(false);
+                  router.push('/bookings/confirmation');
+                }}
+              >
+                View Booking Details
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -476,6 +492,33 @@ const BookingTable: React.FC<BookingTableProps> = ({ bookings, onSubmitBooking =
             >
               <ChevronRight className="w-5 h-5" />
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Remove Confirmation Modal */}
+      {showRemoveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div ref={modalRef} className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm mx-2">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Are you sure you wanted to remove this booking data?</h2>
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-100"
+                onClick={() => setShowRemoveModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-700"
+                onClick={() => {
+                  onRemoveBookings(selectedIds);
+                  setSelectedIds([]);
+                  setShowRemoveModal(false);
+                }}
+              >
+                Remove
+              </button>
+            </div>
           </div>
         </div>
       )}

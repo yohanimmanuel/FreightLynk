@@ -5,6 +5,7 @@ import BookingTable from "@/app/components/shipmentsbooking/BookingTable";
 import { Download, Plus, Upload } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useBookingStore } from '@/store/bookingStore';
 
 // Booking type (should match BookingTable)
 type Booking = {
@@ -33,14 +34,22 @@ const ClientUI = () => {
   const router = useRouter();
   const [confirmedBookings, setConfirmedBookings] = useState<Booking[]>([]);
   
-  // Load confirmed bookings from localStorage on mount
+  // Load confirmed bookings from localStorage on mount and when storage/focus events fire
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const data = localStorage.getItem('confirmedBookings');
-      if (data) {
-        setConfirmedBookings(JSON.parse(data));
+    function updateBookings() {
+      if (typeof window !== 'undefined') {
+        const data = localStorage.getItem('confirmedBookings');
+        setConfirmedBookings(data ? JSON.parse(data) : []);
+        console.log('Loaded confirmedBookings for table:', data ? JSON.parse(data) : []);
       }
     }
+    updateBookings();
+    window.addEventListener('storage', updateBookings);
+    window.addEventListener('focus', updateBookings);
+    return () => {
+      window.removeEventListener('storage', updateBookings);
+      window.removeEventListener('focus', updateBookings);
+    };
   }, []);
   
   const handleExportCSV = () => {
@@ -54,9 +63,25 @@ const ClientUI = () => {
   };
 
   const handleCreateBooking = () => {
+    const bookingStore = useBookingStore.getState();
+    bookingStore.clearBooking();
+    bookingStore.setBookingSubmitted(false);
+    // Debug log to confirm state is empty
+    console.log('After clearBooking:', bookingStore.formData, bookingStore.selectedPOs, bookingStore.bookingSubmitted);
     router.push('/bookings/create');
   };
- 
+
+  // Remove bookings handler
+  const handleRemoveBookings = (ids: string[]) => {
+    if (typeof window !== 'undefined') {
+      const data = localStorage.getItem('confirmedBookings');
+      const bookings = data ? JSON.parse(data) : [];
+      const updated = bookings.filter((b: Booking) => !ids.includes(b.id));
+      localStorage.setItem('confirmedBookings', JSON.stringify(updated));
+      setConfirmedBookings(updated);
+    }
+  };
+
   return (
     <div>
       {/* Header and Calendar Layout */}
@@ -89,7 +114,7 @@ const ClientUI = () => {
               </button>
               </div>
           </div>
-          <BookingTable bookings={confirmedBookings} />
+          <BookingTable bookings={confirmedBookings} onRemoveBookings={handleRemoveBookings} />
         </div>
         <div className="md:col-span-1 col-span-1 p-0 md:p-2 mt-4 md:mt-0">
           <BookingCalendar />

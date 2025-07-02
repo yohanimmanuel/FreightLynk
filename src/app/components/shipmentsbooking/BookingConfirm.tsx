@@ -23,101 +23,36 @@ import BookingConfirmPopUp from './BookingConfirmPopUp';
 import POSummaryTable from '../purchasesorders/POSummaryTable';
 import { purchaseOrdersData, poDetailsData } from '../purchasesorders/POManagementTable';
 import { useRouter } from 'next/navigation';
+import { useBookingStore } from '@/store/bookingStore';
 
 // Move zoom handlers outside so both components can use them
 type ZoomSetter = Dispatch<SetStateAction<number>>;
 const handleZoomIn = (setter: ZoomSetter) => setter((z: number) => Math.min(z + 0.2, 2.5));
 const handleZoomOut = (setter: ZoomSetter) => setter((z: number) => Math.max(z - 0.2, 1));
 
-const BookingReview = () => {
+const BookingConfirm = () => {
   const [activeTab, setActiveTab] = useState('activity');
-  const [bookingData, setBookingData] = useState(null);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [title, setTitle] = useState('PO 1057, PO 1055');
-  const [tempTitle, setTempTitle] = useState(title);
+  const [tempTitle, setTempTitle] = useState('');
   const [pricingReady, setPricingReady] = useState(false);
   const [showPopup, setShowPopup] = useState(true);
   const [showMapModal, setShowMapModal] = useState(false);
   const [mapZoom, setMapZoom] = useState(1);
   const [showStatusBar, setShowStatusBar] = useState(true);
   const [headerData, setHeaderData] = useState<{ shipmentId: string; shipmentName: string; shipmentTags: { hasTags: boolean; poNumber: string; skuNumber: string } } | null>(null);
-  const [shipmentName, setShipmentName] = useState('');
-  const [bookingFormData, setBookingFormData] = useState<any>(null);
-  const [flNumber, setFlNumber] = useState('');
   const router = useRouter();
 
-  // Load booking data from sessionStorage (from BookingCreation form)
-  useEffect(() => {
-    // Redirect if booking already submitted
-    if (typeof window !== 'undefined' && sessionStorage.getItem('bookingSubmitted')) {
-      router.replace('/bookings/submitted');
-      return;
-    }
-    const name = sessionStorage.getItem('shipmentName') || '';
-    setShipmentName(name);
-    const formData = sessionStorage.getItem('bookingFormData');
-    if (formData) setBookingFormData(JSON.parse(formData));
-    const savedBookingData = sessionStorage.getItem('bookingData');
-    if (savedBookingData) {
-      setBookingData(JSON.parse(savedBookingData));
-    }
-    // Read FL-number from sessionStorage
-    const fl = sessionStorage.getItem('flNumber');
-    if (fl) setFlNumber(fl);
-    // Confetti effect if coming from review
-    if (typeof window !== 'undefined' && sessionStorage.getItem('showConfetti')) {
-      console.log('Triggering confetti!');
-      import('canvas-confetti').then((module) => {
-        module.default({
-          particleCount: 120,
-          spread: 80,
-          origin: { y: 0.6 },
-          zIndex: 99999,
-        });
-      });
-      sessionStorage.removeItem('showConfetti');
-    }
-  }, []);
-
-  // Add function to set bookingSubmitted and clear session data
-  const setBookingSubmittedAndClear = () => {
-    // Gather all booking data for the table
-    const bookingFormData = JSON.parse(sessionStorage.getItem('bookingFormData') || '{}');
-    const bookingData = JSON.parse(sessionStorage.getItem('bookingData') || '[]');
-    const shipmentName = sessionStorage.getItem('shipmentName') || '';
-    const flNumber = sessionStorage.getItem('flNumber') || '';
-    // Compose booking object for the table
-    const confirmedBooking = {
-      id: `BK-${Date.now()}`,
-      shipmentId: flNumber,
-      poNumber: bookingData.length > 0 ? bookingData.map((po: any) => po.poId).join(', ') : '',
-      productName: bookingFormData.productName || '',
-      hsCode: bookingFormData.hsCode || '',
-      consignee: bookingFormData.consigneeValue || '',
-      shipper: bookingFormData.shipperValue || '',
-      origin: bookingFormData.originPort || '',
-      destination: bookingFormData.destinationPort || '',
-      shipmentType: bookingFormData.shipmentTypeValue || '',
-      containerType: bookingFormData.containerTypeValue || '',
-      incoterms: bookingFormData.incotermsValue || '',
-      cargoReadyDate: bookingFormData.cargoReadyDate || '',
-      dangerousGoods: !!bookingFormData.dangerousGoods,
-      weight: bookingFormData.weight || '',
-      volume: bookingFormData.volume || '',
-      pieces: bookingFormData.packageCount ? parseInt(bookingFormData.packageCount, 10) || 0 : 0,
-      status: 'Booked',
-      eta: '',
-    };
-    // Save to localStorage
-    const prev = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
-    localStorage.setItem('confirmedBookings', JSON.stringify([...prev, confirmedBooking]));
-    // Mark as submitted and clear session data
-    sessionStorage.setItem('bookingSubmitted', 'true');
-    sessionStorage.removeItem('flNumber');
-    sessionStorage.removeItem('bookingFormData');
-    sessionStorage.removeItem('bookingData');
-    sessionStorage.removeItem('shipmentName');
-  };
+  // Zustand booking data
+  const formData = useBookingStore(state => state.formData);
+  const setFormData = useBookingStore(state => state.setFormData);
+  const selectedPOs = useBookingStore(state => state.selectedPOs);
+  const setSelectedPOs = useBookingStore(state => state.setSelectedPOs);
+  const tradeRole = useBookingStore(state => state.tradeRole);
+  const setTradeRole = useBookingStore(state => state.setTradeRole);
+  const flNumber = useBookingStore(state => state.flNumber);
+  const setFlNumber = useBookingStore(state => state.setFlNumber);
+  const bookingSubmitted = useBookingStore(state => state.bookingSubmitted);
+  const setBookingSubmitted = useBookingStore(state => state.setBookingSubmitted);
 
   // Progress steps
   const progressSteps = [
@@ -215,7 +150,7 @@ const BookingReview = () => {
         </button>
         <button
           className="mt-2 w-full px-4 py-3 rounded-lg text-xs font-semibold bg-white text-[#007bff] hover:bg-blue-50 border border-[#007bff] transition-colors duration-200"
-          onClick={() => router.push('/bookings')}
+          onClick={() => { setBookingSubmitted(true); router.push('/bookings'); }}
         >
           {'>> Go to Bookings'}
         </button>
@@ -223,8 +158,8 @@ const BookingReview = () => {
       <div className="mb-4">
         <h4 className="text-xs font-semibold text-gray-900 mb-2">Cargo Ready Date</h4>
         <p className="text-xs text-gray-900">{(() => {
-          if (!bookingFormData?.cargoReadyDate) return 'Not specified';
-          const date = new Date(bookingFormData.cargoReadyDate);
+          if (!formData?.cargoReadyDate) return 'Not specified';
+          const date = new Date(formData.cargoReadyDate);
           return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         })()}</p>
       </div>
@@ -232,39 +167,103 @@ const BookingReview = () => {
         <div className="flex items-start gap-3">
           <div className="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
           <div>
-            <p className="text-xs font-medium text-gray-900">{bookingFormData?.shipperValue || ''}</p>
-            <p className="text-xs text-gray-500">{bookingFormData?.originLocation}</p>
+            <p className="text-xs font-medium text-gray-900">{formData?.shipperValue || ''}</p>
+            <p className="text-xs text-gray-500">{formData?.originLocation}</p>
           </div>
         </div>
         <div className="flex items-start gap-3">
           <div className="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
           <div>
-            <p className="text-xs font-medium text-gray-900">{bookingFormData?.originPort}</p>
-            <p className="text-xs text-gray-500">{bookingFormData?.originPort}</p>
+            <p className="text-xs font-medium text-gray-900">{formData?.originPort}</p>
+            <p className="text-xs text-gray-500">{formData?.originPort}</p>
           </div>
         </div>
         <div className="flex items-start gap-3">
           <div className="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
           <div>
-            <p className="text-xs font-medium text-gray-900">{bookingFormData?.destinationPort}</p>
-            <p className="text-xs text-gray-500">{bookingFormData?.destinationPort}</p>
+            <p className="text-xs font-medium text-gray-900">{formData?.destinationPort}</p>
+            <p className="text-xs text-gray-500">{formData?.destinationPort}</p>
           </div>
         </div>
         <div className="flex items-start gap-3">
           <div className="w-2 h-2 bg-green-400 rounded-full mt-2"></div>
           <div>
-            <p className="text-xs font-medium text-gray-900">{bookingFormData?.consigneeValue || ''}</p>
-            <p className="text-xs text-gray-500">{bookingFormData?.destinationLocation}</p>
+            <p className="text-xs font-medium text-gray-900">{formData?.consigneeValue || ''}</p>
+            <p className="text-xs text-gray-500">{formData?.destinationLocation}</p>
           </div>
         </div>
       </div>
     </div>
   );
 
+  useEffect(() => {
+    if (bookingSubmitted) {
+      router.replace('/bookings/submitted');
+    }
+  }, [bookingSubmitted, router]);
+
+  useEffect(() => {
+    // Build the booking object from Zustand state
+    const booking = {
+      id: flNumber,
+      shipmentId: flNumber,
+      poNumber: selectedPOs.map(po => `PO ${po.poId.replace(/^PO ?/, '')}`).join(', '),
+      productName: formData.productName,
+      hsCode: formData.hsCode,
+      consignee: formData.consigneeValue,
+      shipper: formData.shipperValue,
+      origin: formData.originPort,
+      destination: formData.destinationPort,
+      shipmentType: formData.shipmentTypeValue,
+      containerType: formData.containerTypeValue,
+      incoterms: formData.incotermsValue,
+      cargoReadyDate: formData.cargoReadyDate,
+      dangerousGoods: formData.dangerousGoods,
+      weight: formData.weight,
+      volume: formData.volume,
+      pieces: Number(formData.packageCount) || 0,
+      status: 'Booked',
+      eta: formData.targetDeliveryDate || '',
+      createdAt: new Date().toISOString(),
+    };
+    // Save to localStorage if not already present
+    if (typeof window !== 'undefined') {
+      const prev = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
+      if (!prev.some((b: any) => b.id === booking.id)) {
+        localStorage.setItem('confirmedBookings', JSON.stringify([...prev, booking]));
+        console.log('Booking saved to localStorage:', booking);
+      } else {
+        console.log('Booking already exists in localStorage:', booking);
+      }
+      console.log('Current confirmedBookings:', JSON.parse(localStorage.getItem('confirmedBookings') || '[]'));
+    }
+  }, [flNumber, formData, selectedPOs]);
+
+  useEffect(() => {
+    // Hydrate Zustand store from sessionStorage if bookingFormData exists
+    if (typeof window !== 'undefined') {
+      const bookingFormData = sessionStorage.getItem('bookingFormData');
+      if (bookingFormData) {
+        try {
+          const data = JSON.parse(bookingFormData);
+          if (data) {
+            setFormData(data);
+            if (data.selectedPOs) setSelectedPOs(data.selectedPOs);
+            if (data.tradeRole) setTradeRole(data.tradeRole);
+            if (data.flNumber) setFlNumber(data.flNumber);
+            setBookingSubmitted(false); // Prevent redirect when viewing details
+          }
+        } catch (e) {
+          // Ignore parse errors
+        }
+      }
+    }
+  }, [setFormData, setSelectedPOs, setTradeRole, setFlNumber, setBookingSubmitted]);
+
   return (
     <div className="min-h-screen bg-white">
       {/* Booking Confirm PopUp */}
-      {showPopup && <BookingConfirmPopUp onClose={() => { setShowPopup(false); setBookingSubmittedAndClear(); }} />}
+      {showPopup && <BookingConfirmPopUp onClose={() => { setShowPopup(false); }} />}
       {/* Header */}
       <div className="bg-white p-4">
         <div className="max-w-8xl mx-auto flex items-center justify-between">
@@ -285,7 +284,7 @@ const BookingReview = () => {
                   <button
                     className="text-green-600 hover:text-green-800"
                     onClick={() => {
-                      setTitle(tempTitle);
+                      setFormData({ ...formData, title: tempTitle });
                       setIsEditingTitle(false);
                     }}
                   >
@@ -294,7 +293,7 @@ const BookingReview = () => {
                   <button
                     className="text-gray-400 hover:text-gray-600"
                     onClick={() => {
-                      setTempTitle(title);
+                      setTempTitle(formData?.title || '');
                       setIsEditingTitle(false);
                     }}
                   >
@@ -303,7 +302,7 @@ const BookingReview = () => {
                 </>
               ) : (
                 <>
-                  <h1 className="text-2xl font-bold text-gray-900 mb-1">{shipmentName || title}</h1>
+                  <h1 className="text-2xl font-bold text-gray-900 mb-1">{formData?.shipmentName || ''}</h1>
                   <button
                     className="text-blue-600 hover:text-blue-800"
                     onClick={() => setIsEditingTitle(true)}
@@ -315,10 +314,10 @@ const BookingReview = () => {
             </div>
             {/* Shipment Tags */}
             <div className="mt-1">
-              {bookingFormData?.requireShipmentTags ? (
+              {formData?.requireShipmentTags ? (
                 <div className="text-sm text-gray-600">
-                  <div>PO number: {bookingFormData.poNumber}</div>
-                  <div>SKU Number: #{bookingFormData.skuNumber}</div>
+                  <div>PO number: {formData.poNumber}</div>
+                  <div>SKU Number: #{formData.skuNumber}</div>
                 </div>
               ) : (
                 <div className="text-sm text-gray-600">No shipment tags</div>
@@ -528,19 +527,19 @@ const BookingReview = () => {
                       <div className="grid grid-cols-2 gap-4 text-xs">
                         <div>
                           <span className="text-gray-500">Origin:</span>
-                          <span className="ml-2 text-gray-900">{bookingFormData?.originLocation}</span>
+                          <span className="ml-2 text-gray-900">{formData?.originLocation}</span>
                         </div>
                         <div>
                           <span className="text-gray-500">Destination:</span>
-                          <span className="ml-2 text-gray-900">{bookingFormData?.destinationLocation}</span>
+                          <span className="ml-2 text-gray-900">{formData?.destinationLocation}</span>
                         </div>
                         <div>
                           <span className="text-gray-500">Weight:</span>
-                          <span className="ml-2 text-gray-900">{bookingFormData?.weight}</span>
+                          <span className="ml-2 text-gray-900">{formData?.weight}</span>
                         </div>
                         <div>
                           <span className="text-gray-500">Volume:</span>
-                          <span className="ml-2 text-gray-900">{bookingFormData?.volume}</span>
+                          <span className="ml-2 text-gray-900">{formData?.volume}</span>
                         </div>
                       </div>
                     </div>
@@ -564,7 +563,7 @@ const BookingReview = () => {
                     </div>
                     <div className="border border-gray-200 rounded-lg p-4">
                       <POSummaryTable
-                        selectedPOs={bookingData || []}
+                        selectedPOs={selectedPOs || []}
                         purchaseOrdersData={purchaseOrdersData}
                         poDetailsData={poDetailsData}
                       />
@@ -591,18 +590,18 @@ const BookingReview = () => {
                       air: 'Air Freight',
                       land: 'Land Freight',
                     };
-                    return map[bookingFormData?.transportModeValue] || bookingFormData?.transportModeValue || '-';
+                    return map[formData?.transportModeValue] || formData?.transportModeValue || '-';
                   })()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-xs text-gray-500">Shipment Type:</span>
-                  <span className="text-xs font-medium text-gray-900">{bookingFormData?.shipmentTypeValue?.toUpperCase() || '-'}</span>
+                  <span className="text-xs font-medium text-gray-900">{formData?.shipmentTypeValue?.toUpperCase() || '-'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-xs text-gray-500">Container Type:</span>
                   <span className="text-xs font-medium text-gray-900">{(() => {
-                    const type = bookingFormData?.containerTypeValue;
-                    const qty = bookingFormData?.containerQuantity;
+                    const type = formData?.containerTypeValue;
+                    const qty = formData?.containerQuantity;
                     if (type && qty) return `${qty} x ${type}`;
                     if (type) return type;
                     return '-';
@@ -610,7 +609,7 @@ const BookingReview = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-xs text-gray-500">Incoterm:</span>
-                  <span className="text-xs font-medium text-gray-900">{bookingFormData?.incotermsValue || '-'}</span>
+                  <span className="text-xs font-medium text-gray-900">{formData?.incotermsValue || '-'}</span>
                 </div>
               </div>
             </div>
@@ -670,4 +669,4 @@ const MapModal = ({ onClose }: { onClose: () => void }) => {
   );
 };
 
-export default BookingReview;
+export default BookingConfirm;

@@ -9,9 +9,16 @@ import POManagementTable, {
 import POSummaryTable from '../purchasesorders/POSummaryTable';
 import { useRouter } from 'next/navigation';
 import ReactDOM from 'react-dom';
+import { useBookingStore } from '@/store/bookingStore';
 
 interface BookingCreationProps {
-  onSubmitBooking?: () => void;
+  onSubmitBooking: () => void;
+  formData?: any;
+  setFormData?: (data: any) => void;
+  selectedPOs?: any[];
+  setSelectedPOs?: (data: any[]) => void;
+  tradeRole?: 'shipper' | 'consignee';
+  setTradeRole?: (role: 'shipper' | 'consignee') => void;
 }
 
 // Dropdown component
@@ -138,17 +145,18 @@ const Dropdown: React.FC<{
   );
 };
 
-const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () => {} }) => {
+const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) => {
   const router = useRouter();
+  // Use Zustand selectors for reactive state
+  const formData = useBookingStore(state => state.formData);
+  const setFormData = useBookingStore(state => state.setFormData);
+  const selectedPOs = useBookingStore(state => state.selectedPOs);
+  const setSelectedPOs = useBookingStore(state => state.setSelectedPOs);
+  const tradeRole = useBookingStore(state => state.tradeRole);
+  const setTradeRole = useBookingStore(state => state.setTradeRole);
   
   // State management
   const [showPOSelection, setShowPOSelection] = useState(false);
-  const [tradeRole, setTradeRole] = useState<'shipper' | 'consignee'>('shipper');
-  const [selectedPOs, setSelectedPOs] = useState<{
-    poId: string;
-    selectedItems: number[];
-    bookedQuantities: Record<number, number>;
-  }[]>([]);
   const [showPOReview, setShowPOReview] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -156,55 +164,11 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
   const [requireFields, setRequireFields] = useState(true);
   const lastAutoPOString = useRef('');
 
-  // Form data state
-  const [formData, setFormData] = useState({
-    shipmentName: '',
-    originLocation: '',
-    originPort: '',
-    cargoReadyDate: '',
-    destinationLocation: '',
-    destinationPort: '',
-    targetDeliveryDate: '',
-    weight: '',
-    volume: '',
-    additionalNotes: '',
-    productName: '',
-    hsCode: '',
-    goodsDescription: '',
-    poNumber: '',
-    skuNumber: '',
-    specialInstructions: '',
-    originCustoms: false,
-    originTrucking: false,
-    destinationCustoms: false,
-    destinationTrucking: false,
-    dangerousGoods: false,
-    requireShipmentTags: false,
-    prefillValue: '',
-    shipperValue: '',
-    consigneeValue: '',
-    transportModeValue: '',
-    shipmentTypeValue: '',
-    containerTypeValue: '',
-    incotermsValue: '',
-    packageTypeValue: '',
-    packageCount: '',
-    containerQuantity: '',
-  });
-
   // Previous shipments data
   const [previousShipments] = useState([
     { id: 'SH001', name: 'PO 1001 - Electronics', date: '2024-01-15' },
     { id: 'SH002', name: 'PO 1002 - Textiles', date: '2024-01-20' }
   ]);
-
-  // Load booking data from session storage
-  useEffect(() => {
-    const bookingData = sessionStorage.getItem('bookingData');
-    if (bookingData) {
-      setSelectedPOs(JSON.parse(bookingData));
-    }
-  }, []);
 
   // Debug log for selectedPOs
   useEffect(() => {
@@ -216,15 +180,8 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
     const poString = selectedPOs.length > 0
       ? selectedPOs.map(po => `PO ${po.poId.replace(/^PO ?/, '')}`).join(', ')
       : '';
-    // If shipmentName matches the last auto-generated PO string or is empty, update it
-    if (
-      !formData.shipmentName ||
-      formData.shipmentName === lastAutoPOString.current
-    ) {
-      setFormData(prev => ({ ...prev, shipmentName: poString }));
-    }
-    // Always update the last auto-generated PO string
-    lastAutoPOString.current = poString;
+    setFormData({ shipmentName: poString });
+    console.log('Force-updating shipmentName to:', poString);
   }, [selectedPOs]);
 
   // Helper function to format date for input
@@ -242,12 +199,9 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
     }
   };
 
-  // Handle form field changes
+  // Update handleInputChange to use setFormData from the store
   const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setFormData({ ...formData, [field]: value });
   };
 
   // Handle edit order
@@ -346,13 +300,11 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form submission
+  // On submit, just call onSubmitBooking (data is already in the store)
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setHasSubmitted(true);
     if (validateForm()) {
-      sessionStorage.setItem('shipmentName', formData.shipmentName);
-      sessionStorage.setItem('bookingFormData', JSON.stringify({ ...formData, tradeRole }));
       onSubmitBooking();
     } else {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -364,6 +316,8 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
       sessionStorage.removeItem('bookingSubmitted');
     }
   }, []);
+
+  console.log('Input value:', formData.shipmentName);
 
   return (
     <div className="max-w-4xl mx-auto p-2 bg-white">
@@ -423,11 +377,8 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
             purchaseOrdersData={purchaseOrdersData}
             poDetailsData={poDetailsData}
             onRemovePO={(poId) => {
-              setSelectedPOs(prev => {
-                const updated = prev.filter(sel => sel.poId !== poId);
-                sessionStorage.setItem('bookingData', JSON.stringify(updated));
-                return updated;
-              });
+              const updated = selectedPOs.filter((sel: any) => sel.poId !== poId);
+              setSelectedPOs(updated);
             }}
           />
         </div>
@@ -439,7 +390,7 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
           </label>
           <input
             type="text"
-            value={formData.shipmentName}
+            value={formData.shipmentName || ""}
             onChange={(e) => handleInputChange('shipmentName', e.target.value)}
             className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.shipmentName ? 'border-red-500' : ''}`}
             placeholder="Enter shipment name for easy recognition"
@@ -1066,21 +1017,16 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking = () 
                 poDetails={poDetailsData}
                 onEditOrder={handleEditOrder}
                 onCreateBooking={(bookingData) => {
-                  const normalized = bookingData.map(poSel => ({
+                  const normalized = bookingData.map((poSel: any) => ({
                     ...poSel,
                     bookedQuantities: Object.fromEntries(
-                      Object.entries(poSel.bookedQuantities).map(([id, qty]) => [id, qty > 0 ? qty : 1]))
+                      Object.entries(poSel.bookedQuantities).map(([id, qty]: any) => [id, qty > 0 ? qty : 1]))
                   }));
                   
-                  setSelectedPOs(prevSelectedPOs => {
-                    const existingPOIds = new Set(prevSelectedPOs.map(po => po.poId));
-                    const newPOs = normalized.filter(po => !existingPOIds.has(po.poId));
-                    const mergedPOs = [...prevSelectedPOs, ...newPOs];
-                    
-                    sessionStorage.setItem('bookingData', JSON.stringify(mergedPOs));
-                    return mergedPOs;
-                  });
-                  
+                  const existingPOIds = new Set(selectedPOs.map((po: any) => po.poId));
+                  const newPOs = normalized.filter((po: any) => !existingPOIds.has(po.poId));
+                  const mergedPOs = [...selectedPOs, ...newPOs];
+                  setSelectedPOs(mergedPOs);
                   setShowPOReview(true);
                   setShowPOSelection(false);
                 }}

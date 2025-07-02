@@ -8,6 +8,7 @@ import POManagementTable, {
   poDetailsData
 } from "@/app/components/purchasesorders/POManagementTable";
 import { Download, Plus, Upload } from 'lucide-react';
+import { useBookingStore } from '@/store/bookingStore';
 
 
 const ClientUI = () => {
@@ -61,7 +62,17 @@ const ClientUI = () => {
     selectedItems: number[];
     bookedQuantities: Record<number, number>;
     }[]) => {
-    sessionStorage.setItem('bookingData', JSON.stringify(bookingData));
+    // Clear the booking store and reset submission flag
+    const bookingStore = useBookingStore.getState();
+    bookingStore.clearBooking();
+    bookingStore.setBookingSubmitted(false);
+    // Debug log to confirm state is empty
+    console.log('After clearBooking:', bookingStore.formData, bookingStore.selectedPOs, bookingStore.bookingSubmitted);
+    // Pre-fill with selected POs if any
+    bookingStore.setSelectedPOs(bookingData);
+    // Optionally, set other fields (e.g., shipmentName) here if needed
+    // bookingStore.setFormData({ shipmentName: ... });
+    // Navigate to booking creation page
     router.push('/bookings/create');
   };
 
