@@ -392,10 +392,8 @@ const BookingTable: React.FC<BookingTableProps> = ({ bookings, onSubmitBooking =
               <button
                 className="px-4 py-2 bg-[#007bff] text-white rounded-lg text-sm font-semibold hover:bg-blue-700"
                 onClick={() => {
-                  sessionStorage.setItem('bookingFormData', JSON.stringify(selectedBookings[0]));
-                  sessionStorage.removeItem('bookingSubmitted');
-                  useBookingStore.getState().setBookingSubmitted(false);
-                  router.push('/bookings/confirmation');
+                  // Navigate to confirmation page with booking ID as query param
+                  router.push(`/bookings/confirmation?id=${selectedBookings[0].id}`);
                 }}
               >
                 View Booking Details

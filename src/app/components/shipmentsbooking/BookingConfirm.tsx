@@ -30,7 +30,7 @@ type ZoomSetter = Dispatch<SetStateAction<number>>;
 const handleZoomIn = (setter: ZoomSetter) => setter((z: number) => Math.min(z + 0.2, 2.5));
 const handleZoomOut = (setter: ZoomSetter) => setter((z: number) => Math.max(z - 0.2, 1));
 
-const BookingConfirm = () => {
+const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
   const [activeTab, setActiveTab] = useState('activity');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState('');
@@ -158,38 +158,38 @@ const BookingConfirm = () => {
       <div className="mb-4">
         <h4 className="text-xs font-semibold text-gray-900 mb-2">Cargo Ready Date</h4>
         <p className="text-xs text-gray-900">{(() => {
-          if (!formData?.cargoReadyDate) return 'Not specified';
-          const date = new Date(formData.cargoReadyDate);
+          if (!displayData?.cargoReadyDate) return 'Not specified';
+          const date = new Date(displayData.cargoReadyDate);
           return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         })()}</p>
       </div>
       <div className="space-y-3">
-        <div className="flex items-start gap-3">
+        {/* Origin */}
+        <div className="flex items-start gap-2">
           <div className="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
           <div>
-            <p className="text-xs font-medium text-gray-900">{formData?.shipperValue || ''}</p>
-            <p className="text-xs text-gray-500">{formData?.originLocation}</p>
+            <div className="text-xs font-semibold text-gray-900">{displayData.shipper || displayData.shipperValue || '-'}</div>
+            <div className="text-xs text-gray-700">{displayData.originLocation || '-'}</div>
           </div>
         </div>
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-2">
           <div className="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
           <div>
-            <p className="text-xs font-medium text-gray-900">{formData?.originPort}</p>
-            <p className="text-xs text-gray-500">{formData?.originPort}</p>
+            <div className="text-xs font-semibold text-gray-900 mt-1">{formData.originPort || '-'}</div>
           </div>
         </div>
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-2">
           <div className="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
           <div>
-            <p className="text-xs font-medium text-gray-900">{formData?.destinationPort}</p>
-            <p className="text-xs text-gray-500">{formData?.destinationPort}</p>
+            <div className="text-xs font-semibold text-gray-900 mt-1">{formData.destinationPort || '-'}</div>
           </div>
         </div>
-        <div className="flex items-start gap-3">
+        {/* Destination */}
+        <div className="flex items-start gap-2">
           <div className="w-2 h-2 bg-green-400 rounded-full mt-2"></div>
           <div>
-            <p className="text-xs font-medium text-gray-900">{formData?.consigneeValue || ''}</p>
-            <p className="text-xs text-gray-500">{formData?.destinationLocation}</p>
+            <div className="text-xs font-semibold text-gray-900">{displayData.consignee || displayData.consigneeValue || '-'}</div>
+            <div className="text-xs text-gray-700">{displayData.destinationLocation || '-'}</div>
           </div>
         </div>
       </div>
@@ -198,67 +198,92 @@ const BookingConfirm = () => {
 
   useEffect(() => {
     if (bookingSubmitted) {
-      router.replace('/bookings/submitted');
-    }
-  }, [bookingSubmitted, router]);
-
-  useEffect(() => {
-    // Build the booking object from Zustand state
-    const booking = {
-      id: flNumber,
-      shipmentId: flNumber,
-      poNumber: selectedPOs.map(po => `PO ${po.poId.replace(/^PO ?/, '')}`).join(', '),
-      productName: formData.productName,
-      hsCode: formData.hsCode,
-      consignee: formData.consigneeValue,
-      shipper: formData.shipperValue,
-      origin: formData.originPort,
-      destination: formData.destinationPort,
-      shipmentType: formData.shipmentTypeValue,
-      containerType: formData.containerTypeValue,
-      incoterms: formData.incotermsValue,
-      cargoReadyDate: formData.cargoReadyDate,
-      dangerousGoods: formData.dangerousGoods,
-      weight: formData.weight,
-      volume: formData.volume,
-      pieces: Number(formData.packageCount) || 0,
-      status: 'Booked',
-      eta: formData.targetDeliveryDate || '',
-      createdAt: new Date().toISOString(),
-    };
-    // Save to localStorage if not already present
-    if (typeof window !== 'undefined') {
-      const prev = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
-      if (!prev.some((b: any) => b.id === booking.id)) {
-        localStorage.setItem('confirmedBookings', JSON.stringify([...prev, booking]));
-        console.log('Booking saved to localStorage:', booking);
-      } else {
-        console.log('Booking already exists in localStorage:', booking);
-      }
-      console.log('Current confirmedBookings:', JSON.parse(localStorage.getItem('confirmedBookings') || '[]'));
-    }
-  }, [flNumber, formData, selectedPOs]);
-
-  useEffect(() => {
-    // Hydrate Zustand store from sessionStorage if bookingFormData exists
-    if (typeof window !== 'undefined') {
-      const bookingFormData = sessionStorage.getItem('bookingFormData');
-      if (bookingFormData) {
-        try {
-          const data = JSON.parse(bookingFormData);
-          if (data) {
-            setFormData(data);
-            if (data.selectedPOs) setSelectedPOs(data.selectedPOs);
-            if (data.tradeRole) setTradeRole(data.tradeRole);
-            if (data.flNumber) setFlNumber(data.flNumber);
-            setBookingSubmitted(false); // Prevent redirect when viewing details
-          }
-        } catch (e) {
-          // Ignore parse errors
+      // Build the full booking object with all fields
+      const booking = {
+        id: flNumber,
+        shipmentId: flNumber,
+        poNumber: selectedPOs.map(po => `PO ${po.poId.replace(/^PO ?/, '')}`).join(', '),
+        productName: formData.productName,
+        hsCode: formData.hsCode,
+        consignee: formData.consigneeValue,
+        shipper: formData.shipperValue,
+        origin: formData.originPort,
+        destination: formData.destinationPort,
+        originPort: formData.originPort,
+        destinationPort: formData.destinationPort,
+        shipmentType: formData.shipmentTypeValue,
+        shipmentTypeValue: formData.shipmentTypeValue,
+        containerType: formData.containerTypeValue,
+        containerTypeValue: formData.containerTypeValue,
+        incoterms: formData.incotermsValue,
+        incotermsValue: formData.incotermsValue,
+        cargoReadyDate: formData.cargoReadyDate,
+        dangerousGoods: formData.dangerousGoods,
+        weight: formData.weight,
+        volume: formData.volume,
+        pieces: Number(formData.packageCount) || 0,
+        status: 'Booked',
+        eta: formData.targetDeliveryDate || '',
+        createdAt: new Date().toISOString(),
+        shipmentName: formData.shipmentName,
+        requireShipmentTags: formData.requireShipmentTags,
+        skuNumber: formData.skuNumber,
+        originLocation: formData.originLocation,
+        destinationLocation: formData.destinationLocation,
+        containerQuantity: formData.containerQuantity,
+        transportModeValue: formData.transportModeValue,
+      };
+      // Save to localStorage if not already present
+      if (typeof window !== 'undefined') {
+        const prev = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
+        if (!prev.some((b: any) => b.id === booking.id)) {
+          localStorage.setItem('confirmedBookings', JSON.stringify([...prev, booking]));
         }
       }
+      router.replace('/bookings/submitted');
     }
-  }, [setFormData, setSelectedPOs, setTradeRole, setFlNumber, setBookingSubmitted]);
+  }, [bookingSubmitted, router, flNumber, formData, selectedPOs]);
+
+  const [externalBooking, setExternalBooking] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (bookingId && typeof window !== 'undefined') {
+      const all = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
+      const found = all.find((b: any) => b.id === bookingId);
+      if (found) setExternalBooking(found);
+    }
+  }, [bookingId]);
+
+  // Hybrid logic: if bookingId is present, use localStorage; else use Zustand (formData, etc.)
+  const displayData = bookingId && externalBooking ? externalBooking : {
+    id: flNumber,
+    shipmentId: flNumber,
+    poNumber: selectedPOs.map(po => `PO ${po.poId.replace(/^PO ?/, '')}`).join(', '),
+    productName: formData.productName,
+    hsCode: formData.hsCode,
+    consignee: formData.consigneeValue,
+    shipper: formData.shipperValue,
+    origin: formData.originPort,
+    destination: formData.destinationPort,
+    shipmentType: formData.shipmentTypeValue,
+    containerType: formData.containerTypeValue,
+    incoterms: formData.incotermsValue,
+    cargoReadyDate: formData.cargoReadyDate,
+    dangerousGoods: formData.dangerousGoods,
+    weight: formData.weight,
+    volume: formData.volume,
+    pieces: Number(formData.packageCount) || 0,
+    status: 'Booked',
+    eta: formData.targetDeliveryDate || '',
+    createdAt: new Date().toISOString(),
+    shipmentName: formData.shipmentName,
+    requireShipmentTags: formData.requireShipmentTags,
+    skuNumber: formData.skuNumber,
+    originLocation: formData.originLocation,
+    destinationLocation: formData.destinationLocation,
+    containerQuantity: formData.containerQuantity,
+    transportModeValue: formData.transportModeValue,
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -302,7 +327,7 @@ const BookingConfirm = () => {
                 </>
               ) : (
                 <>
-                  <h1 className="text-2xl font-bold text-gray-900 mb-1">{formData?.shipmentName || ''}</h1>
+                  <h1 className="text-2xl font-bold text-gray-900 mb-1">{displayData?.shipmentName || ''}</h1>
                   <button
                     className="text-blue-600 hover:text-blue-800"
                     onClick={() => setIsEditingTitle(true)}
@@ -314,10 +339,10 @@ const BookingConfirm = () => {
             </div>
             {/* Shipment Tags */}
             <div className="mt-1">
-              {formData?.requireShipmentTags ? (
+              {displayData?.requireShipmentTags ? (
                 <div className="text-sm text-gray-600">
-                  <div>PO number: {formData.poNumber}</div>
-                  <div>SKU Number: #{formData.skuNumber}</div>
+                  <div>PO number: {displayData.poNumber}</div>
+                  <div>SKU Number: #{displayData.skuNumber}</div>
                 </div>
               ) : (
                 <div className="text-sm text-gray-600">No shipment tags</div>
@@ -527,19 +552,19 @@ const BookingConfirm = () => {
                       <div className="grid grid-cols-2 gap-4 text-xs">
                         <div>
                           <span className="text-gray-500">Origin:</span>
-                          <span className="ml-2 text-gray-900">{formData?.originLocation}</span>
+                          <span className="ml-2 text-gray-900">{displayData?.originLocation}</span>
                         </div>
                         <div>
                           <span className="text-gray-500">Destination:</span>
-                          <span className="ml-2 text-gray-900">{formData?.destinationLocation}</span>
+                          <span className="ml-2 text-gray-900">{displayData?.destinationLocation}</span>
                         </div>
                         <div>
                           <span className="text-gray-500">Weight:</span>
-                          <span className="ml-2 text-gray-900">{formData?.weight}</span>
+                          <span className="ml-2 text-gray-900">{displayData?.weight}</span>
                         </div>
                         <div>
                           <span className="text-gray-500">Volume:</span>
-                          <span className="ml-2 text-gray-900">{formData?.volume}</span>
+                          <span className="ml-2 text-gray-900">{displayData?.volume}</span>
                         </div>
                       </div>
                     </div>
@@ -579,37 +604,24 @@ const BookingConfirm = () => {
             <CurrentStatusCard />
             
             {/* Container Details */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-4">Cargo & Shipping Details</h3>
-              <div className="space-y-3">
+            <div className="bg-white rounded-lg border border-gray-200 p-4 mt-4">
+              <h3 className="text-base font-semibold text-gray-900 mb-4">Cargo & Shipping Details</h3>
+              <div className="grid grid-cols-1 gap-x-4 gap-y-4">
                 <div className="flex justify-between">
                   <span className="text-xs text-gray-500">Transport Mode:</span>
-                  <span className="text-xs font-medium text-gray-900">{(() => {
-                    const map: Record<string, string> = {
-                      sea: 'Sea Freight',
-                      air: 'Air Freight',
-                      land: 'Land Freight',
-                    };
-                    return map[formData?.transportModeValue] || formData?.transportModeValue || '-';
-                  })()}</span>
+                  <span className="text-xs font-medium text-gray-900">{displayData.transportModeValue || displayData.transportMode || '-'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-xs text-gray-500">Shipment Type:</span>
-                  <span className="text-xs font-medium text-gray-900">{formData?.shipmentTypeValue?.toUpperCase() || '-'}</span>
+                  <span className="text-xs font-medium text-gray-900">{displayData.shipmentTypeValue || displayData.shipmentType || '-'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-xs text-gray-500">Container Type:</span>
-                  <span className="text-xs font-medium text-gray-900">{(() => {
-                    const type = formData?.containerTypeValue;
-                    const qty = formData?.containerQuantity;
-                    if (type && qty) return `${qty} x ${type}`;
-                    if (type) return type;
-                    return '-';
-                  })()}</span>
+                  <span className="text-xs font-medium text-gray-900">{displayData.containerTypeValue || displayData.containerType || '-'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-xs text-gray-500">Incoterm:</span>
-                  <span className="text-xs font-medium text-gray-900">{formData?.incotermsValue || '-'}</span>
+                  <span className="text-xs font-medium text-gray-900">{displayData.incotermsValue || displayData.incoterms || '-'}</span>
                 </div>
               </div>
             </div>

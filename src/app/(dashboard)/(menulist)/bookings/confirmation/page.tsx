@@ -1,11 +1,14 @@
 'use client';
 
 import BookingConfirm from "@/app/components/shipmentsbooking/BookingConfirm";
+import { useSearchParams } from 'next/navigation';
 
 const ClientUI = () => {
+  const searchParams = useSearchParams();
+  const bookingId = searchParams.get('id') || undefined;
   return (
     <div>
-      <BookingConfirm />
+      <BookingConfirm bookingId={bookingId} />
     </div>
   );
 };
