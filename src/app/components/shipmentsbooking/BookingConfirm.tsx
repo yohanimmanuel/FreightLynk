@@ -40,6 +40,7 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
   const [mapZoom, setMapZoom] = useState(1);
   const [showStatusBar, setShowStatusBar] = useState(true);
   const [headerData, setHeaderData] = useState<{ shipmentId: string; shipmentName: string; shipmentTags: { hasTags: boolean; poNumber: string; skuNumber: string } } | null>(null);
+  const [externalBooking, setExternalBooking] = useState<any | null>(null);
   const router = useRouter();
 
   // Zustand booking data
@@ -142,6 +143,9 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
           <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
           <span className="text-xs font-medium text-orange-600">Awaiting Pricing</span>
         </div>
+        <p className="text-xs text-gray-500 mt-2">
+          * Pricing typically takes 2-4 business days from the forwarder or logistics provider.
+        </p>
         <button
           className={`mt-4 w-full px-4 py-3 rounded-lg text-xs font-semibold transition-colors duration-200 ${pricingReady ? 'bg-[#007bff] text-white hover:bg-blue-700 cursor-pointer' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
           disabled={!pricingReady}
@@ -150,11 +154,14 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
         </button>
         <button
           className="mt-2 w-full px-4 py-3 rounded-lg text-xs font-semibold bg-white text-[#007bff] hover:bg-blue-50 border border-[#007bff] transition-colors duration-200"
-          onClick={() => { setBookingSubmitted(true); router.push('/bookings'); }}
+          onClick={() => {
+            router.replace('/bookings');
+          }}
         >
           {'>> Go to Bookings'}
         </button>
       </div>
+      {/* Cargo Ready Date */}
       <div className="mb-4">
         <h4 className="text-xs font-semibold text-gray-900 mb-2">Cargo Ready Date</h4>
         <p className="text-xs text-gray-900">{(() => {
@@ -175,13 +182,13 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
         <div className="flex items-start gap-2">
           <div className="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
           <div>
-            <div className="text-xs font-semibold text-gray-900 mt-1">{formData.originPort || '-'}</div>
+            <div className="text-xs font-semibold text-gray-900 mt-1">{bookingId && externalBooking ? externalBooking.originPort : formData.originPort}</div>
           </div>
         </div>
         <div className="flex items-start gap-2">
           <div className="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
           <div>
-            <div className="text-xs font-semibold text-gray-900 mt-1">{formData.destinationPort || '-'}</div>
+            <div className="text-xs font-semibold text-gray-900 mt-1">{bookingId && externalBooking ? externalBooking.destinationPort : formData.destinationPort}</div>
           </div>
         </div>
         {/* Destination */}
@@ -191,6 +198,15 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
             <div className="text-xs font-semibold text-gray-900">{displayData.consignee || displayData.consigneeValue || '-'}</div>
             <div className="text-xs text-gray-700">{displayData.destinationLocation || '-'}</div>
           </div>
+        </div>
+        {/* Target Delivery Date */}
+        <div className="mt-4">
+          <h4 className="text-xs font-semibold text-gray-900 mb-2">Target Delivery Date</h4>
+          <p className="text-xs text-gray-900">{(() => {
+            if (!displayData?.eta) return 'Not specified';
+            const date = new Date(displayData.eta);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          })()}</p>
         </div>
       </div>
     </div>
@@ -232,30 +248,121 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
         destinationLocation: formData.destinationLocation,
         containerQuantity: formData.containerQuantity,
         transportModeValue: formData.transportModeValue,
+        // Properly format selectedPOs for storage
+        selectedPOs: selectedPOs.map(po => ({
+          poId: po.poId,
+          selectedItems: Array.isArray(po.selectedItems) ? po.selectedItems : Array.from(po.selectedItems),
+          bookedQuantities: po.bookedQuantities || {}
+        })),
       };
-      // Save to localStorage if not already present
+
+      // Save to localStorage first
       if (typeof window !== 'undefined') {
-        const prev = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
-        if (!prev.some((b: any) => b.id === booking.id)) {
-          localStorage.setItem('confirmedBookings', JSON.stringify([...prev, booking]));
+        try {
+          const prev = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
+          const updated = [...prev, booking];
+          localStorage.setItem('confirmedBookings', JSON.stringify(updated));
+          console.log('Saved booking to localStorage:', booking);
+          
+          // Dispatch storage event to notify other components
+          window.dispatchEvent(new Event('storage'));
+          
+          // Clear booking data from sessionStorage
+          sessionStorage.removeItem('bookingData');
+          
+          // Navigate to submitted page
+          router.replace('/bookings/submitted');
+          
+          // Clear state after navigation
+          setTimeout(() => {
+            setFormData({});
+            setSelectedPOs([]);
+            setTradeRole('shipper');
+            setFlNumber('');
+            setBookingSubmitted(false);
+          }, 100);
+        } catch (error) {
+          console.error('Error saving booking:', error);
         }
       }
-      router.replace('/bookings/submitted');
     }
-  }, [bookingSubmitted, router, flNumber, formData, selectedPOs]);
+  }, [bookingSubmitted, router, flNumber, formData, selectedPOs, setFormData, setSelectedPOs, setTradeRole, setFlNumber, setBookingSubmitted]);
 
-  const [externalBooking, setExternalBooking] = useState<any | null>(null);
+  // Check if this is a new booking or viewing an existing one
+  useEffect(() => {
+    if (bookingId) {
+      // If viewing existing booking, don't check bookingSubmitted
+      return;
+    }
 
+    // For new bookings, check if already confirmed
+    if (typeof window !== 'undefined') {
+      const confirmedBookings = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
+      if (confirmedBookings.some((b: any) => b.id === flNumber)) {
+        router.replace('/bookings/submitted');
+      }
+    }
+  }, [bookingId, flNumber, router]);
+
+  // Load existing booking if bookingId is provided
   useEffect(() => {
     if (bookingId && typeof window !== 'undefined') {
       const all = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
       const found = all.find((b: any) => b.id === bookingId);
-      if (found) setExternalBooking(found);
+      if (found) {
+        setExternalBooking(found);
+        console.log('Loaded existing booking:', found);
+        
+        // Override Zustand state with the booking data to ensure correct display
+        if (found.originPort) {
+          setFormData((prev: any) => ({
+            ...prev,
+            originPort: found.originPort,
+            destinationPort: found.destinationPort
+          }));
+        }
+      }
     }
-  }, [bookingId]);
+  }, [bookingId, setFormData]);
 
   // Hybrid logic: if bookingId is present, use localStorage; else use Zustand (formData, etc.)
-  const displayData = bookingId && externalBooking ? externalBooking : {
+  const displayData = bookingId && externalBooking ? {
+    ...externalBooking,
+    id: externalBooking.id,
+    shipmentId: externalBooking.shipmentId,
+    poNumber: externalBooking.poNumber,
+    productName: externalBooking.productName,
+    hsCode: externalBooking.hsCode,
+    consignee: externalBooking.consignee,
+    shipper: externalBooking.shipper,
+    origin: externalBooking.origin || externalBooking.originPort,
+    destination: externalBooking.destination || externalBooking.destinationPort,
+    originPort: externalBooking.originPort,
+    destinationPort: externalBooking.destinationPort,
+    shipmentType: externalBooking.shipmentType,
+    shipmentTypeValue: externalBooking.shipmentTypeValue,
+    containerType: externalBooking.containerType,
+    containerTypeValue: externalBooking.containerTypeValue,
+    incoterms: externalBooking.incoterms,
+    incotermsValue: externalBooking.incotermsValue,
+    cargoReadyDate: externalBooking.cargoReadyDate,
+    dangerousGoods: externalBooking.dangerousGoods,
+    weight: externalBooking.weight,
+    volume: externalBooking.volume,
+    pieces: externalBooking.pieces,
+    status: externalBooking.status,
+    eta: externalBooking.eta,
+    createdAt: externalBooking.createdAt,
+    shipmentName: externalBooking.shipmentName,
+    requireShipmentTags: externalBooking.requireShipmentTags,
+    skuNumber: externalBooking.skuNumber,
+    originLocation: externalBooking.originLocation,
+    destinationLocation: externalBooking.destinationLocation,
+    containerQuantity: externalBooking.containerQuantity,
+    transportModeValue: externalBooking.transportModeValue,
+    // Ensure selectedPOs is properly formatted for POSummaryTable
+    selectedPOs: Array.isArray(externalBooking.selectedPOs) ? externalBooking.selectedPOs : [],
+  } : {
     id: flNumber,
     shipmentId: flNumber,
     poNumber: selectedPOs.map(po => `PO ${po.poId.replace(/^PO ?/, '')}`).join(', '),
@@ -265,9 +372,14 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
     shipper: formData.shipperValue,
     origin: formData.originPort,
     destination: formData.destinationPort,
+    originPort: formData.originPort,
+    destinationPort: formData.destinationPort,
     shipmentType: formData.shipmentTypeValue,
+    shipmentTypeValue: formData.shipmentTypeValue,
     containerType: formData.containerTypeValue,
+    containerTypeValue: formData.containerTypeValue,
     incoterms: formData.incotermsValue,
+    incotermsValue: formData.incotermsValue,
     cargoReadyDate: formData.cargoReadyDate,
     dangerousGoods: formData.dangerousGoods,
     weight: formData.weight,
@@ -283,19 +395,94 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
     destinationLocation: formData.destinationLocation,
     containerQuantity: formData.containerQuantity,
     transportModeValue: formData.transportModeValue,
+    selectedPOs: selectedPOs,
   };
+
+  // For debugging
+  useEffect(() => {
+    if (bookingId && externalBooking) {
+      console.log('Using external booking data:', externalBooking);
+      console.log('displayData:', displayData);
+    }
+  }, [bookingId, externalBooking, displayData]);
 
   return (
     <div className="min-h-screen bg-white">
       {/* Booking Confirm PopUp */}
-      {showPopup && <BookingConfirmPopUp onClose={() => { setShowPopup(false); }} />}
+      {!bookingId && (  // Only show popup for new bookings
+        showPopup && <BookingConfirmPopUp 
+          onClose={() => { 
+            setShowPopup(false);
+            // Save the booking to localStorage when popup is closed
+            if (typeof window !== 'undefined') {
+              try {
+                const booking = {
+                  id: flNumber,
+                  shipmentId: flNumber,
+                  poNumber: selectedPOs.map(po => `PO ${po.poId.replace(/^PO ?/, '')}`).join(', '),
+                  productName: formData.productName,
+                  hsCode: formData.hsCode,
+                  consignee: formData.consigneeValue,
+                  shipper: formData.shipperValue,
+                  origin: formData.originPort,
+                  destination: formData.destinationPort,
+                  originPort: formData.originPort,
+                  destinationPort: formData.destinationPort,
+                  shipmentType: formData.shipmentTypeValue,
+                  shipmentTypeValue: formData.shipmentTypeValue,
+                  containerType: formData.containerTypeValue,
+                  containerTypeValue: formData.containerTypeValue,
+                  incoterms: formData.incotermsValue,
+                  incotermsValue: formData.incotermsValue,
+                  cargoReadyDate: formData.cargoReadyDate,
+                  dangerousGoods: formData.dangerousGoods,
+                  weight: formData.weight,
+                  volume: formData.volume,
+                  pieces: Number(formData.packageCount) || 0,
+                  status: 'Booked',
+                  eta: formData.targetDeliveryDate || '',
+                  createdAt: new Date().toISOString(),
+                  shipmentName: formData.shipmentName,
+                  requireShipmentTags: formData.requireShipmentTags,
+                  skuNumber: formData.skuNumber,
+                  originLocation: formData.originLocation,
+                  destinationLocation: formData.destinationLocation,
+                  containerQuantity: formData.containerQuantity,
+                  transportModeValue: formData.transportModeValue,
+                  // Properly format selectedPOs for storage
+                  selectedPOs: selectedPOs.map(po => ({
+                    poId: po.poId,
+                    selectedItems: Array.isArray(po.selectedItems) ? po.selectedItems : Array.from(po.selectedItems),
+                    bookedQuantities: po.bookedQuantities || {}
+                  })),
+                };
+                const prev = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
+                const updated = [...prev, booking];
+                localStorage.setItem('confirmedBookings', JSON.stringify(updated));
+                console.log('Saved booking to localStorage:', booking);
+                
+                // Dispatch storage event to notify other components
+                window.dispatchEvent(new Event('storage'));
+              } catch (error) {
+                console.error('Error saving booking:', error);
+              }
+            }
+          }} 
+          bookingData={{
+            shipmentId: displayData.shipmentId,
+            poNumber: displayData.poNumber,
+            originPort: displayData.originPort,
+            destinationPort: displayData.destinationPort
+          }}
+        />
+      )}
       {/* Header */}
       <div className="bg-white p-4">
         <div className="max-w-8xl mx-auto flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
               <Package className="w-4 h-4" />
-              <span>{flNumber || 'FL-XXXXX'}</span>
+              <span>{displayData.shipmentId || 'FL-XXXXX'}</span>
             </div>
             <div className="flex items-center gap-4">
               {isEditingTitle ? (
@@ -369,9 +556,9 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
                 />
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                   <div className="text-center pointer-events-auto">
-                    <MapPin className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600">Shipment Route Map</p>
-                    <p className="text-xs text-gray-400">Shanghai → Los Angeles</p>
+                  <MapPin className="w-8 h-8 text-blue-400 mx-auto mb-2" />
+                  <p className="text-sm text-gray-600">Shipment Route Map</p>
+                  <p className="text-xs text-gray-400">Shanghai → Los Angeles</p>
                   </div>
                 </div>
                 {/* Map Controls - bottom right */}
@@ -551,11 +738,19 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
                       <h4 className="text-sm font-semibold text-gray-900 mb-3">Shipment Details</h4>
                       <div className="grid grid-cols-2 gap-4 text-xs">
                         <div>
-                          <span className="text-gray-500">Origin:</span>
+                          <span className="text-gray-500">Origin Port:</span>
+                          <span className="ml-2 text-gray-900">{bookingId && externalBooking ? externalBooking.originPort : formData.originPort}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Destination Port:</span>
+                          <span className="ml-2 text-gray-900">{bookingId && externalBooking ? externalBooking.destinationPort : formData.destinationPort}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Origin Location:</span>
                           <span className="ml-2 text-gray-900">{displayData?.originLocation}</span>
                         </div>
                         <div>
-                          <span className="text-gray-500">Destination:</span>
+                          <span className="text-gray-500">Destination Location:</span>
                           <span className="ml-2 text-gray-900">{displayData?.destinationLocation}</span>
                         </div>
                         <div>
@@ -588,7 +783,7 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
                     </div>
                     <div className="border border-gray-200 rounded-lg p-4">
                       <POSummaryTable
-                        selectedPOs={selectedPOs || []}
+                        selectedPOs={displayData.selectedPOs || []}
                         purchaseOrdersData={purchaseOrdersData}
                         poDetailsData={poDetailsData}
                       />
@@ -602,10 +797,10 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
           {/* Right Column (narrower) */}
           <div className="w-full lg:w-110 flex-shrink-0">
             <CurrentStatusCard />
-            
-            {/* Container Details */}
+
+            {/* Cargo & Shipping Details */}
             <div className="bg-white rounded-lg border border-gray-200 p-4 mt-4">
-              <h3 className="text-base font-semibold text-gray-900 mb-4">Cargo & Shipping Details</h3>
+              <h3 className="text-sm font-semibold text-gray-900 mb-4">Cargo & Shipping Details</h3>
               <div className="grid grid-cols-1 gap-x-4 gap-y-4">
                 <div className="flex justify-between">
                   <span className="text-xs text-gray-500">Transport Mode:</span>

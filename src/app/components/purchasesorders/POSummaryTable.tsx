@@ -5,8 +5,8 @@ import { PurchaseOrder, PODetail } from './POManagementTable';
 interface POSummaryTableProps {
   selectedPOs: {
     poId: string;
-    selectedItems: number[];
-    bookedQuantities: Record<number, number>;
+    selectedItems: number[] | Set<number> | any;
+    bookedQuantities: Record<number, number> | any;
   }[];
   purchaseOrdersData: PurchaseOrder[];
   poDetailsData: PODetail[];
@@ -15,10 +15,39 @@ interface POSummaryTableProps {
 
 const POSummaryTable: React.FC<POSummaryTableProps> = ({ selectedPOs, purchaseOrdersData, poDetailsData, onRemovePO }) => {
   console.log('POSummaryTable selectedPOs:', selectedPOs);
+  
+  // Normalize selectedPOs to handle different data formats
+  const normalizedSelectedPOs = selectedPOs.map(poSelection => {
+    // Ensure selectedItems is an array
+    let selectedItems = [];
+    if (Array.isArray(poSelection.selectedItems)) {
+      selectedItems = poSelection.selectedItems;
+    } else if (poSelection.selectedItems instanceof Set) {
+      selectedItems = Array.from(poSelection.selectedItems);
+    } else if (typeof poSelection.selectedItems === 'object' && poSelection.selectedItems !== null) {
+      // Handle any other object type
+      try {
+        selectedItems = Object.values(poSelection.selectedItems);
+      } catch (e) {
+        selectedItems = [];
+      }
+    }
+    
+    // Ensure bookedQuantities is a record
+    const bookedQuantities = poSelection.bookedQuantities || {};
+    
+    return {
+      ...poSelection,
+      selectedItems,
+      bookedQuantities
+    };
+  });
+  
   // Build summary data
-  const selectedData = selectedPOs.map(poSelection => {
+  const selectedData = normalizedSelectedPOs.map(poSelection => {
     const po = purchaseOrdersData.find(p => p.id === poSelection.poId);
     if (!po) return null;
+    
     const poNum = parseInt(poSelection.poId.replace('PO', ''));
     const items = poDetailsData.filter(item =>
       poSelection.selectedItems.includes(item.id) &&
@@ -28,6 +57,7 @@ const POSummaryTable: React.FC<POSummaryTableProps> = ({ selectedPOs, purchaseOr
       poOrderNumber: poNum,
       booked: poSelection.bookedQuantities[item.id] || 0
     })).filter(item => item.booked > 0);
+    
     return { po, items, selection: poSelection };
   }).filter((data): data is NonNullable<typeof data> => data !== null && data.items.length > 0);
 
@@ -91,7 +121,7 @@ const POSummaryTable: React.FC<POSummaryTableProps> = ({ selectedPOs, purchaseOr
               )}
             </div>
           </div>
-          <div className="overflow-x-auto">
+          
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
@@ -104,7 +134,7 @@ const POSummaryTable: React.FC<POSummaryTableProps> = ({ selectedPOs, purchaseOr
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+            <tbody>
                 {groupedPOs[po.id]?.map((item, index) => (
                   <tr key={item.id} className="hover:bg-gray-50">
                     <td className="px-4 py-4 text-xs text-gray-900">{index + 1}</td>
@@ -131,7 +161,6 @@ const POSummaryTable: React.FC<POSummaryTableProps> = ({ selectedPOs, purchaseOr
                 ))}
               </tbody>
             </table>
-          </div>
         </div>
       ))}
     </div>

@@ -460,11 +460,11 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
                 <input
                   list="consignee-options"
                   type="text"
-                  value={formData.consigneeValue}
+                    value={formData.consigneeValue}
                   onChange={e => handleInputChange('consigneeValue', e.target.value)}
                   className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.consigneeValue ? 'border-red-500' : ''}`}
                   placeholder="Select or enter consignee company"
-                />
+                  />
                 <button
                   type="button"
                   className="w-50 px-4 py-3 text-xs bg-[#007bff] text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center justify-center gap-1"
@@ -927,13 +927,13 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
                 </label>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-500 font-semibold">PO</span>
-                  <input
-                    type="text"
-                    value={formData.poNumber}
-                    onChange={(e) => handleInputChange('poNumber', e.target.value)}
-                    className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.poNumber ? 'border-red-500' : ''}`}
-                    placeholder="Enter PO number"
-                  />
+                <input
+                  type="text"
+                  value={formData.poNumber}
+                  onChange={(e) => handleInputChange('poNumber', e.target.value)}
+                  className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.poNumber ? 'border-red-500' : ''}`}
+                  placeholder="Enter PO number"
+                />
                 </div>
                 {hasSubmitted && errors.poNumber && (
                   <p className="text-xs text-red-500 mt-1">{errors.poNumber}</p>
@@ -945,13 +945,13 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
                 </label>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-500 font-semibold">#</span>
-                  <input
-                    type="text"
-                    value={formData.skuNumber}
-                    onChange={(e) => handleInputChange('skuNumber', e.target.value)}
-                    className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.skuNumber ? 'border-red-500' : ''}`}
-                    placeholder="Enter SKU number"
-                  />
+                <input
+                  type="text"
+                  value={formData.skuNumber}
+                  onChange={(e) => handleInputChange('skuNumber', e.target.value)}
+                  className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.skuNumber ? 'border-red-500' : ''}`}
+                  placeholder="Enter SKU number"
+                />
                 </div>
                 {hasSubmitted && errors.skuNumber && (
                   <p className="text-xs text-red-500 mt-1">{errors.skuNumber}</p>

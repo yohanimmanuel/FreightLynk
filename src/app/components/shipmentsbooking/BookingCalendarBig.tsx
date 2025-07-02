@@ -1,111 +1,29 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Calendar, Clock, MapPin, Package, X, Ship, Truck, Plane } from 'lucide-react';
+import { CalendarBooking } from '@/store/types';
 
-interface Booking {
-  bookingId: string;
-  origin: string;
-  destination: string;
-  status: 'Confirmed' | 'Pending' | 'Cancelled' | 'In Transit';
-  date: string;
-  shipmentType?: 'ocean' | 'air' | 'truck';
-  weight?: string;
-  value?: string;
+interface BookingCalendarBigProps {
+  bookings: CalendarBooking[];
 }
 
-const BookingCalendarBig = () => {
+const BookingCalendarBig: React.FC<BookingCalendarBigProps> = ({ bookings }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'month' | 'week'>('month');
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<CalendarBooking | null>(null);
 
-  // Updated booking data to match BookingCalendar.tsx
-  const bookings: Booking[] = [
-    {
-      bookingId: "BL-239181",
-      origin: "Jakarta, ID",
-      destination: "Los Angeles, US",
-      status: "Confirmed",
-      date: "2025-06-18",
-      shipmentType: "air",
-      weight: "2.5 tons",
-      value: "$12,000"
-    },
-    {
-      bookingId: "BL-832794",
-      origin: "Singapore, SG",
-      destination: "Bangkok, TH",
-      status: "Pending",
-      date: "2025-06-18",
-      shipmentType: "truck",
-      weight: "15 tons",
-      value: "$8,500"
-    },
-    {
-      bookingId: "BL-445123",
-      origin: "Hong Kong, HK",
-      destination: "Rotterdam, NL",
-      status: "Confirmed",
-      date: "2025-06-20",
-      shipmentType: "ocean",
-      weight: "25 TEU",
-      value: "$45,000"
-    },
-    {
-      bookingId: "BL-667890",
-      origin: "Shanghai, CN",
-      destination: "Hamburg, DE",
-      status: "In Transit",
-      date: "2025-06-22",
-      shipmentType: "ocean",
-      weight: "18 TEU",
-      value: "$35,000"
-    },
-    {
-      bookingId: "BL-778901",
-      origin: "Manila, PH",
-      destination: "Tokyo, JP",
-      status: "Pending",
-      date: "2025-06-25",
-      shipmentType: "ocean",
-      weight: "8 TEU",
-      value: "$18,000"
-    },
-    {
-      bookingId: "BL-889012",
-      origin: "Mumbai, IN",
-      destination: "Dubai, AE",
-      status: "Cancelled",
-      date: "2025-06-28",
-      shipmentType: "air",
-      weight: "3.2 tons",
-      value: "$15,500"
-    },
-    {
-      bookingId: "BL-990123",
-      origin: "Kuala Lumpur, MY",
-      destination: "Sydney, AU",
-      status: "Confirmed",
-      date: "2025-06-30",
-      shipmentType: "air",
-      weight: "2.8 tons",
-      value: "$13,200"
-    }
-  ];
-
-  const statusColors = {
+  const statusColors: { [key: string]: string } = {
+    'Booked': 'bg-blue-100 text-blue-800 border-blue-200',
+    'Payment': 'bg-yellow-100 text-yellow-800 border-yellow-200',
     'Confirmed': 'bg-green-100 text-green-800 border-green-200',
-    'Pending': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    'Cancelled': 'bg-red-100 text-red-800 border-red-200',
-    'In Transit': 'bg-blue-100 text-blue-800 border-blue-200'
   };
 
-  const statusIcons = {
+  const statusIcons: { [key: string]: any } = {
+    'Booked': Calendar,
+    'Payment': '⏳',
     'Confirmed': '✓',
-    'Pending': '⏳',
-    'Cancelled': '✕',
-    'In Transit': '🚢'
   };
 
-  const transportIcons = {
+  const transportIcons: { [key: string]: any } = {
     ocean: Ship,
     air: Plane,
     truck: Truck
@@ -153,7 +71,7 @@ const BookingCalendarBig = () => {
 
   const getBookingsForDate = (date: Date) => {
     const dateStr = date.toISOString().split('T')[0];
-    return bookings.filter(booking => booking.date === dateStr);
+    return bookings.filter(booking => booking.cargoReadyDate === dateStr);
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {
@@ -179,8 +97,8 @@ const BookingCalendarBig = () => {
     }
   };
 
-  const renderBookingBadge = (booking: Booking) => {
-    const TransportIcon = transportIcons[booking.shipmentType || 'ocean'];
+  const renderBookingBadge = (booking: CalendarBooking) => {
+    const TransportIcon = transportIcons[booking.transportMode] || transportIcons['ocean'];
     return (
       <div
         key={booking.bookingId}
@@ -188,10 +106,10 @@ const BookingCalendarBig = () => {
         onClick={() => setSelectedBooking(booking)}
       >
         <div className="flex items-center gap-1">
-          <TransportIcon size={8} />
+          {TransportIcon && <TransportIcon size={8} />}
           <span className="font-medium text-xs">{booking.bookingId}</span>
         </div>
-        <div className="truncate text-xs">{booking.destination.split(',')[0]}</div>
+        <div className="truncate text-xs">{booking.destinationPort.split(',')[0]}</div>
       </div>
     );
   };
@@ -292,15 +210,11 @@ const BookingCalendarBig = () => {
             </div>
             <div className="flex items-center gap-1 text-yellow-500">
               <div className="w-2 h-2 bg-yellow-100 border border-yellow-200 rounded"></div>
-              <span>Pending</span>
+              <span>Payment</span>
             </div>
-            <div className="flex items-center gap-1 text-[#007bff]">
+            <div className="flex items-center gap-1 text-blue-500">
               <div className="w-2 h-2 bg-blue-100 border border-blue-200 rounded"></div>
-              <span>In Transit</span>
-            </div>
-            <div className="flex items-center gap-1 text-red-500">
-              <div className="w-2 h-2 bg-red-100 border border-red-200 rounded"></div>
-              <span>Cancelled</span>
+              <span>Booked</span>
             </div>
           </div>
           <div className="flex items-center gap-1 col-span-1">
@@ -357,7 +271,10 @@ const BookingCalendarBig = () => {
 
                 <div className="flex items-center gap-2">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[selectedBooking.status]}`}>
-                    {statusIcons[selectedBooking.status]} {selectedBooking.status.replace('-', ' ').toUpperCase()}
+                    {typeof statusIcons[selectedBooking.status] === 'string'
+                      ? statusIcons[selectedBooking.status]
+                      : React.createElement(statusIcons[selectedBooking.status], { size: 14, style: { display: 'inline', verticalAlign: 'middle' } })}
+                    {' '}{selectedBooking.status.replace('-', ' ').toUpperCase()}
                   </span>
                 </div>
 
@@ -366,21 +283,21 @@ const BookingCalendarBig = () => {
                     <label className="text-xs font-medium text-gray-600 flex items-center gap-1">
                       <MapPin size={12} /> Origin
                     </label>
-                    <p className="font-medium text-xs text-gray-900">{selectedBooking.origin}</p>
+                    <p className="font-medium text-xs text-gray-900">{selectedBooking.originPort}</p>
                   </div>
                   <div>
                     <label className="text-xs font-medium text-gray-600 flex items-center gap-1">
                       <MapPin size={12} /> Destination
                     </label>
-                    <p className="font-medium text-xs text-gray-900">{selectedBooking.destination}</p>
+                    <p className="font-medium text-xs text-gray-900">{selectedBooking.destinationPort}</p>
                   </div>
                 </div>
 
                 <div>
                   <label className="text-xs font-medium text-gray-600 flex items-center gap-1">
-                    <Clock size={12} /> Departure Date
+                    <Clock size={12} /> Cargo Ready Date
                   </label>
-                  <p className="font-medium text-xs text-gray-900">{new Date(selectedBooking.date).toLocaleDateString('en-US', { 
+                  <p className="font-medium text-xs text-gray-900">{new Date(selectedBooking.cargoReadyDate).toLocaleDateString('en-US', { 
                     weekday: 'long', 
                     year: 'numeric', 
                     month: 'long', 
@@ -391,26 +308,36 @@ const BookingCalendarBig = () => {
                 {selectedBooking.weight && (
                   <div>
                     <label className="text-xs font-medium text-gray-600 flex items-center gap-1">
-                      <Package size={12} /> Weight/Volume
+                      <Package size={12} /> Weight (kg/lbs)
                     </label>
-                    <p className="font-medium text-xs text-gray-900">{selectedBooking.weight}</p>
+                    <p className="font-medium text-xs text-gray-900">{selectedBooking.weight} kg</p>
                   </div>
                 )}
 
-                {selectedBooking.value && (
+                {selectedBooking.volume && (
+
                   <div>
-                    <label className="text-xs font-medium text-gray-600">Cargo Value</label>
-                    <p className="font-medium text-green-600 text-sm">{selectedBooking.value}</p>
+                    <label className="text-xs font-medium text-gray-600 flex items-center gap-1">
+                      <Package size={12} /> Volume (m³)
+                    </label>
+                    <p className="font-medium text-xs text-gray-900">{selectedBooking.volume} m³</p>
                   </div>
                 )}
 
                 <div>
+                  <label className="text-xs font-medium text-gray-600">Cargo Value</label>
+                  <p className={`font-medium text-sm ${selectedBooking.cargoValue === 'awaiting pricing' ? 'text-orange-600' : 'text-green-600'}`}>{selectedBooking.cargoValue}</p>
+                </div>
+
+                <div>
                   <label className="text-xs font-medium text-gray-600">Transport Mode</label>
                   <div className="flex items-center gap-2 text-gray-900 mt-1">
-                    {selectedBooking.shipmentType && (
+                    {selectedBooking.transportMode && (
                       <>
-                        {React.createElement(transportIcons[selectedBooking.shipmentType], { size: 14, className: "text-[#007bff]" })}
-                        <span className="font-medium capitalize text-sm">{selectedBooking.shipmentType}</span>
+                        {transportIcons[selectedBooking.transportMode] ?
+                          React.createElement(transportIcons[selectedBooking.transportMode], { size: 14, className: "text-[#007bff]" }) :
+                          React.createElement(transportIcons['ocean'], { size: 14, className: "text-[#007bff]" })}
+                        <span className="font-medium capitalize text-sm">{selectedBooking.transportMode}</span>
                       </>
                     )}
                   </div>

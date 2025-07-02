@@ -15,9 +15,15 @@ import { useBookingStore } from '@/store/bookingStore';
 
 interface BookingConfirmProps {
   onClose?: () => void;
+  bookingData?: {
+    shipmentId?: string;
+    poNumber?: string;
+    originPort?: string;
+    destinationPort?: string;
+  };
 }
 
-const BookingConfirm: React.FC<BookingConfirmProps> = ({ onClose = () => {} }) => {
+const BookingConfirmPopUp: React.FC<BookingConfirmProps> = ({ onClose = () => {}, bookingData }) => {
   const [selectedNextAction, setSelectedNextAction] = useState<string>('');
   const formData = useBookingStore(state => state.formData);
   const selectedPOs = useBookingStore(state => state.selectedPOs);
@@ -42,6 +48,13 @@ const BookingConfirm: React.FC<BookingConfirmProps> = ({ onClose = () => {} }) =
   const handleClose = () => {
     onClose();
   };
+
+  // Use bookingData if provided, otherwise use Zustand state
+  const shipmentId = bookingData?.shipmentId || flNumber;
+  const poNumber = bookingData?.poNumber || (selectedPOs && selectedPOs.length > 0 ? 
+    selectedPOs.map(po => `PO ${po.poId.replace(/^PO ?/, '')}`).join(', ') : '-');
+  const originPort = bookingData?.originPort || formData?.originPort || '-';
+  const destinationPort = bookingData?.destinationPort || formData?.destinationPort || '-';
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
@@ -74,7 +87,7 @@ const BookingConfirm: React.FC<BookingConfirmProps> = ({ onClose = () => {} }) =
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 mb-1">Booking Reference</h3>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-mono font-bold text-[#007bff]">{flNumber}</span>
+                  <span className="text-sm font-mono font-bold text-[#007bff]">{shipmentId}</span>
                   <button className="text-gray-400 hover:text-gray-600">
                     <Copy className="w-4 h-4" />
                   </button>
@@ -82,21 +95,21 @@ const BookingConfirm: React.FC<BookingConfirmProps> = ({ onClose = () => {} }) =
               </div>
               <div className="text-right">
                 <div className="text-xs text-gray-500 mb-1">Purchase Orders</div>
-                <div className="text-xs font-medium text-gray-900">{selectedPOs && selectedPOs.length > 0 ? selectedPOs.map(po => `PO ${po.poId.replace(/^PO ?/, '')}`).join(', ') : '-'}</div>
+                <div className="text-xs font-medium text-gray-900">{poNumber}</div>
               </div>
             </div>
             {/* Route Summary */}
             <div className="flex items-center gap-4 bg-white p-3 rounded border border-gray-200">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-[#007bff] rounded-full"></div>
-                <span className="text-xs font-medium text-gray-900">{formData?.originPort || '-'}</span>
+                <span className="text-xs font-medium text-gray-900">{originPort}</span>
               </div>
               <div className="flex-1 border-t border-gray-300 relative">
                 <Ship className="w-4 h-4 text-gray-500 absolute left-1/2 top-0 transform -translate-x-1/2 -translate-y-1/2 bg-white" />
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-                <span className="text-xs font-medium text-gray-900">{formData?.destinationPort || '-'}</span>
+                <span className="text-xs font-medium text-gray-900">{destinationPort}</span>
               </div>
             </div>
           </div>
@@ -206,4 +219,4 @@ const BookingConfirm: React.FC<BookingConfirmProps> = ({ onClose = () => {} }) =
   );
 };
 
-export default BookingConfirm;
+export default BookingConfirmPopUp;

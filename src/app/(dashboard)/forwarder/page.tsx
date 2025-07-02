@@ -60,7 +60,7 @@ const FreightLynkDashboard = () => {
           
           {/* Right side - Calendar (25% width on large screens) */}
           <div className="lg:col-span-1 space-y-4">
-            <BookingCalendar />
+            <BookingCalendar bookings={[]} />
             <IndustryNews />
             <ShipmentAlert />
           </div>

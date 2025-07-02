@@ -1,14 +1,30 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import BookingReview from "@/app/components/shipmentsbooking/BookingReview";
 import { useRouter } from "next/navigation";
+import { useBookingStore } from '@/store/bookingStore';
 
 const ClientUI = () => {
   const router = useRouter();
+  const flNumber = useBookingStore(state => state.flNumber);
+  const bookingSubmitted = useBookingStore(state => state.bookingSubmitted);
+
+  useEffect(() => {
+    // Check if we're coming from confirmation page or if booking is already submitted
+    if (typeof window !== 'undefined') {
+      const confirmedBookings = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
+      if (bookingSubmitted || (flNumber && confirmedBookings.some((b: any) => b.id === flNumber))) {
+        router.replace('/bookings/submitted');
+        return;
+      }
+    }
+  }, [router, flNumber, bookingSubmitted]);
+
   const handleConfirmBooking = () => {
     router.push('/bookings/confirmation');
   };
+
   return (
     <div>
       <BookingReview onConfirmBooking={handleConfirmBooking} />

@@ -19,8 +19,8 @@ import { useRouter } from 'next/navigation';
 import { useBookingStore } from '@/store/bookingStore';
 
 interface BookingReviewProps {
-  onConfirmBooking?: () => void;
-}
+    onConfirmBooking?: () => void;
+  }
 
 const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking }) => { 
   const router = useRouter();
@@ -33,19 +33,24 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking }) => {
   const flNumber = useBookingStore(state => state.flNumber);
   const setFlNumber = useBookingStore(state => state.setFlNumber);
   const bookingSubmitted = useBookingStore(state => state.bookingSubmitted);
+  const setBookingSubmitted = useBookingStore(state => state.setBookingSubmitted);
 
   const [shipmentName, setShipmentName] = useState('');
 
   useEffect(() => {
-    if (bookingSubmitted) {
-      router.replace('/bookings/submitted');
+    // Check if we're coming from confirmation page
+    if (typeof window !== 'undefined') {
+      const confirmedBookings = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
+      // Only check if the booking exists in localStorage
+      if (confirmedBookings.some((b: any) => b.id === flNumber)) {
+        console.log('Booking already confirmed, redirecting to submitted page');
+        router.replace('/bookings/submitted');
+        return;
+      }
     }
-    if (typeof window !== 'undefined' && sessionStorage.getItem('bookingSubmitted')) {
-      router.replace('/bookings/submitted');
-      return;
-    }
+
     setShipmentName(formData.shipmentName || '');
-  }, [formData.shipmentName, bookingSubmitted, router]);
+  }, [formData.shipmentName, router, flNumber]);
 
   // Helper for transport mode icon
   const renderTransportIcon = (mode: string) => {
@@ -71,6 +76,16 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking }) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  // When confirm button is clicked
+  const handleConfirmClick = () => {
+    if (!flNumber) {
+      const fl = 'FL-' + Math.floor(10000 + Math.random() * 90000);
+      setFlNumber(fl);
+    }
+    // Navigate to confirmation page
+    onConfirmBooking && onConfirmBooking();
   };
 
   return (
@@ -172,7 +187,7 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking }) => {
                     <div className="text-xs text-gray-600 leading-tight">
                       <span className="font-medium">Trucking: </span>
                       {formData ? (formData.originTrucking ? 'Trucking required' : 'No trucking') : 'Trucking status will be shown here'}
-                    </div>
+                  </div>
                   </div>
                 </div>
               </div>
@@ -209,7 +224,7 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking }) => {
                     <div className="text-xs text-gray-600 leading-tight">
                       <span className="font-medium">Trucking: </span>
                       {formData ? (formData.destinationTrucking ? 'Trucking required' : 'No trucking') : 'Trucking status will be shown here'}
-                    </div>
+                  </div>
                   </div>
                 </div>
               </div>
@@ -252,7 +267,7 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking }) => {
               <div className="mb-2">
                 <div className="font-semibold text-sm text-gray-900 mb-1">
                   {formData?.productName || 'Product name will be shown here'}
-                </div>
+                  </div>
                 <div className="text-xs text-gray-600 mb-1">
                   {formData?.goodsDescription?.trim() ? formData.goodsDescription : 'No description'}
                 </div>
@@ -269,11 +284,11 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking }) => {
                   <div className="text-xs font-medium text-gray-600 mb-1">Total weight</div>
                   <div className="text-sm font-semibold">{formData?.weight ? `${formData.weight} kg` : 'N/A'}</div>
                 </div>
-                <div>
+                  <div>
                   <div className="text-xs font-medium text-gray-600 mb-1">Total volume</div>
                   <div className="text-sm font-semibold">{formData?.volume ? `${formData.volume} cbm` : 'N/A'}</div>
-                </div>
-                <div>
+                  </div>
+                  <div>
                   <div className="text-xs font-medium text-gray-600 mb-1">Pieces</div>
                   <div className="text-sm font-semibold">
                     {formData?.packageCount ? `${formData.packageCount} ${formData?.packageTypeValue || ''}`.trim() : 'N/A'}
@@ -311,7 +326,7 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking }) => {
               ) : (
                 <div className="text-xs text-gray-900">
                   No shipment tags required
-                </div>
+              </div>
               )}
             </div>
           </div>
@@ -325,13 +340,7 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking }) => {
             <div className="font-semibold text-sm text-gray-900 mb-2">New Shipment</div>
             <button 
               className="w-full px-6 py-3 text-sm bg-[#007bff] text-white font-semibold rounded-lg hover:bg-blue-700 mb-2"
-              onClick={() => {
-                if (!flNumber) {
-                  const fl = 'FL-' + Math.floor(10000 + Math.random() * 90000);
-                  setFlNumber(fl);
-                }
-                onConfirmBooking && onConfirmBooking();
-              }}
+              onClick={handleConfirmClick}
             >
               Confirm Booking
             </button>

@@ -2,12 +2,23 @@
 
 import BookingCreation from "@/app/components/shipmentsbooking/BookingCreation";
 import { useRouter } from "next/navigation";
+import { useEffect } from 'react';
+import { useBookingStore } from '@/store/bookingStore';
 
 const ClientUI = () => {
   const router = useRouter();
+  const setBookingSubmitted = useBookingStore(state => state.setBookingSubmitted);
+
   const handleSubmitBooking = () => {
     router.push('/bookings/review');
   };
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('bookingSubmitted');
+    }
+    setBookingSubmitted(false);
+  }, [setBookingSubmitted]);
 
   return (
     <div>

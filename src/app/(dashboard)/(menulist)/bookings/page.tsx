@@ -6,6 +6,7 @@ import { Download, Plus, Upload } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useBookingStore } from '@/store/bookingStore';
+import { CalendarBooking } from '@/store/types';
 
 // Booking type (should match BookingTable)
 type Booking = {
@@ -34,21 +35,36 @@ const ClientUI = () => {
   const router = useRouter();
   const [confirmedBookings, setConfirmedBookings] = useState<Booking[]>([]);
   
-  // Load confirmed bookings from localStorage on mount and when storage/focus events fire
-  useEffect(() => {
-    function updateBookings() {
-      if (typeof window !== 'undefined') {
+  // Load confirmed bookings from localStorage
+  const loadBookings = () => {
+    if (typeof window !== 'undefined') {
+      try {
         const data = localStorage.getItem('confirmedBookings');
-        setConfirmedBookings(data ? JSON.parse(data) : []);
-        console.log('Loaded confirmedBookings for table:', data ? JSON.parse(data) : []);
+        const bookings = data ? JSON.parse(data) : [];
+        console.log('Loading bookings from localStorage:', bookings);
+        setConfirmedBookings(bookings);
+      } catch (error) {
+        console.error('Error loading bookings:', error);
+        setConfirmedBookings([]);
       }
     }
-    updateBookings();
-    window.addEventListener('storage', updateBookings);
-    window.addEventListener('focus', updateBookings);
+  };
+
+  // Load bookings on mount and when storage changes
+  useEffect(() => {
+    // Initial load
+    loadBookings();
+
+    // Add event listeners
+    window.addEventListener('storage', loadBookings);
+
+    // Set up interval to check localStorage every second
+    const interval = setInterval(loadBookings, 1000);
+
+    // Cleanup
     return () => {
-      window.removeEventListener('storage', updateBookings);
-      window.removeEventListener('focus', updateBookings);
+      window.removeEventListener('storage', loadBookings);
+      clearInterval(interval);
     };
   }, []);
   
@@ -74,13 +90,32 @@ const ClientUI = () => {
   // Remove bookings handler
   const handleRemoveBookings = (ids: string[]) => {
     if (typeof window !== 'undefined') {
-      const data = localStorage.getItem('confirmedBookings');
-      const bookings = data ? JSON.parse(data) : [];
-      const updated = bookings.filter((b: Booking) => !ids.includes(b.id));
-      localStorage.setItem('confirmedBookings', JSON.stringify(updated));
-      setConfirmedBookings(updated);
+      try {
+        const data = localStorage.getItem('confirmedBookings');
+        const bookings = data ? JSON.parse(data) : [];
+        const updated = bookings.filter((b: Booking) => !ids.includes(b.id));
+        localStorage.setItem('confirmedBookings', JSON.stringify(updated));
+        setConfirmedBookings(updated);
+        console.log('Removed bookings:', ids);
+        console.log('Updated bookings:', updated);
+      } catch (error) {
+        console.error('Error removing bookings:', error);
+      }
     }
   };
+
+  // Map confirmedBookings to CalendarBooking[]
+  const calendarBookings: CalendarBooking[] = confirmedBookings.map(b => ({
+    bookingId: b.id,
+    status: b.status,
+    originPort: b.origin,
+    destinationPort: b.destination,
+    cargoReadyDate: b.cargoReadyDate,
+    weight: b.weight,
+    volume: b.volume,
+    cargoValue: b.status === 'Booked' ? 'awaiting pricing' : '',
+    transportMode: b.shipmentType,
+  }));
 
   return (
     <div>
@@ -117,7 +152,7 @@ const ClientUI = () => {
           <BookingTable bookings={confirmedBookings} onRemoveBookings={handleRemoveBookings} />
         </div>
         <div className="md:col-span-1 col-span-1 p-0 md:p-2 mt-4 md:mt-0">
-          <BookingCalendar />
+          <BookingCalendar bookings={calendarBookings} />
         </div>
       </div>
     </div>

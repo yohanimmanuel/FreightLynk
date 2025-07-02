@@ -50,13 +50,13 @@ const BookingTable: React.FC<BookingTableProps> = ({ bookings, onSubmitBooking =
     { key: 'shipmentType', label: 'Shipment Type', mandatory: false, width: '120px' },
     { key: 'containerType', label: 'Container Type', mandatory: false, width: '140px' },
     { key: 'incoterms', label: 'Incoterms', mandatory: false, width: '100px' },
-    { key: 'cargoReadyDate', label: 'Cargo Ready Date', mandatory: false, width: '140px' },
     { key: 'dangerousGoods', label: 'Dangerous Goods', mandatory: false, width: '130px' },
     { key: 'weight', label: 'Weight', mandatory: false, width: '110px' },
     { key: 'volume', label: 'Volume', mandatory: false, width: '110px' },
     { key: 'pieces', label: 'Pieces', mandatory: false, width: '100px' },
+    { key: 'cargoReadyDate', label: 'Cargo Ready Date', mandatory: false, width: '140px' },
+    { key: 'eta', label: 'ETA', mandatory: false, width: '120px' },
     { key: 'status', label: 'Status', mandatory: true, width: '120px' },
-    { key: 'eta', label: 'ETA', mandatory: false, width: '120px' }
   ];
 
   // Default visible columns
@@ -186,14 +186,12 @@ const BookingTable: React.FC<BookingTableProps> = ({ bookings, onSubmitBooking =
   const StatusBadge = ({ status }: { status: string }) => {
     const getStatusConfig = (status: string) => {
       switch (status.toLowerCase()) {
-        case 'delivered':
-          return { color: 'bg-green-100 text-green-800', icon: CheckCircle };
-        case 'in transit':
-          return { color: 'bg-blue-100 text-blue-800', icon: Ship };
         case 'booked':
-          return { color: 'bg-purple-100 text-purple-800', icon: Calendar };
-        case 'pending':
+          return { color: 'bg-blue-100 text-blue-800', icon: Calendar };
+        case 'payment':
           return { color: 'bg-orange-100 text-orange-800', icon: Clock };
+        case 'confirmed':
+          return { color: 'bg-green-100 text-green-800', icon: CheckCircle };
         default:
           return { color: 'bg-gray-100 text-gray-800', icon: Minus };
       }

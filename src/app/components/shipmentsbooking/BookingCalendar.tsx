@@ -1,74 +1,18 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, MoreHorizontal, X } from 'lucide-react';
+import { CalendarBooking } from '@/store/types';
 
 // Import the existing BookingCalendarBig component
 import BookingCalendarBig from './BookingCalendarBig';
 
-interface Booking {
-  bookingId: string;
-  origin: string;
-  destination: string;
-  status: 'Confirmed' | 'Pending' | 'Cancelled' | 'In Transit';
-  date: string;
+interface BookingCalendarProps {
+  bookings: CalendarBooking[];
 }
 
-const BookingCalendar: React.FC = () => {
+const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookings }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showBigCalendar, setShowBigCalendar] = useState(false);
-
-  // Mock booking data
-  const bookings: Booking[] = [
-    {
-      bookingId: "BL-239181",
-      origin: "Jakarta, ID",
-      destination: "Los Angeles, US",
-      status: "Confirmed",
-      date: "2025-06-18"
-    },
-    {
-      bookingId: "BL-832794",
-      origin: "Singapore, SG",
-      destination: "Bangkok, TH",
-      status: "Pending",
-      date: "2025-06-18"
-    },
-    {
-      bookingId: "BL-445123",
-      origin: "Hong Kong, HK",
-      destination: "Rotterdam, NL",
-      status: "Confirmed",
-      date: "2025-06-20"
-    },
-    {
-      bookingId: "BL-667890",
-      origin: "Shanghai, CN",
-      destination: "Hamburg, DE",
-      status: "In Transit",
-      date: "2025-06-22"
-    },
-    {
-      bookingId: "BL-778901",
-      origin: "Manila, PH",
-      destination: "Tokyo, JP",
-      status: "Pending",
-      date: "2025-06-25"
-    },
-    {
-      bookingId: "BL-889012",
-      origin: "Mumbai, IN",
-      destination: "Dubai, AE",
-      status: "Cancelled",
-      date: "2025-06-28"
-    },
-    {
-      bookingId: "BL-990123",
-      origin: "Kuala Lumpur, MY",
-      destination: "Sydney, AU",
-      status: "Confirmed",
-      date: "2025-06-30"
-    }
-  ];
 
   // Get calendar days for current month
   const getCalendarDays = useMemo(() => {
@@ -113,7 +57,7 @@ const BookingCalendar: React.FC = () => {
 
   const hasBooking = (date: Date) => {
     const dateKey = formatDateKey(date);
-    return bookings.some(booking => booking.date === dateKey);
+    return bookings.some(booking => booking.cargoReadyDate === dateKey);
   };
 
   const isToday = (date: Date) => {
@@ -132,19 +76,17 @@ const BookingCalendar: React.FC = () => {
   };
 
   const getBookingsForDate = (dateKey: string) => {
-    return bookings.filter(booking => booking.date === dateKey);
+    return bookings.filter(booking => booking.cargoReadyDate === dateKey);
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'Booked':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'Payment':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'Confirmed':
         return 'bg-green-100 text-green-800 border-green-200';
-      case 'Pending':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'Cancelled':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'In Transit':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -254,7 +196,7 @@ const BookingCalendar: React.FC = () => {
                     </span>
                   </div>
                   <p className="text-xs text-gray-600">
-                    {booking.origin} → {booking.destination}
+                    {booking.originPort} → {booking.destinationPort}
                   </p>
                 </div>
               ))
@@ -273,15 +215,15 @@ const BookingCalendar: React.FC = () => {
 
       {/* Big Calendar Modal */}
       {showBigCalendar && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-lg max-w-5xl w-full max-h-[90vh] overflow-hidden relative">
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center bg-black bg-opacity-30">
+          <div className="relative w-full max-w-6xl mx-auto">
+            <BookingCalendarBig bookings={bookings} />
             <button
+              className="absolute top-2 right-2 p-2 bg-white rounded-full shadow hover:bg-gray-100"
               onClick={() => setShowBigCalendar(false)}
-              className="absolute top-2 right-4 p-2 hover:bg-gray-100 rounded-full z-10"
             >
-              <X size={20} className="text-gray-600" />
+              <X size={20} />
             </button>
-            <BookingCalendarBig />
           </div>
         </div>
       )}
