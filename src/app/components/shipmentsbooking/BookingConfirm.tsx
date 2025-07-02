@@ -248,6 +248,8 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
         destinationLocation: formData.destinationLocation,
         containerQuantity: formData.containerQuantity,
         transportModeValue: formData.transportModeValue,
+        packageType: formData.packageTypeValue || formData.packageType,
+        goodsDescription: formData.goodsDescription,
         // Properly format selectedPOs for storage
         selectedPOs: selectedPOs.map(po => ({
           poId: po.poId,
@@ -360,6 +362,8 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
     destinationLocation: externalBooking.destinationLocation,
     containerQuantity: externalBooking.containerQuantity,
     transportModeValue: externalBooking.transportModeValue,
+    packageType: externalBooking.packageTypeValue || externalBooking.packageType,
+    goodsDescription: externalBooking.goodsDescription,
     // Ensure selectedPOs is properly formatted for POSummaryTable
     selectedPOs: Array.isArray(externalBooking.selectedPOs) ? externalBooking.selectedPOs : [],
   } : {
@@ -395,6 +399,8 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
     destinationLocation: formData.destinationLocation,
     containerQuantity: formData.containerQuantity,
     transportModeValue: formData.transportModeValue,
+    packageType: formData.packageTypeValue || formData.packageType,
+    goodsDescription: formData.goodsDescription,
     selectedPOs: selectedPOs,
   };
 
@@ -449,6 +455,8 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
                   destinationLocation: formData.destinationLocation,
                   containerQuantity: formData.containerQuantity,
                   transportModeValue: formData.transportModeValue,
+                  packageType: formData.packageTypeValue || formData.packageType,
+                  goodsDescription: formData.goodsDescription,
                   // Properly format selectedPOs for storage
                   selectedPOs: selectedPOs.map(po => ({
                     poId: po.poId,
@@ -733,7 +741,8 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
                 )}
 
                 {activeTab === 'details' && (
-                  <div className="space-y-6">
+                  <div className="space-y-8">
+                    {/* Shipment Details Section */}
                     <div>
                       <h4 className="text-sm font-semibold text-gray-900 mb-3">Shipment Details</h4>
                       <div className="grid grid-cols-2 gap-4 text-xs">
@@ -754,12 +763,66 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
                           <span className="ml-2 text-gray-900">{displayData?.destinationLocation}</span>
                         </div>
                         <div>
+                          <span className="text-gray-500">Transport Mode:</span>
+                          <span className="ml-2 text-gray-900">{displayData.transportModeValue || displayData.transportMode || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Shipment Type:</span>
+                          <span className="ml-2 text-gray-900">{displayData.shipmentTypeValue || displayData.shipmentType || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Container Type:</span>
+                          <span className="ml-2 text-gray-900">{displayData.containerTypeValue || displayData.containerType || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Incoterm:</span>
+                          <span className="ml-2 text-gray-900">{displayData.incotermsValue || displayData.incoterms || '-'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Cargo & Load Specifications Section */}
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-900 mb-3">Cargo & Load Specifications</h4>
+                      <div className="grid grid-cols-2 gap-4 text-xs">
+                        <div>
                           <span className="text-gray-500">Weight:</span>
-                          <span className="ml-2 text-gray-900">{displayData?.weight}</span>
+                          <span className="ml-2 text-gray-900">{displayData.weight || '-'}</span>
                         </div>
                         <div>
                           <span className="text-gray-500">Volume:</span>
-                          <span className="ml-2 text-gray-900">{displayData?.volume}</span>
+                          <span className="ml-2 text-gray-900">{displayData.volume || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Package Count:</span>
+                          <span className="ml-2 text-gray-900">{displayData.packageCount || displayData.pieces || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Package Type:</span>
+                          <span className="ml-2 text-gray-900">{displayData.packageTypeValue || displayData.packageType || '-'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Product & Compliance Section */}
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-900 mb-3">Product & Compliance</h4>
+                      <div className="grid grid-cols-2 gap-4 text-xs">
+                        <div>
+                          <span className="text-gray-500">Product Name:</span>
+                          <span className="ml-2 text-gray-900">{displayData.productName || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">HS Code:</span>
+                          <span className="ml-2 text-gray-900">{displayData.hsCode || '-'}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-gray-500">Goods Description:</span>
+                          <span className="ml-2 text-gray-900">{displayData.goodsDescription || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Dangerous Goods:</span>
+                          <span className="ml-2 text-gray-900">{displayData.dangerousGoods ? 'Yes' : 'No'}</span>
                         </div>
                       </div>
                     </div>
@@ -797,30 +860,6 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
           {/* Right Column (narrower) */}
           <div className="w-full lg:w-110 flex-shrink-0">
             <CurrentStatusCard />
-
-            {/* Cargo & Shipping Details */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4 mt-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-4">Cargo & Shipping Details</h3>
-              <div className="grid grid-cols-1 gap-x-4 gap-y-4">
-                <div className="flex justify-between">
-                  <span className="text-xs text-gray-500">Transport Mode:</span>
-                  <span className="text-xs font-medium text-gray-900">{displayData.transportModeValue || displayData.transportMode || '-'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-xs text-gray-500">Shipment Type:</span>
-                  <span className="text-xs font-medium text-gray-900">{displayData.shipmentTypeValue || displayData.shipmentType || '-'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-xs text-gray-500">Container Type:</span>
-                  <span className="text-xs font-medium text-gray-900">{displayData.containerTypeValue || displayData.containerType || '-'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-xs text-gray-500">Incoterm:</span>
-                  <span className="text-xs font-medium text-gray-900">{displayData.incotermsValue || displayData.incoterms || '-'}</span>
-                </div>
-              </div>
-            </div>
-
           </div>
         </div>
       </div>

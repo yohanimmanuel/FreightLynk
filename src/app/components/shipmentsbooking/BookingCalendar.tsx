@@ -51,8 +51,12 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookings }) => {
     return currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   };
 
+  // Helper to format a Date object as YYYY-MM-DD in local time
   const formatDateKey = (date: Date) => {
-    return date.toISOString().split('T')[0];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   const hasBooking = (date: Date) => {
@@ -187,19 +191,23 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookings }) => {
 
           <div className="space-y-2 max-h-80 overflow-y-auto">
             {selectedBookings.length > 0 ? (
-              selectedBookings.map((booking) => (
-                <div key={booking.bookingId} className="bg-gray-50 rounded-lg p-4 border border-gray-100">
-                  <div className="flex items-start justify-between">
-                    <h4 className="font-medium text-xs text-gray-900">{booking.bookingId}</h4>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(booking.status)}`}>
-                      {booking.status}
-                    </span>
+              selectedBookings.map((booking) => {
+                const [year, month, day] = booking.cargoReadyDate.split('-').map(Number);
+                const date = new Date(year, month - 1, day);
+                return (
+                  <div key={booking.bookingId} className="bg-gray-50 rounded-lg p-4 border border-gray-100">
+                    <div className="flex items-start justify-between">
+                      <h4 className="font-medium text-xs text-gray-900">{booking.bookingId}</h4>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(booking.status)}`}>
+                        {booking.status}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600">
+                      {booking.originPort} → {booking.destinationPort}
+                    </p>
                   </div>
-                  <p className="text-xs text-gray-600">
-                    {booking.originPort} → {booking.destinationPort}
-                  </p>
-                </div>
-              ))
+                );
+              })
             ) : selectedDate ? (
               <div className="text-center py-8 text-gray-500">
                 <p className="text-xs">No bookings scheduled for this date</p>
