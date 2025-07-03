@@ -23,6 +23,7 @@ type Booking = {
   pieces: number;
   status: string;
   eta: string;
+  transportMode: string;
 };
 
 interface BookingTableProps {
@@ -57,6 +58,7 @@ const BookingTable: React.FC<BookingTableProps> = ({ bookings, onSubmitBooking =
     { key: 'cargoReadyDate', label: 'Cargo Ready Date', mandatory: false, width: '140px' },
     { key: 'eta', label: 'ETA', mandatory: false, width: '120px' },
     { key: 'status', label: 'Status', mandatory: true, width: '120px' },
+    { key: 'transportMode', label: 'Transport Mode', mandatory: false, width: '120px' },
   ];
 
   // Default visible columns
@@ -237,7 +239,7 @@ const BookingTable: React.FC<BookingTableProps> = ({ bookings, onSubmitBooking =
         return (
           <span className="flex items-center">
             <Package className="w-3 h-3 mr-1 text-gray-400" />
-            {booking[columnKey] as string}
+            {(booking[columnKey] as string)?.toUpperCase()}
           </span>
         );
       case 'cargoReadyDate':
@@ -246,6 +248,19 @@ const BookingTable: React.FC<BookingTableProps> = ({ bookings, onSubmitBooking =
           <span className="flex items-center">
             <Calendar className="w-3 h-3 mr-1 text-gray-400" />
             {booking[columnKey] as string}
+          </span>
+        );
+      case 'transportMode':
+        let ModeIcon = Ship;
+        const mode = (booking[columnKey] as string)?.toLowerCase();
+        if (mode === 'air') ModeIcon = require('lucide-react').Plane;
+        else if (mode === 'road') ModeIcon = require('lucide-react').Truck;
+        else if (mode === 'sea') ModeIcon = require('lucide-react').Ship;
+        else ModeIcon = require('lucide-react').Package;
+        return (
+          <span className="flex items-center">
+            <ModeIcon className="w-4 h-4 mr-1 text-gray-400" />
+            {(booking[columnKey] as string)?.toUpperCase()}
           </span>
         );
       default:

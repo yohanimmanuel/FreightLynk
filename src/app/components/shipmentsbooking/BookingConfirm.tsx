@@ -144,7 +144,7 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
           <span className="text-xs font-medium text-orange-600">Awaiting Pricing</span>
         </div>
         <p className="text-xs text-gray-500 mt-2">
-          * Pricing typically takes 2-4 business days from the forwarder or logistics provider.
+          * Pricing typically takes 1-3 business days from the forwarder or logistics provider.
         </p>
         <button
           className={`mt-4 w-full px-4 py-3 rounded-lg text-xs font-semibold transition-colors duration-200 ${pricingReady ? 'bg-[#007bff] text-white hover:bg-blue-700 cursor-pointer' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
@@ -764,11 +764,11 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
                         </div>
                         <div>
                           <span className="text-gray-500">Transport Mode:</span>
-                          <span className="ml-2 text-gray-900">{displayData.transportModeValue || displayData.transportMode || '-'}</span>
+                          <span className="ml-2 text-gray-900">{(displayData.transportModeValue || displayData.transportMode || '-').toUpperCase()}</span>
                         </div>
                         <div>
                           <span className="text-gray-500">Shipment Type:</span>
-                          <span className="ml-2 text-gray-900">{displayData.shipmentTypeValue || displayData.shipmentType || '-'}</span>
+                          <span className="ml-2 text-gray-900">{(displayData.shipmentTypeValue || displayData.shipmentType || '-').toUpperCase()}</span>
                         </div>
                         <div>
                           <span className="text-gray-500">Container Type:</span>

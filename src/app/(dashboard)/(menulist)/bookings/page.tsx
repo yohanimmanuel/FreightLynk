@@ -29,6 +29,7 @@ type Booking = {
   pieces: number;
   status: string;
   eta: string;
+  transportModeValue?: string;
 };
 
 const ClientUI = () => {
@@ -114,7 +115,12 @@ const ClientUI = () => {
     weight: b.weight,
     volume: b.volume,
     cargoValue: b.status === 'Booked' ? 'awaiting pricing' : '',
-    transportMode: b.shipmentType,
+    transportMode: b.transportModeValue || '',
+  }));
+
+  const bookingsWithTransportMode = confirmedBookings.map(b => ({
+    ...b,
+    transportMode: b.transportModeValue || '',
   }));
 
   return (
@@ -149,7 +155,7 @@ const ClientUI = () => {
               </button>
               </div>
           </div>
-          <BookingTable bookings={confirmedBookings} onRemoveBookings={handleRemoveBookings} />
+          <BookingTable bookings={bookingsWithTransportMode} onRemoveBookings={handleRemoveBookings} />
         </div>
         <div className="md:col-span-1 col-span-1 p-0 md:p-2 mt-4 md:mt-0">
           <BookingCalendar bookings={calendarBookings} />

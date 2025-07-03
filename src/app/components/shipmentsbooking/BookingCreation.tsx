@@ -304,6 +304,15 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setHasSubmitted(true);
+    let updatedFormData = { ...formData };
+    if (formData.shipmentTypeValue === 'lcl') {
+      updatedFormData = {
+        ...updatedFormData,
+        containerTypeValue: '-',
+        containerType: '-',
+      };
+      setFormData(updatedFormData);
+    }
     if (validateForm()) {
       onSubmitBooking();
     } else {
@@ -318,6 +327,13 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
   }, []);
 
   console.log('Input value:', formData.shipmentName);
+
+  // Add useEffect to auto-set shipmentTypeValue to 'lcl' when Air Freight is selected
+  useEffect(() => {
+    if (formData.transportModeValue === 'air' && formData.shipmentTypeValue !== 'lcl') {
+      setFormData({ ...formData, shipmentTypeValue: 'lcl' });
+    }
+  }, [formData.transportModeValue]);
 
   return (
     <div className="max-w-4xl mx-auto p-2 bg-white">
@@ -525,8 +541,11 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
                   <button
                     key={type}
                     type="button"
+                    disabled={formData.transportModeValue === 'air' && type === 'fcl'}
                     className={`flex-1 px-4 py-3 text-xs border rounded-lg transition-colors
-                      ${formData.shipmentTypeValue === type ? 'bg-blue-50 border-blue-500 text-blue-700 font-semibold' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                      ${formData.shipmentTypeValue === type ? 'bg-blue-50 border-blue-500 text-blue-700 font-semibold' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}
+                      ${formData.transportModeValue === 'air' && type === 'fcl' ? 'opacity-50 cursor-not-allowed' : ''}
+                      ${formData.transportModeValue === 'air' && type === 'lcl' ? 'font-bold' : ''}`}
                     onClick={() => handleInputChange('shipmentTypeValue', type)}
                   >
                     {type === 'fcl' ? 'FCL' : 'LCL'}
@@ -538,10 +557,11 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
               )}
             </div>
             {/* Container Type */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-2">
-                Container Type <span className="text-red-500">*</span>
-              </label>
+            {formData.shipmentTypeValue === 'lcl' ? (
+              <div className="text-xs text-gray-600 mt-3 mb-2">
+                Specify your cargo & load details below for consolidation and handling.
+              </div>
+            ) : (
               <div className="flex gap-2 items-center">
                 {formData.shipmentTypeValue === 'fcl' && (
                   <input
@@ -568,10 +588,10 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
                   </button>
                 ))}
               </div>
-              {formData.shipmentTypeValue === 'fcl' && hasSubmitted && errors.containerQuantity && (
-                <p className="text-xs text-red-500 mt-1">{errors.containerQuantity}</p>
-              )}
-            </div>
+            )}
+            {formData.shipmentTypeValue === 'fcl' && hasSubmitted && errors.containerQuantity && (
+              <p className="text-xs text-red-500 mt-1">{errors.containerQuantity}</p>
+            )}
             {/* Incoterms (dropdown) */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-2">
