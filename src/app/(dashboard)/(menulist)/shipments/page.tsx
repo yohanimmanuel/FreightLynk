@@ -1,11 +1,11 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import IndustryNews from "@/app/components/shipmentsbooking/IndustryNews";
-import ShipmentAlerts from "@/app/components/shipmentsbooking/ShipmentAlert";
-import ShipmentMapTracker from "@/app/components/shipmentsbooking/ShipmentMapTracker";
-import ShipmentTable from "@/app/components/shipmentsbooking/ShipmentTable";
-import ShipmentMilestone from '@/app/components/shipmentsbooking/ShipmentMilestone';
+import IndustryNews from "@/app/components/clients/shipmentsbooking/IndustryNews";
+import ShipmentAlerts from "@/app/components/clients/shipmentsbooking/ShipmentAlert";
+import ShipmentMapTracker from "@/app/components/clients/shipmentsbooking/ShipmentMapTracker";
+import ShipmentTable from "@/app/components/clients/shipmentsbooking/ShipmentTable";
+import ShipmentMilestone from '@/app/components/clients/shipmentsbooking/ShipmentMilestone';
 
 const ClientUI = () => {
    const router = useRouter();

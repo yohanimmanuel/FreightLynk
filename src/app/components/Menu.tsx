@@ -39,7 +39,25 @@ import {
 
 import { useMenuContext } from '@/app/(dashboard)/layout';
 
-const menuItems = [
+type MenuItem = {
+  icon: any;
+  label: string;
+  href: string;
+  visible: string[];
+  hasSubmenu?: boolean;
+  submenu?: Array<{
+    icon: any;
+    label: string;
+    href: string;
+  }>;
+};
+
+type MenuSection = {
+  title: string;
+  items: MenuItem[];
+};
+
+const menuItems: MenuSection[] = [
     {
       title: "MENU",
       items: [
@@ -113,21 +131,8 @@ const menuItems = [
           {
             icon: Building2,
             label: "Business",
-            href: "#", // Changed to # since it's dropdown only
+            href: "/business", // Changed to # since it's dropdown only
             visible: ["admin", "client", "forwarder", "logisticsprovider"],
-            hasSubmenu: true,
-            submenu: [
-              {
-                icon: UserCheck,
-                label: "Partners",
-                href: "/business/partners",
-              },
-              {
-                icon: Network,
-                label: "Networking",
-                href: "/business/networking",
-              },
-            ]
           },
           {
             icon: HelpCircle,
@@ -312,7 +317,7 @@ const Menu = () => {
                         }`}
                     >
                       {/* For items with submenu, make entire row clickable for dropdown */}
-                      {item.hasSubmenu ? (
+                      {item.hasSubmenu === true && item.submenu ? (
                         <button
                           onClick={() => toggleSubmenu(item.label)}
                           className="flex items-center gap-3 flex-1 w-full text-left"
@@ -353,7 +358,7 @@ const Menu = () => {
                       ) : (
                         /* For regular menu items, keep as Link */
                         <Link 
-                          href={href}
+                          href={href as unknown as never}
                           className="flex items-center gap-3 flex-1"
                           title={isCollapsed ? item.label : undefined}
                         >

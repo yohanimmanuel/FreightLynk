@@ -36,7 +36,7 @@ const AdminUI = () => {
   );
 };
 
-const InvitationsUI = ({ userType }: { userType: string }) => {
+const Business = ({ userType }: { userType: string }) => {
   // Manually set userType for testing - change this value to test different UIs
   const testUserType: string = 'client'; // Change to: 'client', 'forwarder', 'logistics', 'admin'
   
@@ -48,4 +48,4 @@ const InvitationsUI = ({ userType }: { userType: string }) => {
   return <div>Access denied</div>;
 };
 
-export default InvitationsUI;
+export default Business;

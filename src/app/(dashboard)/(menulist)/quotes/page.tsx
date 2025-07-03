@@ -1,7 +1,7 @@
 'use client';
 
-import QuoteTable from "@/app/components/quotefinancing/QuoteTable";
-import RateTable from "@/app/components/quotefinancing/RateTable";
+import QuoteTable from "@/app/components/clients/quotefinancing/QuoteTable";
+import RateTable from "@/app/components/clients/quotefinancing/RateTable";
 import { useRouter } from 'next/navigation';
 
 const ClientUI = () => {

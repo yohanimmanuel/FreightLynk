@@ -1,38 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronDown, ChevronRight, ChevronLeft, Search, Upload, Download, Plus, Filter, MoreHorizontal, Check, X, Edit } from 'lucide-react';
-
-export interface PurchaseOrder {
-  id: string;
-  exceptions: string;
-  cargoReadyBy: string;
-  mustArriveBy: string;
-  buyer: string;
-  seller: string;
-  subjectedCarrier: string;
-  progress: string;
-  status: string;
-}
-
-export interface PODetail {
-  id: number;
-  poOrderNumber: number;
-  productCode: string;
-  productName: string;
-  cargoReadyDate: string;
-  mustArriveDate: string;
-  transportMode: string;
-  destination: string;
-  currency: string;
-  unitCost: string;
-  uom: string;
-  requested: number;
-}
-
-interface POSelection {
-  poId: string;
-  selectedItems: Set<number>; // Only explicitly checked items
-  bookedQuantities: Record<number, number>; // All quantities (selected or not)
-}
+import { ChevronDown, ChevronRight, ChevronLeft, Search, Upload, Download, Plus, Filter, MoreHorizontal, Check, X, Edit, Trash2 } from 'lucide-react';
+import { usePOStore } from '@/store/poStore';
+import type { PurchaseOrder, PODetail, POSelection } from '@/store/poMockData';
 
 export interface POManagementTableProps {
   onEditOrder: (poId: string) => void;
@@ -41,184 +10,11 @@ export interface POManagementTableProps {
     selectedItems: number[];
     bookedQuantities: Record<number, number>;
   }[]) => void;  // Add this
-  purchaseOrders?: PurchaseOrder[];
-  poDetails?: PODetail[];
   mode?: 'standalone' | 'review';
 }
 
-export const purchaseOrdersData: PurchaseOrder[] = [
-    {
-      id: 'PO3400',
-      exceptions: 'Missed cargo ready date',
-      cargoReadyBy: 'Aug 30, 2019',
-      mustArriveBy: 'Oct 1, 2019',
-      buyer: 'Studio Apparel',
-      seller: 'Forward Supply Co',
-      subjectedCarrier: 'Maersk Line',
-      progress: '1/2 lines booked',
-      status: 'Open'
-    },
-    {
-      id: 'PO1000',
-      exceptions: 'Missed cargo ready date',
-      cargoReadyBy: 'Jan 28, 2021',
-      mustArriveBy: 'Feb 12, 2021',
-      buyer: 'Studio Apparel',
-      seller: 'Forward Supply Co',
-      subjectedCarrier: 'DHL Express',
-      progress: '0/7 lines booked',
-      status: 'Open'
-    },
-    {
-      id: 'PO1057',
-      exceptions: 'Missed cargo ready date',
-      cargoReadyBy: 'Feb 21, 2021',
-      mustArriveBy: 'Apr 15, 2021',
-      buyer: 'Studio Apparel',
-      seller: 'Forward Supply Co',
-      subjectedCarrier: 'COSCO Shipping',
-      progress: '0/7 lines booked',
-      status: 'Open'
-    },
-    {
-      id: 'PO1055',
-      exceptions: '--',
-      cargoReadyBy: 'Mar 12, 2021',
-      mustArriveBy: 'Apr 15, 2021',
-      buyer: 'Studio Apparel',
-      seller: 'Forward Supply Co',
-      subjectedCarrier: 'FedEx',
-      progress: '1/7 lines booked',
-      status: 'Open'
-    },
-    {
-      id: 'PO1003',
-      exceptions: 'Booking approval required',
-      cargoReadyBy: 'Mar 12, 2021',
-      mustArriveBy: 'Apr 15, 2021',
-      buyer: 'Studio Apparel',
-      seller: 'Forward Supply Co',
-      subjectedCarrier: 'DB Schenker',
-      progress: '1/7 lines booked',
-      status: 'Open'
-    },
-    {
-      id: 'PO2883',
-      exceptions: 'Booking approval required',
-      cargoReadyBy: 'Mar 12, 2021',
-      mustArriveBy: 'Apr 15, 2021',
-      buyer: 'Studio Apparel',
-      seller: 'Forward Supply Co',
-      subjectedCarrier: 'DB Schenker',
-      progress: '1/7 lines booked',
-      status: 'Open'
-    }
-];
-
-export const poDetailsData: PODetail[] = [
-    {
-      id: 1,
-      poOrderNumber: 3400,
-      productCode: 'F-ACS-LTH-BELT-BLCK',
-      productName: "Women's Leather Belt",
-      cargoReadyDate: 'Aug 30, 2019',
-      mustArriveDate: 'Oct 1, 2019',
-      transportMode: 'Sea',
-      destination: 'Los Angeles Warehouse',
-      currency: 'USD',
-      unitCost: '$15.00',
-      uom: 'PC',
-      requested: 200
-    },
-    {
-      id: 2,
-      poOrderNumber: 1000,
-      productCode: 'F-BTDN-TOP-SILK',
-      productName: "Women's Silk Shirt",
-      cargoReadyDate: 'Jan 28, 2021',
-      mustArriveDate: 'Feb 12, 2021',
-      transportMode: 'Sea',
-      destination: 'Los Angeles Warehouse',
-      currency: 'USD',
-      unitCost: '$20.00',
-      uom: 'PC',
-      requested: 300
-    },
-    {
-      id: 3,
-      poOrderNumber: 1057,
-      productCode: 'F-BTM-DNM-BOYF-LTBLUE',
-      productName: "Women's Boyfriend Jean - Lt Blue",
-      cargoReadyDate: 'Feb 21, 2021',
-      mustArriveDate: 'Apr 15, 2021',
-      transportMode: 'Sea',
-      destination: 'Los Angeles Warehouse',
-      currency: 'AUD',
-      unitCost: '$16.00',
-      uom: 'PC',
-      requested: 250
-    },
-    {
-      id: 4,
-      poOrderNumber: 1055,
-      productCode: 'F-DRS-CTTN-MUSC-BLK',
-      productName: "Women's Muscle Tank Dress",
-      cargoReadyDate: 'Mar 12, 2021',
-      mustArriveDate: 'Apr 15, 2021',
-      transportMode: 'Sea',
-      destination: 'Los Angeles Warehouse',
-      currency: 'SGD',
-      unitCost: '$12.00',
-      uom: 'PC',
-      requested: 400
-    },
-    {
-      id: 5,
-      poOrderNumber: 1003,
-      productCode: 'F-SWTR-CSHM-KNIT',
-      productName: "Women's Cashmere Knit Sweater",
-      cargoReadyDate: 'Mar 12, 2021',
-      mustArriveDate: 'Apr 15, 2021',
-      transportMode: 'Sea',
-      destination: 'Los Angeles Warehouse',
-      currency: 'SGD',
-      unitCost: '$25.00',
-      uom: 'PC',
-      requested: 150
-    },
-    {
-      id: 6,
-      poOrderNumber: 3400,
-      productCode: 'F-TEE-CTTN-CREW',
-      productName: "Women's Cotton Crew Tee",
-      cargoReadyDate: 'Aug 30, 2019',
-      mustArriveDate: 'Oct 1, 2019',
-      transportMode: 'Sea',
-      destination: 'Los Angeles Warehouse',
-      currency: 'IDR',
-      unitCost: '$12.00',
-      uom: 'PC',
-      requested: 170
-    },
-    {
-      id: 7,
-      poOrderNumber: 2883,
-      productCode: 'F-TEE-CTTN-CREW',
-      productName: "Women's Cotton Crew Tee",
-      cargoReadyDate: 'Mar 12, 2021',
-      mustArriveDate: 'Apr 15, 2021',
-      transportMode: 'Sea',
-      destination: 'Los Angeles Warehouse',
-      currency: 'IDR',
-      unitCost: '$12.00',
-      uom: 'PC',
-      requested: 170
-    }
-];
-
 const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManagementTableProps) => {
-  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(purchaseOrdersData);
-  const [poDetails] = useState<PODetail[]>(poDetailsData);
+  // Now using Zustand store for purchaseOrders and poDetails
   const [selectedPOs, setSelectedPOs] = useState<POSelection[]>([]);
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [activeBulkPOs, setActiveBulkPOs] = useState<string[]>([]);
@@ -226,6 +22,10 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
   const statusDropdownRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookingType, setBookingType] = useState<'new' | 'existing'>('new');
+
+  const purchaseOrders = usePOStore(state => state.purchaseOrders);
+  const poDetails = usePOStore(state => state.poDetails);
+  const setPurchaseOrders = usePOStore(state => state.setPurchaseOrders);
 
     // Helper function to format date
   const formatDate = (dateString: string) => {
@@ -256,7 +56,8 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
         poSelection.selectedItems.has(item.id) && 
         item.poOrderNumber === parseInt(poSelection.poId.replace('PO', ''))
       );
-      return { po, items, selection: poSelection };
+      // Convert Set<number> to number[] for selectedItems
+      return { po, items, selection: { ...poSelection, selectedItems: Array.from(poSelection.selectedItems) } };
     }).filter(data => data.po && data.items.length > 0);
 
     // Auto-close modal when no data
@@ -458,13 +259,7 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
   };
 
   const handleStatusChange = (poId: string, newStatus: string) => {
-    setPurchaseOrders(prevOrders => 
-      prevOrders.map(po => 
-        po.id === poId ? { ...po, status: newStatus } : po
-      )
-    );
-    
-    // Close the dropdown
+    setPurchaseOrders(purchaseOrders.map(po => po.id === poId ? { ...po, status: newStatus } : po));
     setStatusDropdowns(prev => ({ ...prev, [poId]: false }));
   };
 
@@ -949,13 +744,20 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
                       <td className="px-4 py-3 text-xs text-gray-900">{po.subjectedCarrier}</td>
                       <td className="px-4 py-3 text-xs text-gray-900">{po.progress}</td>
                       {renderStatusDropdown(po)}
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-5 flex items-center gap-2">
                         <button 
                           onClick={() => onEditOrder(po.id)}  
                           className="p-1 text-gray-500 hover:text-gray-700 rounded"
                           title="Edit PO"
                         >
                           <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setPurchaseOrders(purchaseOrders.filter(p => p.id !== po.id))}
+                          className="p-1 text-gray-500 hover:text-red-600 rounded"
+                          title="Remove PO"
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </td> 
                     </tr>

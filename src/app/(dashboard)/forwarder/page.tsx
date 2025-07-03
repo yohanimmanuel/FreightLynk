@@ -2,13 +2,13 @@
 
 import React, { useState } from 'react';
 import { MapPin, Ship, Clock, DollarSign, AlertTriangle, Bell, TrendingUp, Package, Calendar, FileText, Navigation, Truck } from 'lucide-react';
-import ShipmentMapTracker from '@/app/components/shipmentsbooking/ShipmentMapTracker';
-import BookingCalendar from '@/app/components/shipmentsbooking/BookingCalendar';
+import ShipmentMapTracker from '@/app/components/clients/shipmentsbooking/ShipmentMapTracker';
+import BookingCalendar from '@/app/components/clients/shipmentsbooking/BookingCalendar';
 import Image from 'next/image';
-import ShipmentTable from '@/app/components/shipmentsbooking/ShipmentTable';
-import ShipmentMilestone from '@/app/components/shipmentsbooking/ShipmentMilestone';
-import IndustryNews from '@/app/components/shipmentsbooking/IndustryNews';
-import ShipmentAlert from '@/app/components/shipmentsbooking/ShipmentAlert';
+import ShipmentTable from '@/app/components/clients/shipmentsbooking/ShipmentTable';
+import ShipmentMilestone from '@/app/components/clients/shipmentsbooking/ShipmentMilestone';
+import IndustryNews from '@/app/components/clients/shipmentsbooking/IndustryNews';
+import ShipmentAlert from '@/app/components/clients/shipmentsbooking/ShipmentAlert';
 import { useRouter } from 'next/navigation';
 
 const FreightLynkDashboard = () => {

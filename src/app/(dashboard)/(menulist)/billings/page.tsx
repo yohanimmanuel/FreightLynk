@@ -1,6 +1,6 @@
 'use client';
 
-import BillingTable from "@/app/components/quotefinancing/BillingTable";
+import BillingTable from "@/app/components/clients/quotefinancing/BillingTable";
 import { Download, Upload } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { useBillingStore } from '../../../../store/billingStore';

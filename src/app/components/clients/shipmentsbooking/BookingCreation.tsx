@@ -1,15 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ChevronDown, ChevronUp, Package, Users, Truck, MapPin, Target, Scale, FileText, Tag, MessageSquare, Info, Plus, X, Trash2 } from 'lucide-react';
-import POManagementTable, { 
-  PurchaseOrder, 
-  PODetail, 
-  purchaseOrdersData, 
-  poDetailsData, 
-} from '../purchasesorders/POManagementTable';
 import POSummaryTable from '../purchasesorders/POSummaryTable';
+import POManagementTable from '../purchasesorders/POManagementTable';
 import { useRouter } from 'next/navigation';
 import ReactDOM from 'react-dom';
 import { useBookingStore } from '@/store/bookingStore';
+import { usePOStore } from '@/store/poStore';
 
 interface BookingCreationProps {
   onSubmitBooking: () => void;
@@ -206,10 +202,10 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
 
   // Handle edit order
   const handleEditOrder = (poId: string) => {
-    const selectedPO = purchaseOrdersData.find(po => po.id === poId);
+    const selectedPO = purchaseOrders.find(po => po.id === poId);
     if (!selectedPO) return;
 
-    const poItems = poDetailsData.filter(
+    const poItems = poDetails.filter(
       item => item.poOrderNumber === parseInt(poId.replace('PO', ''))
     );
 
@@ -243,10 +239,10 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
   const getSelectedPODetails = () => {
     const details = selectedPOs
       .map(poSelection => {
-        const po = purchaseOrdersData.find(p => p.id === poSelection.poId);
+        const po = purchaseOrders.find(p => p.id === poSelection.poId);
         if (!po) return null;
         const poNum = parseInt(poSelection.poId.replace('PO', ''));
-        const items = poDetailsData.filter(item =>
+        const items = poDetails.filter(item =>
           poSelection.selectedItems.includes(item.id) &&
           item.poOrderNumber === poNum
         ).map(item => ({
@@ -335,6 +331,9 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
     }
   }, [formData.transportModeValue]);
 
+  const purchaseOrders = usePOStore(state => state.purchaseOrders);
+  const poDetails = usePOStore(state => state.poDetails);
+
   return (
     <div className="max-w-4xl mx-auto p-2 bg-white">
       <div className="mb-4 border-b border-gray-200 pb-4">
@@ -390,8 +389,8 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
           )}
           <POSummaryTable
             selectedPOs={selectedPOs}
-            purchaseOrdersData={purchaseOrdersData}
-            poDetailsData={poDetailsData}
+            purchaseOrdersData={purchaseOrders}
+            poDetailsData={poDetails}
             onRemovePO={(poId) => {
               const updated = selectedPOs.filter((sel: any) => sel.poId !== poId);
               setSelectedPOs(updated);
@@ -1033,8 +1032,6 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
             <div className="flex-1 overflow-auto p-4 text-black">
               <POManagementTable
                 mode='standalone'
-                purchaseOrders={purchaseOrdersData}
-                poDetails={poDetailsData}
                 onEditOrder={handleEditOrder}
                 onCreateBooking={(bookingData) => {
                   const normalized = bookingData.map((poSel: any) => ({

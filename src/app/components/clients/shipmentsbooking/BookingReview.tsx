@@ -14,9 +14,9 @@ import {
   Building2
 } from 'lucide-react';
 import POSummaryTable from '../purchasesorders/POSummaryTable';
-import { purchaseOrdersData, poDetailsData } from '../purchasesorders/POManagementTable';
 import { useRouter } from 'next/navigation';
 import { useBookingStore } from '@/store/bookingStore';
+import { usePOStore } from '@/store/poStore';
 
 interface BookingReviewProps {
     onConfirmBooking?: () => void;
@@ -34,7 +34,8 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking }) => {
   const setFlNumber = useBookingStore(state => state.setFlNumber);
   const bookingSubmitted = useBookingStore(state => state.bookingSubmitted);
   const setBookingSubmitted = useBookingStore(state => state.setBookingSubmitted);
-
+  const purchaseOrders = usePOStore(state => state.purchaseOrders);
+  const poDetails = usePOStore(state => state.poDetails);
   const [shipmentName, setShipmentName] = useState('');
 
   useEffect(() => {
@@ -248,8 +249,8 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking }) => {
             <div className="p-4">
               <POSummaryTable
                 selectedPOs={selectedPOs}
-                purchaseOrdersData={purchaseOrdersData}
-                poDetailsData={poDetailsData}
+                purchaseOrdersData={purchaseOrders}
+                poDetailsData={poDetails}
               />
             </div>
           </div>

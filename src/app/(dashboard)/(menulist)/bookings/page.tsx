@@ -1,7 +1,7 @@
 'use client';
 
-import BookingCalendar from "@/app/components/shipmentsbooking/BookingCalendar";
-import BookingTable from "@/app/components/shipmentsbooking/BookingTable";
+import BookingCalendar from "@/app/components/clients/shipmentsbooking/BookingCalendar";
+import BookingTable from "@/app/components/clients/shipmentsbooking/BookingTable";
 import { Download, Plus, Upload } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';

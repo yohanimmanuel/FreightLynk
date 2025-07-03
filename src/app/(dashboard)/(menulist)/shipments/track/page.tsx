@@ -1,6 +1,6 @@
 'use client';
 
-import ShipmentTrackingList from "@/app/components/shipmentsbooking/ShipmentTrackingList";
+import ShipmentTrackingList from "@/app/components/clients/shipmentsbooking/ShipmentTrackingList";
 
 const ClientUI = () => {
   return (

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Download, Upload, Plus, Eye, CreditCard, Calendar, Filter, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
-import { billingData } from '../../../store/billingData';
+import { billingData } from '@/store/billingMockData';
 
 interface BillingTableProps {
   onViewDetails?: (item: any) => void;

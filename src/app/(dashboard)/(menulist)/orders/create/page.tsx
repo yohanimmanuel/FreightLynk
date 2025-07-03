@@ -1,6 +1,6 @@
 'use client';
 
-import POCreation from "@/app/components/purchasesorders/POCreation";
+import POCreation from "@/app/components/clients/purchasesorders/POCreation";
 
 const ClientUI = () => {
   return (

@@ -1,6 +1,6 @@
 'use client';
 
-import BookingConfirm from "@/app/components/shipmentsbooking/BookingConfirm";
+import BookingConfirm from "@/app/components/clients/shipmentsbooking/BookingConfirm";
 import { useSearchParams } from 'next/navigation';
 
 const ClientUI = () => {

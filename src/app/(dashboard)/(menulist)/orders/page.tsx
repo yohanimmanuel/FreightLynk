@@ -1,14 +1,11 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import POManagementTable, {
-  PurchaseOrder,
-  PODetail,
-  purchaseOrdersData,
-  poDetailsData
-} from "@/app/components/purchasesorders/POManagementTable";
+import POManagementTable from "@/app/components/clients/purchasesorders/POManagementTable";
 import { Download, Plus, Upload } from 'lucide-react';
 import { useBookingStore } from '@/store/bookingStore';
+import type { PurchaseOrder, PODetail } from '@/store/poMockData';
+import { purchaseOrdersData, poDetailsData } from '@/store/poMockData';
 
 
 const ClientUI = () => {
@@ -98,7 +95,6 @@ const ClientUI = () => {
          </div>
       </div>
       <POManagementTable
-        purchaseOrders={orders}
         onEditOrder={handleEditOrder}
         onCreateBooking={handleCreateBooking}
       />

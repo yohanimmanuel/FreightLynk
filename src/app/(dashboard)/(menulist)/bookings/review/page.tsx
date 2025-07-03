@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import BookingReview from "@/app/components/shipmentsbooking/BookingReview";
+import BookingReview from "@/app/components/clients/shipmentsbooking/BookingReview";
 import { useRouter } from "next/navigation";
 import { useBookingStore } from '@/store/bookingStore';
 

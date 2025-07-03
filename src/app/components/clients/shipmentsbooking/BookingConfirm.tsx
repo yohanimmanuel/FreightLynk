@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import BookingConfirmPopUp from './BookingConfirmPopUp';
 import POSummaryTable from '../purchasesorders/POSummaryTable';
-import { purchaseOrdersData, poDetailsData } from '../purchasesorders/POManagementTable';
+import { usePOStore } from '@/store/poStore';
 import { useRouter } from 'next/navigation';
 import { useBookingStore } from '@/store/bookingStore';
 
@@ -54,7 +54,8 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
   const setFlNumber = useBookingStore(state => state.setFlNumber);
   const bookingSubmitted = useBookingStore(state => state.bookingSubmitted);
   const setBookingSubmitted = useBookingStore(state => state.setBookingSubmitted);
-
+  const purchaseOrders = usePOStore(state => state.purchaseOrders);
+  const poDetails = usePOStore(state => state.poDetails);
   // Progress steps
   const progressSteps = [
     { id: 'booking', label: 'Booking', status: 'completed', icon: CheckCircle },
@@ -847,8 +848,8 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
                     <div className="border border-gray-200 rounded-lg p-4">
                       <POSummaryTable
                         selectedPOs={displayData.selectedPOs || []}
-                        purchaseOrdersData={purchaseOrdersData}
-                        poDetailsData={poDetailsData}
+                        purchaseOrdersData={purchaseOrders}
+                        poDetailsData={poDetails}
                       />
                     </div>
                   </div>

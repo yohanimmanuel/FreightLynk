@@ -1,7 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import PODetails, { POData, POItem } from "@/app/components/purchasesorders/PODetails";
-import { PurchaseOrder, PODetail } from "@/app/components/purchasesorders/POManagementTable";
+import PODetails, { POData, POItem } from "@/app/components/clients/purchasesorders/PODetails";
+import type { PurchaseOrder, PODetail } from '@/store/poMockData';
 import { useEffect, useState } from 'react';
 
 const ClientDetailsUI = () => {

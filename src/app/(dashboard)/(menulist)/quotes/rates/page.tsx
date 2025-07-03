@@ -1,6 +1,6 @@
 'use client';
 
-import RateTable from "@/app/components/quotefinancing/RateTable";
+import RateTable from "@/app/components/clients/quotefinancing/RateTable";
 import { Upload, Download, Plus } from 'lucide-react';
 
 const ClientUI = () => {

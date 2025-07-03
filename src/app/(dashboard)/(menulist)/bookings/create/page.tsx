@@ -1,6 +1,6 @@
 'use client';
 
-import BookingCreation from "@/app/components/shipmentsbooking/BookingCreation";
+import BookingCreation from "@/app/components/clients/shipmentsbooking/BookingCreation";
 import { useRouter } from "next/navigation";
 import { useEffect } from 'react';
 import { useBookingStore } from '@/store/bookingStore';

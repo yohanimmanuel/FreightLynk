@@ -1,6 +1,6 @@
 'use client';
 
-import ShipmentTable from "@/app/components/shipmentsbooking/ShipmentTable";
+import ShipmentTable from "@/app/components/clients/shipmentsbooking/ShipmentTable";
 import { Upload, Download, Plus } from 'lucide-react';
 
 

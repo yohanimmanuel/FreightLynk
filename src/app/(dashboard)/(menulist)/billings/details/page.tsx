@@ -1,6 +1,6 @@
 'use client';
 
-import BillingDetails from "@/app/components/quotefinancing/BillingDetails";
+import BillingDetails from "@/app/components/clients/quotefinancing/BillingDetails";
 import { useBillingStore } from '../../../../../store/billingStore';
 import { Download, CreditCard } from 'lucide-react';
 
