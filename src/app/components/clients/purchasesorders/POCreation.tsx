@@ -1,9 +1,12 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Plus, Trash2, Calendar, Package, Truck, DollarSign, MapPin, ChevronDown } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { usePOStore } from '@/store/poStore';
+import type { PurchaseOrder, PODetail } from '@/store/poMockData';
 
 // Type definitions
 interface POItem {
-  id: string;
+  id: number;
   lineNumber: number;
   productSKU: string;
   productName: string;
@@ -11,7 +14,7 @@ interface POItem {
   mabd: string;
   mode: 'Sea' | 'Air' | 'Road' | 'Rail' | '';
   destination: string;
-  currency: 'USD' | 'CNY' | 'EUR' | 'IDR' | 'JPY' | 'GBP' | '';
+  currency: 'USD' | 'CNY' | 'EUR' | 'IDR' | 'JPY' | 'GBP' | 'AUD' | ''; 
   unitCost: number | '';
   uom: 'PC' | 'KG' | 'CBM' | 'LBS' | 'TON' | '';
   requestedQty: number | '';
@@ -33,6 +36,11 @@ interface POData {
 }
 
 const POCreation: React.FC = () => {
+  const router = useRouter();
+  const setPurchaseOrders = usePOStore(state => state.setPurchaseOrders);
+  const setPODetails = usePOStore(state => state.setPODetails);
+  const purchaseOrders = usePOStore(state => state.purchaseOrders);
+  const poDetails = usePOStore(state => state.poDetails);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);  
   const [showModeDropdowns, setShowModeDropdowns] = useState<{[key: string]: boolean}>({});
   const [showCurrencyDropdowns, setShowCurrencyDropdowns] = useState<{[key: string]: boolean}>({});
@@ -132,7 +140,7 @@ const POCreation: React.FC = () => {
   // Dropdown options
   const statusOptions = ['Open', 'Closed', 'Pending'] as const;
   const modeOptions = ['Sea', 'Air', 'Road', 'Rail'] as const;
-  const currencyOptions = ['USD', 'CNY', 'EUR', 'IDR', 'JPY', 'GBP'] as const;
+  const currencyOptions = ['USD', 'CNY', 'EUR', 'IDR', 'JPY', 'GBP', 'AUD'] as const;
   const uomOptions = ['PC', 'KG', 'CBM', 'LBS', 'TON'] as const;
 
   // Calculate progress based on booked items
@@ -150,9 +158,14 @@ const POCreation: React.FC = () => {
     }));
   };
 
+  let lastId = Date.now();
+  function generateUniqueId() {
+    return ++lastId + Math.floor(Math.random() * 10000);
+  }
+
   // Create new item
   const createNewItem = (): POItem => ({
-    id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    id: generateUniqueId(),
     lineNumber: formData.items.length + 1,
     productSKU: '',
     productName: '',
@@ -161,9 +174,9 @@ const POCreation: React.FC = () => {
     mode: '',
     destination: '',
     currency: '',
-    unitCost: '',
+    unitCost: 0,
     uom: '',
-    requestedQty: '',
+    requestedQty: 0,
     bookedQty: 0,
     bookingProgress: 0
   });
@@ -180,7 +193,7 @@ const POCreation: React.FC = () => {
   };
 
   // Remove item row
-  const removeItem = (itemId: string) => {
+  const removeItem = (itemId: number) => {
     const updatedItems = formData.items
       .filter(item => item.id !== itemId)
       .map((item, index) => ({ ...item, lineNumber: index + 1 }));
@@ -193,18 +206,19 @@ const POCreation: React.FC = () => {
   };
 
   // Handle item field changes
-  const handleItemChange = (itemId: string, field: keyof POItem, value: any) => {
+  const handleItemChange = (itemId: number, field: keyof POItem, value: any) => {
     const updatedItems = formData.items.map(item => {
       if (item.id === itemId) {
-        const updatedItem = { ...item, [field]: value };
-        
-        // Calculate booking progress for this item
+        let newValue = value;
+        if (field === 'unitCost' || field === 'requestedQty' || field === 'bookedQty') {
+          newValue = Number(value) || 0;
+        }
+        const updatedItem = { ...item, [field]: newValue };
         if (field === 'requestedQty' || field === 'bookedQty') {
-          const requested = field === 'requestedQty' ? Number(value) || 0 : Number(item.requestedQty) || 0;
-          const booked = field === 'bookedQty' ? Number(value) || 0 : Number(item.bookedQty) || 0;
+          const requested = field === 'requestedQty' ? Number(newValue) || 0 : Number(item.requestedQty) || 0;
+          const booked = field === 'bookedQty' ? Number(newValue) || 0 : Number(item.bookedQty) || 0;
           updatedItem.bookingProgress = requested > 0 ? Math.round((booked / requested) * 100) : 0;
         }
-        
         return updatedItem;
       }
       return item;
@@ -256,35 +270,46 @@ const POCreation: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      // Simulate API call
-      const response = await fetch('/api/purchase-orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      // Convert form data to store format
+      const poNumber = parseInt(formData.poNumber.replace('PO', ''));
+      
+      // Create purchase order
+      const newPO: PurchaseOrder = {
+        id: formData.poNumber,
+        cargoReadyBy: formData.cargoReadyBy,
+        mustArriveBy: formData.mustArriveBy,
+        buyer: formData.buyer,
+        seller: formData.seller,
+        subjectedCarrier: formData.subjectedCarrier,
+        status: formData.status,
+        progress: formData.progress,
+        exceptions: formData.exceptions[0] || '--'
+      };
 
-      if (response.ok) {
-        alert('Purchase Order created successfully!');
-        // Reset form or redirect
-        setFormData({
-          poNumber: generatePONumber(),
-          cargoReadyBy: '',
-          mustArriveBy: '',
-          buyer: '',
-          seller: '',
-          subjectedCarrier: '',
-          status: 'Open',
-          progress: '0/0 lines booked',
-          exceptions: [],
-          items: []
-        });
-      } else {
-        throw new Error('Failed to create purchase order');
-      }
+      // Create PO details
+      const newPODetails: PODetail[] = formData.items.map(item => ({
+        id: item.id,
+        poOrderNumber: poNumber,
+        productCode: item.productSKU,
+        productName: item.productName,
+        cargoReadyDate: item.crd,
+        mustArriveDate: item.mabd,
+        transportMode: item.mode,
+        destination: item.destination,
+        currency: item.currency,
+        unitCost: `$${Number(item.unitCost).toFixed(2)}`,
+        uom: item.uom,
+        requested: Number(item.requestedQty)
+      }));
+
+      // Update store
+      setPurchaseOrders([...purchaseOrders, newPO]);
+      setPODetails([...poDetails, ...newPODetails]);
+
+      // Reset form and redirect
+      router.push('/orders');
     } catch (error) {
-      console.error('Error submitting form:', error);
+      console.error('Error creating PO:', error);
       alert('Error creating purchase order. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -516,20 +541,20 @@ const POCreation: React.FC = () => {
                         <label className="block text-xs font-medium text-gray-500 mb-1">Mode *</label>
                         <button
                           type="button"
-                          data-mode-dropdown={item.id}
-                          onClick={() => setShowModeDropdowns(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                          data-mode-dropdown={item.id.toString()}
+                          onClick={() => setShowModeDropdowns(prev => ({ ...prev, [item.id.toString()]: !prev[item.id.toString()] }))}
                           className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                         >
                           {item.mode || 'Select mode'}
-                          <ChevronDown className={`w-4 h-4 transition-transform ${showModeDropdowns[item.id] ? 'rotate-180' : ''}`} />
+                          <ChevronDown className={`w-4 h-4 transition-transform ${showModeDropdowns[item.id.toString()] ? 'rotate-180' : ''}`} />
                         </button>
-                        {showModeDropdowns[item.id] && (
+                        {showModeDropdowns[item.id.toString()] && (
                           <div 
                             ref={el => {
                               if (el) {
-                                modeDropdownRefs.current[item.id] = el;
+                                modeDropdownRefs.current[item.id.toString()] = el;
                               } else {
-                                delete modeDropdownRefs.current[item.id];
+                                delete modeDropdownRefs.current[item.id.toString()];
                               }
                             }}
                             className="absolute right-0 mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 max-h-80 overflow-y-auto z-50"
@@ -541,7 +566,7 @@ const POCreation: React.FC = () => {
                                   type="button"
                                   onClick={() => {
                                     handleItemChange(item.id, 'mode', mode);
-                                    setShowModeDropdowns(prev => ({ ...prev, [item.id]: false }));
+                                    setShowModeDropdowns(prev => ({ ...prev, [item.id.toString()]: false }));
                                   }}
                                   className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${
                                     item.mode === mode ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
@@ -575,20 +600,20 @@ const POCreation: React.FC = () => {
                         <label className="block text-xs font-medium text-gray-500 mb-1">Currency *</label>
                         <button
                           type="button"
-                          data-currency-dropdown={item.id}
-                          onClick={() => setShowCurrencyDropdowns(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                          data-currency-dropdown={item.id.toString()}
+                          onClick={() => setShowCurrencyDropdowns(prev => ({ ...prev, [item.id.toString()]: !prev[item.id.toString()] }))}
                           className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                         >
                           {item.currency || 'Select currency'}
-                          <ChevronDown className={`w-4 h-4 transition-transform ${showCurrencyDropdowns[item.id] ? 'rotate-180' : ''}`} />
+                          <ChevronDown className={`w-4 h-4 transition-transform ${showCurrencyDropdowns[item.id.toString()] ? 'rotate-180' : ''}`} />
                         </button>
-                        {showCurrencyDropdowns[item.id] && (
+                        {showCurrencyDropdowns[item.id.toString()] && (
                           <div 
                             ref={el => {
                               if (el) {
-                                currencyDropdownRefs.current[item.id] = el;
+                                currencyDropdownRefs.current[item.id.toString()] = el;
                               } else {
-                                delete currencyDropdownRefs.current[item.id];
+                                delete currencyDropdownRefs.current[item.id.toString()];
                               }
                             }}
                             className="absolute right-0 mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 max-h-80 overflow-y-auto z-50"
@@ -600,7 +625,7 @@ const POCreation: React.FC = () => {
                                   type="button"
                                   onClick={() => {
                                     handleItemChange(item.id, 'currency', currency);
-                                    setShowCurrencyDropdowns(prev => ({ ...prev, [item.id]: false }));
+                                    setShowCurrencyDropdowns(prev => ({ ...prev, [item.id.toString()]: false }));
                                   }}
                                   className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${
                                     item.currency === currency ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
@@ -633,20 +658,20 @@ const POCreation: React.FC = () => {
                         <label className="block text-xs font-medium text-gray-500 mb-1">UoM *</label>
                         <button
                           type="button"
-                          data-uom-dropdown={item.id}
-                          onClick={() => setShowUomDropdowns(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                          data-uom-dropdown={item.id.toString()}
+                          onClick={() => setShowUomDropdowns(prev => ({ ...prev, [item.id.toString()]: !prev[item.id.toString()] }))}
                           className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                         >
                           {item.uom || 'Select UoM'}
-                          <ChevronDown className={`w-4 h-4 transition-transform ${showUomDropdowns[item.id] ? 'rotate-180' : ''}`} />
+                          <ChevronDown className={`w-4 h-4 transition-transform ${showUomDropdowns[item.id.toString()] ? 'rotate-180' : ''}`} />
                         </button>
-                        {showUomDropdowns[item.id] && (
+                        {showUomDropdowns[item.id.toString()] && (
                           <div 
                             ref={el => {
                               if (el) {
-                                uomDropdownRefs.current[item.id] = el;
+                                uomDropdownRefs.current[item.id.toString()] = el;
                               } else {
-                                delete uomDropdownRefs.current[item.id];
+                                delete uomDropdownRefs.current[item.id.toString()];
                               }
                             }}
                             className="absolute right-0 mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 max-h-80 overflow-y-auto z-50"
@@ -658,7 +683,7 @@ const POCreation: React.FC = () => {
                                   type="button"
                                   onClick={() => {
                                     handleItemChange(item.id, 'uom', uom);
-                                    setShowUomDropdowns(prev => ({ ...prev, [item.id]: false }));
+                                    setShowUomDropdowns(prev => ({ ...prev, [item.id.toString()]: false }));
                                   }}
                                   className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${
                                     item.uom === uom ? 'bg-blue-50 text-blue-600' : 'text-gray-700'

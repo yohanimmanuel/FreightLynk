@@ -78,28 +78,6 @@ export const purchaseOrdersData: PurchaseOrder[] = [
     progress: '1/7 lines booked',
     status: 'Open'
   },
-  {
-    id: 'PO1003',
-    exceptions: 'Booking approval required',
-    cargoReadyBy: 'Mar 12, 2021',
-    mustArriveBy: 'Apr 15, 2021',
-    buyer: 'Studio Apparel',
-    seller: 'Forward Supply Co',
-    subjectedCarrier: 'DB Schenker',
-    progress: '1/7 lines booked',
-    status: 'Open'
-  },
-  {
-    id: 'PO2883',
-    exceptions: 'Booking approval required',
-    cargoReadyBy: 'Mar 12, 2021',
-    mustArriveBy: 'Apr 15, 2021',
-    buyer: 'Studio Apparel',
-    seller: 'Forward Supply Co',
-    subjectedCarrier: 'DB Schenker',
-    progress: '1/7 lines booked',
-    status: 'Open'
-  }
 ];
 
 export const poDetailsData: PODetail[] = [
@@ -158,5 +136,5 @@ export const poDetailsData: PODetail[] = [
     unitCost: '$12.00',
     uom: 'PC',
     requested: 400
-  }
+  },
 ]; 

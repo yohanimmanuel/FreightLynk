@@ -3,11 +3,15 @@ import { useRouter } from 'next/navigation';
 import PODetails, { POData, POItem } from "@/app/components/clients/purchasesorders/PODetails";
 import type { PurchaseOrder, PODetail } from '@/store/poMockData';
 import { useEffect, useState } from 'react';
+import { usePOStore } from '@/store/poStore';
 
 const ClientDetailsUI = () => {
   const router = useRouter();
-  const [poData, setPoData] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [poData, setPOData] = useState<any>(null);
+  const setPurchaseOrders = usePOStore(state => state.setPurchaseOrders);
+  const setPODetails = usePOStore(state => state.setPODetails);
+  const purchaseOrders = usePOStore(state => state.purchaseOrders);
+  const poDetails = usePOStore(state => state.poDetails);
 
   const formatDateForDisplay = (inputDate: string): string => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
@@ -56,96 +60,103 @@ const ClientDetailsUI = () => {
   };
 
   useEffect(() => {
-    const storedData = sessionStorage.getItem('currentPO');
-    if (!storedData) {
-      router.push('/orders');
-      return;
-    }
-
-    try {
-      const data = JSON.parse(storedData);
-      setPoData(data);
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error parsing PO data:', error);
+    const storedPO = sessionStorage.getItem('currentPO');
+    if (storedPO) {
+      const parsedPO = JSON.parse(storedPO);
+      setPOData({
+        poNumber: parsedPO.id,
+        cargoReadyBy: parsedPO.cargoReadyBy,
+        mustArriveBy: parsedPO.mustArriveBy,
+        buyer: parsedPO.buyer,
+        seller: parsedPO.seller,
+        subjectedCarrier: parsedPO.subjectedCarrier,
+        status: parsedPO.status,
+        progress: parsedPO.progress,
+        exceptions: [parsedPO.exceptions],
+        items: parsedPO.items.map((item: PODetail) => ({
+          id: `item-${item.id}`,
+          lineNumber: item.id,
+          productSKU: item.productCode,
+          productName: item.productName,
+          crd: item.cargoReadyDate,
+          mabd: item.mustArriveDate,
+          mode: item.transportMode,
+          destination: item.destination,
+          currency: item.currency,
+          unitCost: Number(item.unitCost.replace('$', '')),
+          uom: item.uom,
+          requestedQty: item.requested,
+          bookedQty: 0,
+          bookingProgress: 0
+        }))
+      });
+    } else {
       router.push('/orders');
     }
   }, [router]);
 
-  if (isLoading) {
-    return <div className="p-4">Loading...</div>;
-  }
-
-  if (!poData) {
-    return <div className="p-4">Error: No PO data found</div>;
-  }
-
-
-  const transformedData: POData = {
-    poNumber: poData.id,
-    cargoReadyBy: poData.cargoReadyBy,
-    mustArriveBy: poData.mustArriveBy,
-    buyer: poData.buyer,
-    seller: poData.seller,
-    subjectedCarrier: poData.subjectedCarrier,
-    status: poData.status as 'Open' | 'Closed' | 'Pending',
-    progress: poData.progress,
-    exceptions: poData.exceptions === '--' ? [] : [poData.exceptions],
-    items: poData.items.map(transformItem) // This will transform all items automatically
-  };
-
-  const handleSave = async (updatedData: POData) => {
+  const handleSave = async (updatedData: any) => {
     try {
-      const transformedItems: PODetail[] = updatedData.items.map((item, index) => ({
-        id: parseInt(item.id.replace('item-', '')) || index + 1,
-        poOrderNumber: parseInt(poData.id.replace('PO', '')),
-        productCode: item.productSKU,
-        productName: item.productName,
-        cargoReadyDate: item.crd ? formatDateForDisplay(item.crd) : '--',
-        mustArriveDate: item.mabd ? formatDateForDisplay(item.mabd) : '--',
-        transportMode: item.mode,
-        destination: item.destination,
-        currency: `$${item.currency}`,
-        unitCost: `$${typeof item.unitCost === 'number' ? item.unitCost.toFixed(2) : '0.00'}`,
-        uom: item.uom,
-        requested: typeof item.requestedQty === 'number' ? item.requestedQty : parseInt(item.requestedQty?.toString() || '0'),
-        booked: item.bookedQty
-      }));
-
-      const updatedPO = {
-        ...poData,
-        cargoReadyBy: formatDateForDisplay(updatedData.cargoReadyBy),
-        mustArriveBy: formatDateForDisplay(updatedData.mustArriveBy),
+      // Convert back to store format
+      const poNumber = parseInt(updatedData.poNumber.replace('PO', ''));
+      
+      // Update purchase order
+      const updatedPO: PurchaseOrder = {
+        id: updatedData.poNumber,
+        cargoReadyBy: updatedData.cargoReadyBy,
+        mustArriveBy: updatedData.mustArriveBy,
         buyer: updatedData.buyer,
         seller: updatedData.seller,
         subjectedCarrier: updatedData.subjectedCarrier,
         status: updatedData.status,
         progress: updatedData.progress,
-        exceptions: updatedData.exceptions.join(', ') || '--',
-        items: transformedItems
+        exceptions: updatedData.exceptions[0]
       };
 
-      console.log('Saving updated PO:', updatedPO);
-      
-      // Here you would save to your backend
-      // await savePurchaseOrder(updatedPO);
-      
-      sessionStorage.removeItem('currentPO');
+      // Update PO details
+      const updatedPODetails: PODetail[] = updatedData.items.map((item: any) => ({
+        id: Number(item.id.replace('item-', '')),
+        poOrderNumber: poNumber,
+        productCode: item.productSKU,
+        productName: item.productName,
+        cargoReadyDate: item.crd,
+        mustArriveDate: item.mabd,
+        transportMode: item.mode,
+        destination: item.destination,
+        currency: item.currency,
+        unitCost: `$${item.unitCost.toFixed(2)}`,
+        uom: item.uom,
+        requested: Number(item.requestedQty)
+      }));
+
+      // Update store
+      setPurchaseOrders(purchaseOrders.map(po => 
+        po.id === updatedPO.id ? updatedPO : po
+      ));
+
+      setPODetails(poDetails.map(detail => {
+        const updatedDetail = updatedPODetails.find(u => u.id === detail.id);
+        return updatedDetail && detail.poOrderNumber === poNumber ? updatedDetail : detail;
+      }));
+
       router.push('/orders');
     } catch (error) {
-      console.error('Failed to save PO:', error);
-      alert('Failed to save changes. Please try again.');
+      console.error('Error saving PO:', error);
+      throw error;
     }
   };
 
   const handleCancel = () => {
-    sessionStorage.removeItem('currentPO');
     router.push('/orders');
   };
 
+  if (!poData) {
+    return <div className="p-4">Loading...</div>;
+  }
+
   return (
     <PODetails
-      poData={transformedData}
+      poData={poData}
       onSave={handleSave}
       onCancel={handleCancel}
     />

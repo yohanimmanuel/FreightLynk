@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, Calendar, Package, Truck, DollarSign, MapPin, Check, X, ChevronDown } from 'lucide-react';
+import { usePOStore } from '@/store/poStore';
+import type { PurchaseOrder, PODetail } from '@/store/poMockData';
 
 // Reuse the same type definitions from POCreation
 export interface POItem {
@@ -11,7 +13,7 @@ export interface POItem {
   mabd: string;
   mode: 'Sea' | 'Air' | 'Road' | 'Rail' | '';
   destination: string;
-  currency: 'USD' | 'CNY' | 'EUR' | 'IDR' | 'JPY' | 'GBP' | '';
+  currency: 'USD' | 'CNY' | 'EUR' | 'IDR' | 'JPY' | 'GBP' | 'AUD' | '';
   unitCost: number | '';
   uom: 'PC' | 'KG' | 'CBM' | 'LBS' | 'TON' | '';
   requestedQty: number | '';
@@ -52,6 +54,16 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
   const [formData, setFormData] = useState<POData>(poData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isChanged, setIsChanged] = useState(false);
+  
+  const setPurchaseOrders = usePOStore(state => state.setPurchaseOrders);
+  const setPODetails = usePOStore(state => state.setPODetails);
+  const purchaseOrders = usePOStore(state => state.purchaseOrders);
+  const poDetails = usePOStore(state => state.poDetails);
+  
+  // Initialize form data when poData changes
+  useEffect(() => {
+    setFormData(poData);
+  }, [poData]);
   
   // Dropdowns
   useEffect(() => {
@@ -108,7 +120,7 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
   // Dropdown options (same as POCreation)
   const statusOptions = ['Open', 'Closed', 'Pending'] as const;
   const modeOptions = ['Sea', 'Air', 'Road', 'Rail'] as const;
-  const currencyOptions = ['USD', 'CNY', 'EUR', 'IDR', 'JPY', 'GBP'] as const;
+  const currencyOptions = ['USD', 'CNY', 'EUR', 'IDR', 'JPY', 'GBP', 'AUD'] as const;
   const uomOptions = ['PC', 'KG', 'CBM', 'LBS', 'TON'] as const;
  
   // Calculate progress based on booked items
@@ -122,13 +134,20 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
   const handlePOFieldChange = (field: keyof POData, value: any) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: value,
+      // Update progress if needed
+      ...(field === 'items' ? { progress: calculateProgress(value) } : {})
     }));
   };
 
+  let lastId = Date.now();
+  function generateUniqueId() {
+    return ++lastId + Math.floor(Math.random() * 10000);
+  }
+
   // Create new item
   const createNewItem = (): POItem => ({
-    id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    id: generateUniqueId().toString(),
     lineNumber: formData.items.length + 1,
     productSKU: '',
     productName: '',
@@ -137,9 +156,9 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
     mode: '',
     destination: '',
     currency: '',
-    unitCost: '',
+    unitCost: 0,
     uom: '',
-    requestedQty: '',
+    requestedQty: 0,
     bookedQty: 0,
     bookingProgress: 0
   });
@@ -147,7 +166,7 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
   // Add new item row
   const addItem = () => {
     const newItem = createNewItem();
-    const updatedItems = [...formData.items, newItem];
+    const updatedItems = [...formData.items, newItem].map((item, idx) => ({ ...item, lineNumber: idx + 1 }));
     setFormData(prev => ({
       ...prev,
       items: updatedItems,
@@ -161,47 +180,43 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
       .filter(item => item.id !== itemId)
       .map((item, index) => ({ ...item, lineNumber: index + 1 }));
     
-    setFormData(prev => ({
-      ...prev,
-      items: updatedItems,
-      progress: calculateProgress(updatedItems)
-    }));
+    handlePOFieldChange('items', updatedItems);
   };
 
   // Handle item field changes
   const handleItemChange = (itemId: string, field: keyof POItem, value: any) => {
     const updatedItems = formData.items.map(item => {
       if (item.id === itemId) {
-        const updatedItem = { ...item, [field]: value };
-        
+        let newValue = value;
+        // Always parse numbers for numeric fields
+        if (field === 'unitCost' || field === 'requestedQty' || field === 'bookedQty') {
+          newValue = Number(value) || 0;
+        }
+        const updatedItem = { ...item, [field]: newValue };
         // Calculate booking progress for this item
         if (field === 'requestedQty' || field === 'bookedQty') {
-          const requested = field === 'requestedQty' ? Number(value) || 0 : Number(item.requestedQty) || 0;
-          const booked = field === 'bookedQty' ? Number(value) || 0 : Number(item.bookedQty) || 0;
+          const requested = field === 'requestedQty' ? Number(newValue) || 0 : Number(item.requestedQty) || 0;
+          const booked = field === 'bookedQty' ? Number(newValue) || 0 : Number(item.bookedQty) || 0;
           updatedItem.bookingProgress = requested > 0 ? Math.round((booked / requested) * 100) : 0;
         }
-        
         return updatedItem;
       }
       return item;
     });
-
-    setFormData(prev => ({
-      ...prev,
-      items: updatedItems,
-      progress: calculateProgress(updatedItems)
-    }));
+    handlePOFieldChange('items', updatedItems);
   };
 
-  // Form validation
+  // Form validation with improved error messages
   const validateForm = (): string[] => {
     const errors: string[] = [];
     
+    // Validate PO-level fields
     if (!formData.cargoReadyBy) errors.push('Cargo Ready By date is required');
     if (!formData.mustArriveBy) errors.push('Must Arrive By date is required');
     if (!formData.buyer.trim()) errors.push('Buyer is required');
     if (!formData.seller.trim()) errors.push('Seller is required');
     
+    // Validate items
     if (formData.items.length === 0) {
       errors.push('At least one item is required');
     } else {
@@ -219,7 +234,50 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
     return errors;
   };
 
-  // Handle form submission
+  // Enhanced onSave to update Zustand store
+  const handleSave = async (data: POData) => {
+    // Update PO in purchaseOrders
+    const updatedPO: PurchaseOrder = {
+      id: data.poNumber,
+      cargoReadyBy: data.cargoReadyBy,
+      mustArriveBy: data.mustArriveBy,
+      buyer: data.buyer,
+      seller: data.seller,
+      subjectedCarrier: data.subjectedCarrier,
+      status: data.status,
+      progress: data.progress,
+      exceptions: data.exceptions[0] || '--',
+    };
+    const updatedPurchaseOrders = purchaseOrders.map(po =>
+      po.id === updatedPO.id ? updatedPO : po
+    );
+    setPurchaseOrders(updatedPurchaseOrders);
+
+    // Update line items in poDetails
+    const poNumber = parseInt(data.poNumber.replace('PO', ''));
+    // Remove old items for this PO
+    const filteredPODetails = poDetails.filter(item => item.poOrderNumber !== poNumber);
+    // Add new items (ensure unique numeric id and correct poOrderNumber)
+    const newPODetails: PODetail[] = data.items.map((item, idx) => ({
+      id: Number(item.id),
+      poOrderNumber: poNumber,
+      productCode: item.productSKU,
+      productName: item.productName,
+      cargoReadyDate: item.crd,
+      mustArriveDate: item.mabd,
+      transportMode: item.mode,
+      destination: item.destination,
+      currency: item.currency,
+      unitCost: `$${Number(item.unitCost).toFixed(2)}`,
+      uom: item.uom,
+      requested: Number(item.requestedQty)
+    }));
+    setPODetails([...filteredPODetails, ...newPODetails]);
+
+    if (onSave) await onSave(data);
+  };
+
+  // Handle form submission with proper error handling
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -232,7 +290,7 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
     setIsSubmitting(true);
     
     try {
-      await onSave(formData);
+      await handleSave(formData);
     } catch (error) {
       console.error('Error saving PO:', error);
       alert('Error saving purchase order. Please try again.');
@@ -242,7 +300,7 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
   };
 
   return (
-    <div className="w-full mx-auto min-h-screen p-4">
+    <div className="w-full mx-auto min-h-screen">
       <div className="">
         {/* Header */}
         <div className="px-4 py-4 border-b border-gray-200">
@@ -299,7 +357,7 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
             <div className="lg:col-span-3">
               <h2 className="text-sm font-medium text-gray-900 mb-4 flex items-center">
-                <Package className="w-4 h-4 mr-2 text-blue-600" />
+                <Package className="w-4 h-4 mr-2 text-[#007bff]" />
                 Order Information
               </h2>
             </div>
@@ -383,7 +441,7 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-medium text-gray-900 flex items-center">
-                <Package className="w-4 h-4 mr-2 text-blue-600" />
+                <Package className="w-4 h-4 mr-2 text-[#007bff]" />
                 Order Items
               </h2>
               <button
@@ -417,8 +475,7 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {/* Product Info */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">Product SKU *</label>
                         <input
@@ -430,7 +487,6 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
                           required
                         />
                       </div>
-
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">Product Name *</label>
                         <input
@@ -442,8 +498,6 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
                           required
                         />
                       </div>
-
-                      {/* Dates */}
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">CRD</label>
                         <input
@@ -453,7 +507,6 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900"
                         />
                       </div>
-
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">MABD</label>
                         <input
@@ -463,21 +516,22 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900"
                         />
                       </div>
+                    </div>
 
-                     {/* Mode Dropdown */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                       <div className="relative">
                         <label className="block text-xs font-medium text-gray-500 mb-1">Mode *</label>
                         <button
                           type="button"
                           data-mode-dropdown={item.id}
-                          onClick={() => setShowModeDropdowns(prev => ({...prev, [item.id]: !prev[item.id]}))}
+                          onClick={() => setShowModeDropdowns(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
                           className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                         >
                           {item.mode || 'Select mode'}
                           <ChevronDown className={`w-4 h-4 transition-transform ${showModeDropdowns[item.id] ? 'rotate-180' : ''}`} />
                         </button>
                         {showModeDropdowns[item.id] && (
-                          <div 
+                          <div
                             ref={el => {
                               if (el) {
                                 modeDropdownRefs.current[item.id] = el;
@@ -494,11 +548,9 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
                                   type="button"
                                   onClick={() => {
                                     handleItemChange(item.id, 'mode', mode);
-                                    setShowModeDropdowns(prev => ({...prev, [item.id]: false}));
+                                    setShowModeDropdowns(prev => ({ ...prev, [item.id]: false }));
                                   }}
-                                  className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-sm transition-colors ${
-                                    item.mode === mode ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-                                  }`}
+                                  className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${item.mode === mode ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
                                 >
                                   {mode}
                                 </button>
@@ -507,12 +559,8 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
                           </div>
                         )}
                       </div>
-
                       <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">
-                          <MapPin className="w-3 h-3 inline mr-1" />
-                          Destination *
-                        </label>
+                        <label className="block text-xs font-medium text-gray-500 mb-1"><MapPin className="w-3 h-3 inline mr-1" />Destination *</label>
                         <input
                           type="text"
                           value={item.destination}
@@ -522,21 +570,19 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
                           required
                         />
                       </div>
-
-                      {/* Pricing */}
                       <div className="relative">
                         <label className="block text-xs font-medium text-gray-500 mb-1">Currency *</label>
                         <button
                           type="button"
                           data-currency-dropdown={item.id}
-                          onClick={() => setShowCurrencyDropdowns(prev => ({...prev, [item.id]: !prev[item.id]}))}
+                          onClick={() => setShowCurrencyDropdowns(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
                           className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                         >
                           {item.currency || 'Select currency'}
                           <ChevronDown className={`w-4 h-4 transition-transform ${showCurrencyDropdowns[item.id] ? 'rotate-180' : ''}`} />
                         </button>
                         {showCurrencyDropdowns[item.id] && (
-                          <div 
+                          <div
                             ref={el => {
                               if (el) {
                                 currencyDropdownRefs.current[item.id] = el;
@@ -553,11 +599,9 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
                                   type="button"
                                   onClick={() => {
                                     handleItemChange(item.id, 'currency', currency);
-                                    setShowCurrencyDropdowns(prev => ({...prev, [item.id]: false}));
+                                    setShowCurrencyDropdowns(prev => ({ ...prev, [item.id]: false }));
                                   }}
-                                  className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-sm transition-colors ${
-                                    item.currency === currency ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-                                  }`}
+                                  className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${item.currency === currency ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
                                 >
                                   {currency}
                                 </button>
@@ -566,13 +610,10 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
                           </div>
                         )}
                       </div>
-
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">Unit Cost *</label>
                         <input
                           type="number"
-                          step="0.01"
-                          min="0"
                           value={item.unitCost}
                           onChange={(e) => handleItemChange(item.id, 'unitCost', e.target.value)}
                           placeholder="0.00"
@@ -580,21 +621,22 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
                           required
                         />
                       </div>
+                    </div>
 
-                      {/* Quantities */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
                       <div className="relative">
                         <label className="block text-xs font-medium text-gray-500 mb-1">UoM *</label>
                         <button
                           type="button"
                           data-uom-dropdown={item.id}
-                          onClick={() => setShowUomDropdowns(prev => ({...prev, [item.id]: !prev[item.id]}))}
+                          onClick={() => setShowUomDropdowns(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
                           className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                         >
                           {item.uom || 'Select UoM'}
                           <ChevronDown className={`w-4 h-4 transition-transform ${showUomDropdowns[item.id] ? 'rotate-180' : ''}`} />
                         </button>
                         {showUomDropdowns[item.id] && (
-                          <div 
+                          <div
                             ref={el => {
                               if (el) {
                                 uomDropdownRefs.current[item.id] = el;
@@ -611,11 +653,9 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
                                   type="button"
                                   onClick={() => {
                                     handleItemChange(item.id, 'uom', uom);
-                                    setShowUomDropdowns(prev => ({...prev, [item.id]: false}));
+                                    setShowUomDropdowns(prev => ({ ...prev, [item.id]: false }));
                                   }}
-                                  className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-sm transition-colors ${
-                                    item.uom === uom ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-                                  }`}
+                                  className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${item.uom === uom ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
                                 >
                                   {uom}
                                 </button>
@@ -624,12 +664,10 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
                           </div>
                         )}
                       </div>
-
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">Requested Qty *</label>
                         <input
                           type="number"
-                          min="1"
                           value={item.requestedQty}
                           onChange={(e) => handleItemChange(item.id, 'requestedQty', e.target.value)}
                           placeholder="0"
@@ -637,13 +675,16 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
                           required
                         />
                       </div>
-
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">Booked Qty</label>
-                        <div className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-xs text-gray-900">
-                          {item.bookedQty} ({item.bookingProgress}%)
-                        </div>
+                        <input
+                          type="text"
+                          value={`${item.bookedQty} (${Number(item.requestedQty) > 0 ? Math.round((Number(item.bookedQty) / Number(item.requestedQty)) * 100) : 0}%)`}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 bg-gray-50"
+                          disabled
+                        />
                       </div>
+                      <div></div>
                     </div>
                   </div>
                 ))}
@@ -651,40 +692,14 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
             )}
           </div>
 
-          {/* Form Actions */}
-          <div className="flex items-center justify-between pt-6 border-t border-gray-200">
-            <div className="text-sm text-gray-500">
-              {isChanged && (
-                <span className="flex items-center">
-                  <span className="w-2 h-2 rounded-full bg-blue-500 mr-2"></span>
-                  You have unsaved changes
-                </span>
-              )}
-            </div>
-            <div className="flex items-center space-x-2">
-              <button
-                type="button"
-                onClick={() => {
-                  if (!isChanged || confirm('Are you sure you want to discard your changes?')) {
-                    onCancel();
-                  }
-                }}
-                className="px-6 py-2 border border-gray-300 text-sm text-gray-700 rounded-lg hover:bg-gray-200"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmitting || !isChanged}
-                className={`px-6 py-2 text-sm text-white rounded-md ${
-                  isSubmitting || !isChanged
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-[#007bff] hover:bg-blue-700'
-                }`}
-              >
-                {isSubmitting ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
+          <div className="mt-6">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex items-center px-4 py-2 bg-[#007bff] text-sm text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              {isSubmitting ? 'Saving...' : 'Save'}
+            </button>
           </div>
         </form>
       </div>

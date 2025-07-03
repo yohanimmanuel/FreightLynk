@@ -4,25 +4,25 @@ import { useRouter } from 'next/navigation';
 import POManagementTable from "@/app/components/clients/purchasesorders/POManagementTable";
 import { Download, Plus, Upload } from 'lucide-react';
 import { useBookingStore } from '@/store/bookingStore';
+import { usePOStore } from '@/store/poStore';
 import type { PurchaseOrder, PODetail } from '@/store/poMockData';
-import { purchaseOrdersData, poDetailsData } from '@/store/poMockData';
-
 
 const ClientUI = () => {
   const router = useRouter();
-  const [orders] = useState<PurchaseOrder[]>(purchaseOrdersData);
+  const purchaseOrders = usePOStore(state => state.purchaseOrders);
+  const poDetails = usePOStore(state => state.poDetails);
 
   const formatDateForInput = (displayDate: string): string => {
     if (!displayDate || displayDate === '--') return '';
     
-    const months: Record<string, string> = {
-      Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06',
-      Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12'
-    };
+    // If the date is already in YYYY-MM-DD format, return it as is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(displayDate)) {
+      return displayDate;
+    }
     
     try {
-      const [month, day, year] = displayDate.replace(',', '').split(' ');
-      return `${year}-${months[month]}-${day.padStart(2, '0')}`;
+      const date = new Date(displayDate);
+      return date.toISOString().split('T')[0];
     } catch (error) {
       console.error('Error formatting date:', displayDate);
       return '';
@@ -30,14 +30,14 @@ const ClientUI = () => {
   };
 
   const handleEditOrder = (poId: string) => {
-    const po = purchaseOrdersData.find(o => o.id === poId);
+    const po = purchaseOrders.find(o => o.id === poId);
     if (!po) {
       console.error('PO not found:', poId);
       return;
     }
 
     const poNumber = parseInt(poId.replace('PO', ''));
-    const poItems = poDetailsData.filter(item => item.poOrderNumber === poNumber);
+    const poItems = poDetails.filter(item => item.poOrderNumber === poNumber);
 
     const poWithFormattedDates = {
       ...po,
@@ -51,14 +51,14 @@ const ClientUI = () => {
   };
 
   const handleCreateOrder = () => {
-      router.push('/orders/create');
-    };
+    router.push('/orders/create');
+  };
 
   const handleCreateBooking = (bookingData: {
     poId: string;
     selectedItems: number[];
     bookedQuantities: Record<number, number>;
-    }[]) => {
+  }[]) => {
     // Clear the booking store and reset submission flag
     const bookingStore = useBookingStore.getState();
     bookingStore.clearBooking();
@@ -67,8 +67,6 @@ const ClientUI = () => {
     console.log('After clearBooking:', bookingStore.formData, bookingStore.selectedPOs, bookingStore.bookingSubmitted);
     // Pre-fill with selected POs if any
     bookingStore.setSelectedPOs(bookingData);
-    // Optionally, set other fields (e.g., shipmentName) here if needed
-    // bookingStore.setFormData({ shipmentName: ... });
     // Navigate to booking creation page
     router.push('/bookings/create');
   };
