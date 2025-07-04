@@ -62,6 +62,8 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
   
   // Initialize form data when poData changes
   useEffect(() => {
+    console.log('PODetails received poData:', poData);
+    console.log('Date fields - CRD:', poData.cargoReadyBy, 'MABD:', poData.mustArriveBy);
     setFormData(poData);
   }, [poData]);
   
@@ -271,23 +273,26 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
     if (onSave) await onSave(data);
   };
 
-  // Handle form submission with proper error handling
+  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Log form data before submission
+    console.log('Submitting form data:', formData);
+    console.log('Date fields before submission - CRD:', formData.cargoReadyBy, 'MABD:', formData.mustArriveBy);
+    
     const errors = validateForm();
     if (errors.length > 0) {
-      alert('Please fix the following errors:\n' + errors.join('\n'));
+      alert(`Please fix the following errors:\n${errors.join('\n')}`);
       return;
     }
-
-    setIsSubmitting(true);
     
+    setIsSubmitting(true);
     try {
-      await handleSave(formData);
+      await onSave(formData);
     } catch (error) {
       console.error('Error saving PO:', error);
-      alert('Error saving purchase order. Please try again.');
+      alert('Failed to save purchase order. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

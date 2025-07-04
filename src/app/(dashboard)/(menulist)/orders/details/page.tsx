@@ -63,10 +63,16 @@ const ClientDetailsUI = () => {
     const storedPO = sessionStorage.getItem('currentPO');
     if (storedPO) {
       const parsedPO = JSON.parse(storedPO);
+      console.log('Loading PO from sessionStorage:', parsedPO);
+      console.log('Original date fields:', {
+        cargoReadyBy: parsedPO.cargoReadyBy,
+        mustArriveBy: parsedPO.mustArriveBy
+      });
+      
       setPOData({
         poNumber: parsedPO.id,
-        cargoReadyBy: parsedPO.cargoReadyBy,
-        mustArriveBy: parsedPO.mustArriveBy,
+        cargoReadyBy: parsedPO.cargoReadyBy || '',
+        mustArriveBy: parsedPO.mustArriveBy || '',
         buyer: parsedPO.buyer,
         seller: parsedPO.seller,
         subjectedCarrier: parsedPO.subjectedCarrier,
@@ -78,12 +84,12 @@ const ClientDetailsUI = () => {
           lineNumber: idx + 1,
           productSKU: item.productCode,
           productName: item.productName,
-          crd: item.cargoReadyDate,
-          mabd: item.mustArriveDate,
+          crd: item.cargoReadyDate || '',
+          mabd: item.mustArriveDate || '',
           mode: item.transportMode,
           destination: item.destination,
-          currency: item.currency,
-          unitCost: Number(item.unitCost.replace('$', '')),
+          currency: item.currency?.replace('$', ''),
+          unitCost: Number(item.unitCost?.replace(/[^0-9.-]+/g, '') || 0),
           uom: item.uom,
           requestedQty: item.requested,
           bookedQty: 0,
@@ -97,6 +103,12 @@ const ClientDetailsUI = () => {
 
   const handleSave = async (updatedData: any) => {
     try {
+      console.log('Saving updated PO data:', updatedData);
+      console.log('Date fields being saved:', {
+        cargoReadyBy: updatedData.cargoReadyBy,
+        mustArriveBy: updatedData.mustArriveBy
+      });
+      
       // Convert back to store format
       const poNumber = parseInt(updatedData.poNumber.replace('PO', ''));
       
@@ -112,6 +124,8 @@ const ClientDetailsUI = () => {
         progress: updatedData.progress,
         exceptions: updatedData.exceptions[0]
       };
+
+      console.log('Updated PO object for store:', updatedPO);
 
       // Update PO details
       const updatedPODetails: PODetail[] = updatedData.items.map((item: any) => ({

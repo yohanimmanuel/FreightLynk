@@ -209,10 +209,22 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
       item => item.poOrderNumber === parseInt(poId.replace('PO', ''))
     );
 
+    // Format dates properly for the form
+    const cargoReadyDate = selectedPO.cargoReadyBy || poItems[0]?.cargoReadyDate || '';
+    const mustArriveDate = selectedPO.mustArriveBy || poItems[0]?.mustArriveDate || '';
+
+    console.log('Original dates:', {
+      cargoReadyBy: selectedPO.cargoReadyBy,
+      mustArriveBy: selectedPO.mustArriveBy,
+      itemCRD: poItems[0]?.cargoReadyDate,
+      itemMABD: poItems[0]?.mustArriveDate
+    });
+
     const poData = {
       ...selectedPO,
-      cargoReadyBy: formatDateForInput(selectedPO.cargoReadyBy || poItems[0]?.cargoReadyDate),
-      mustArriveBy: formatDateForInput(selectedPO.mustArriveBy || poItems[0]?.mustArriveDate),
+      // Ensure these are properly formatted as YYYY-MM-DD for the date inputs
+      cargoReadyBy: cargoReadyDate,
+      mustArriveBy: mustArriveDate,
       items: poItems.map(item => ({
         ...item,
         cargoReadyDate: item.cargoReadyDate, 
@@ -220,15 +232,10 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
       }))
     };
 
-    console.log('Storing PO data:', {
-      poNumber: poData.id,
-      crd: poData.cargoReadyBy || poData.items[0]?.cargoReadyDate,
-      mabd: poData.mustArriveBy || poData.items[0]?.mustArriveDate,
-      items: poData.items.map(i => ({
-        id: i.id,
-        crd: i.cargoReadyDate,
-        mabd: i.mustArriveDate
-      }))
+    console.log('Storing PO data in sessionStorage:', poData);
+    console.log('Date fields being stored:', {
+      cargoReadyBy: poData.cargoReadyBy,
+      mustArriveBy: poData.mustArriveBy
     });
 
     sessionStorage.setItem('currentPO', JSON.stringify(poData));

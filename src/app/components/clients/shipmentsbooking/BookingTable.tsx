@@ -5,7 +5,7 @@ import { useBookingStore } from '@/store/bookingStore';
 
 type Booking = {
   id: string;
-  shipmentId?: string; // FL-number
+  shipmentId?: string; // Generated after payment (SFLYNK-number) for shipment
   poNumber: string;
   productName: string;
   hsCode: string;
@@ -45,7 +45,8 @@ const BookingTable: React.FC<BookingTableProps> = ({ bookings, onSubmitBooking =
     { key: 'productName', label: 'Product Name', mandatory: false, width: '180px' },
     { key: 'hsCode', label: 'HS Code', mandatory: false, width: '140px' },
     { key: 'shipper', label: 'Shipper', mandatory: false, width: '160px' },
-    { key: 'consignee', label: 'Consignee', mandatory: false, width: '140px' },
+    { key: 'consignee', label: 'Consignee', mandatory: false, width: '140px' }, 
+    { key: 'transportMode', label: 'Transport Mode', mandatory: false, width: '120px' },
     { key: 'origin', label: 'Origin', mandatory: false, width: '140px' },
     { key: 'destination', label: 'Destination', mandatory: false, width: '140px' },
     { key: 'shipmentType', label: 'Shipment Type', mandatory: false, width: '120px' },
@@ -58,11 +59,10 @@ const BookingTable: React.FC<BookingTableProps> = ({ bookings, onSubmitBooking =
     { key: 'cargoReadyDate', label: 'Cargo Ready Date', mandatory: false, width: '140px' },
     { key: 'eta', label: 'ETA', mandatory: false, width: '120px' },
     { key: 'status', label: 'Status', mandatory: true, width: '120px' },
-    { key: 'transportMode', label: 'Transport Mode', mandatory: false, width: '120px' },
   ];
 
   // Default visible columns
-  const defaultVisibleColumns = ['id', 'shipmentId', 'poNumber', 'productName', 'shipper', 'consignee', 'origin', 'destination', 'shipmentType', 'status', 'eta'];
+  const defaultVisibleColumns = ['id', 'shipmentId', 'poNumber', 'productName', 'shipper', 'consignee', 'origin', 'destination', 'shipmentType', 'status', 'eta', 'transportMode', 'incoterms'];
   
   const [visibleColumns, setVisibleColumns] = useState(defaultVisibleColumns);
   const [searchTerm, setSearchTerm] = useState('');
@@ -214,8 +214,8 @@ const BookingTable: React.FC<BookingTableProps> = ({ bookings, onSubmitBooking =
   const renderCellContent = (booking: Booking, columnKey: string) => {
     switch (columnKey) {
       case 'shipmentId':
-        // Show FL-number or placeholder
-        return booking.shipmentId || 'FL-XXXXX';
+        // Show placeholder indicating shipment ID will be generated after payment
+        return booking.shipmentId || 'Generated after payment';
       case 'status':
         return <StatusBadge status={booking[columnKey] as string} />;
       case 'dangerousGoods':

@@ -82,8 +82,8 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking }) => {
   // When confirm button is clicked
   const handleConfirmClick = () => {
     if (!flNumber) {
-      const fl = 'FL-' + Math.floor(10000 + Math.random() * 90000);
-      setFlNumber(fl);
+      const bookingId = 'FLYNK-' + Math.floor(10000 + Math.random() * 90000);
+      setFlNumber(bookingId);
     }
     // Navigate to confirmation page
     onConfirmBooking && onConfirmBooking();

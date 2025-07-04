@@ -218,7 +218,7 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
       // Build the full booking object with all fields
       const booking = {
         id: flNumber,
-        shipmentId: flNumber,
+        shipmentId: null,
         poNumber: selectedPOs.map(po => `PO ${po.poId.replace(/^PO ?/, '')}`).join(', '),
         productName: formData.productName,
         hsCode: formData.hsCode,
@@ -369,7 +369,7 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
     selectedPOs: Array.isArray(externalBooking.selectedPOs) ? externalBooking.selectedPOs : [],
   } : {
     id: flNumber,
-    shipmentId: flNumber,
+    shipmentId: null,
     poNumber: selectedPOs.map(po => `PO ${po.poId.replace(/^PO ?/, '')}`).join(', '),
     productName: formData.productName,
     hsCode: formData.hsCode,
@@ -425,7 +425,7 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
               try {
                 const booking = {
                   id: flNumber,
-                  shipmentId: flNumber,
+                  shipmentId: null,
                   poNumber: selectedPOs.map(po => `PO ${po.poId.replace(/^PO ?/, '')}`).join(', '),
                   productName: formData.productName,
                   hsCode: formData.hsCode,
@@ -490,8 +490,8 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
         <div className="max-w-8xl mx-auto flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-              <Package className="w-4 h-4" />
-              <span>{displayData.shipmentId || 'FL-XXXXX'}</span>
+              <FileText className="w-4 h-4" />
+              <span>{displayData.shipmentId || flNumber || 'FLYNK-XXXXX'}</span>
             </div>
             <div className="flex items-center gap-4">
               {isEditingTitle ? (

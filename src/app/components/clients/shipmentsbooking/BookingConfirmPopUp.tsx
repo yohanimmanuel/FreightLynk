@@ -85,7 +85,7 @@ const BookingConfirmPopUp: React.FC<BookingConfirmProps> = ({ onClose = () => {}
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 mb-1">Booking Reference</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-1">Booking ID</h3>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-mono font-bold text-[#007bff]">{shipmentId}</span>
                   <button className="text-gray-400 hover:text-gray-600">
