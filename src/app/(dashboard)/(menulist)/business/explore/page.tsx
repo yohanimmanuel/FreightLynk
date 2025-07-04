@@ -1,11 +1,13 @@
 'use client';
 
-import BusinessDashboard from "@/app/components/clients/businessoperations/BusinessDashboard";
+import PartnerExplore from "@/app/components/clients/businessoperations/PartnerExplore";
 
 const ClientUI = () => {
   return (
     <div className="p-4">
-      <BusinessDashboard />
+      <h1 className="text-2xl font-bold text-gray-900 mb-2">Partner Explorer</h1>
+      <h1 className="text-sm text-gray-500 mb-6">Explore and connect with partners in the FreightLynk ecosystem</h1>
+      <PartnerExplore view="full" />
     </div>
   );
 };
@@ -37,7 +39,7 @@ const AdminUI = () => {
   );
 };
 
-const Business = () => {
+const Explore = () => {
   // Manually set userType for testing - change this value to test different UIs
   const testUserType: string = 'client'; // Change to: 'client', 'forwarder', 'logistics', 'admin'
   
@@ -49,4 +51,4 @@ const Business = () => {
   return <div>Access denied</div>;
 };
 
-export default Business;
+export default Explore;

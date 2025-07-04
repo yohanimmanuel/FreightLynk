@@ -1,11 +1,11 @@
 'use client';
 
-import BusinessDashboard from "@/app/components/clients/businessoperations/BusinessDashboard";
+import PartnerTable from "@/app/components/clients/businessoperations/PartnerTable";
 
 const ClientUI = () => {
   return (
     <div className="p-4">
-      <BusinessDashboard />
+      <PartnerTable partners={[]} />
     </div>
   );
 };
@@ -37,7 +37,7 @@ const AdminUI = () => {
   );
 };
 
-const Business = () => {
+const Partners = () => {
   // Manually set userType for testing - change this value to test different UIs
   const testUserType: string = 'client'; // Change to: 'client', 'forwarder', 'logistics', 'admin'
   
@@ -49,4 +49,4 @@ const Business = () => {
   return <div>Access denied</div>;
 };
 
-export default Business;
+export default Partners;
