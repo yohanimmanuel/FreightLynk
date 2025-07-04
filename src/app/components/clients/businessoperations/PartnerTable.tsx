@@ -1,21 +1,19 @@
 import React, { useState } from 'react';
-import { Search, Filter, MessageSquare, Eye } from 'lucide-react';
-
-interface Partner {
-  id: number;
-  name: string;
-  type: string;
-  status: string;
-  industry: string;
-  lastContact: string;
-  avatar: string;
-}
+import { Search, Filter, MessageSquare, Eye, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
+import { Partner, partnerDirectory } from '@/store/partnerMockData';
 
 interface PartnerTableProps {
-  partners: Partner[];
+  partners?: Partner[];
+  view?: 'full' | 'summary';
+  maxRows?: number;
 }
 
-const PartnerTable: React.FC<PartnerTableProps> = ({ partners }) => {
+const PartnerTable: React.FC<PartnerTableProps> = ({ 
+  partners = partnerDirectory, 
+  view = 'full', 
+  maxRows = 5 
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const getStatusColor = (status: string) => {
@@ -43,26 +41,48 @@ const PartnerTable: React.FC<PartnerTableProps> = ({ partners }) => {
     partner.type.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Limit number of rows shown in summary view
+  const displayPartners = view === 'summary' && maxRows 
+    ? filteredPartners.slice(0, maxRows) 
+    : filteredPartners;
+
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-md font-semibold text-gray-900">Partner Directory</h2>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <input
-              type="text"
-              placeholder="Search partners..."
-              className="w-64 pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+    <div className="w-full">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4 w-full">
+        {view === 'full' ? (
+          <>
+            <div className="flex-1 w-full relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Search partners..."
+                className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+              <button className="w-full md:w-auto px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 flex items-center gap-2 hover:bg-gray-50">
+                <Filter className="h-4 w-4" />
+                Filter
+              </button>
+              <Link href="/business/explore" className="w-full md:w-auto">
+                <button className="w-full md:w-auto px-3 py-2 bg-[#007bff] text-white rounded-lg text-sm flex items-center gap-2 hover:bg-blue-700 transition-colors">
+                  Explore More Partners
+                </button>
+              </Link>
+            </div>
+          </>
+        ) : (
+          <div className="flex w-full justify-between">
+            <h2 className="text-md font-semibold text-gray-900 mt-1">Partner Directory</h2>
+            <Link href="/business/partners">
+              <button className="bg-[#007bff] text-white hover:bg-blue-700 text-sm rounded-lg shadow-sm p-2 px-4">
+                View All
+              </button>
+            </Link>
           </div>
-          <button className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 flex items-center gap-2 hover:bg-gray-50">
-            <Filter className="h-4 w-4" />
-            Filter
-          </button>
-        </div>
+        )}
       </div>
       
       <div className="overflow-x-auto border border-gray-200 rounded-lg">
@@ -78,8 +98,8 @@ const PartnerTable: React.FC<PartnerTableProps> = ({ partners }) => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {filteredPartners.map(partner => (
-              <tr key={partner.id} className="hover:bg-gray-50">
+            {displayPartners.map(partner => (
+              <tr key={partner.id}>
                 <td className="px-4 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <div className="w-8 h-8 rounded-full bg-[#007bff] flex items-center justify-center text-white font-bold text-sm">
@@ -107,11 +127,8 @@ const PartnerTable: React.FC<PartnerTableProps> = ({ partners }) => {
                   {partner.lastContact}
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap text-right text-xs font-medium">
-                  <button className="text-blue-600 hover:text-blue-900 mr-3">
-                    <MessageSquare className="h-4 w-4" />
-                  </button>
-                  <button className="text-gray-600 hover:text-gray-900">
-                    <Eye className="h-4 w-4" />
+                  <button className="border border-gray-300 rounded-lg px-3 py-1 text-gray-600 hover:bg-gray-100">
+                    View Details
                   </button>
                 </td>
               </tr>

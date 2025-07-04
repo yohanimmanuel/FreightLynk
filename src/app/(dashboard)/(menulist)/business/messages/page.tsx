@@ -1,13 +1,11 @@
 'use client';
 
-import PartnerTable from "@/app/components/clients/businessoperations/PartnerTable";
+import MessageList from '@/app/components/clients/businessoperations/MessageList';
 
 const ClientUI = () => {
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-semibold text-gray-900 mb-1">Partner Management</h1>
-      <p className="text-sm text-gray-500 mb-8">Manage your business partners and ecosystem groups</p>
-      <PartnerTable view="full" />
+    <div className='p-4'>
+      <MessageList view='full'/>
     </div>
   );
 };
@@ -39,7 +37,7 @@ const AdminUI = () => {
   );
 };
 
-const Partners = () => {
+const MessagesUI = ({ userType }: { userType: string }) => {
   // Manually set userType for testing - change this value to test different UIs
   const testUserType: string = 'client'; // Change to: 'client', 'forwarder', 'logistics', 'admin'
   
@@ -51,4 +49,4 @@ const Partners = () => {
   return <div>Access denied</div>;
 };
 
-export default Partners;
+export default MessagesUI;

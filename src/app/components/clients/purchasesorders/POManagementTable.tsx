@@ -606,7 +606,7 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
               <button
                 ref={statusButtonRef}
                 onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 {getStatusDisplayText(filters.status)}
                 <ChevronDown className={`w-4 h-4 transition-transform ${showStatusDropdown ? 'rotate-180' : ''}`} />

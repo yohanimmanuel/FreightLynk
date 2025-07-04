@@ -286,7 +286,7 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
       alert(`Please fix the following errors:\n${errors.join('\n')}`);
       return;
     }
-    
+
     setIsSubmitting(true);
     try {
       await onSave(formData);
@@ -515,7 +515,7 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900"
                         />
                       </div>
-                    </div>
+                      </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                       <div className="relative">
@@ -530,7 +530,7 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
                           <ChevronDown className={`w-4 h-4 transition-transform ${showModeDropdowns[item.id.toString()] ? 'rotate-180' : ''}`} />
                         </button>
                         {showModeDropdowns[item.id.toString()] && (
-                          <div
+                          <div 
                             ref={el => {
                               if (el) {
                                 modeDropdownRefs.current[item.id.toString()] = el;
@@ -581,7 +581,7 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
                           <ChevronDown className={`w-4 h-4 transition-transform ${showCurrencyDropdowns[item.id.toString()] ? 'rotate-180' : ''}`} />
                         </button>
                         {showCurrencyDropdowns[item.id.toString()] && (
-                          <div
+                          <div 
                             ref={el => {
                               if (el) {
                                 currencyDropdownRefs.current[item.id.toString()] = el;
@@ -620,7 +620,7 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
                           required
                         />
                       </div>
-                    </div>
+                      </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
                       <div className="relative">
@@ -635,7 +635,7 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
                           <ChevronDown className={`w-4 h-4 transition-transform ${showUomDropdowns[item.id.toString()] ? 'rotate-180' : ''}`} />
                         </button>
                         {showUomDropdowns[item.id.toString()] && (
-                          <div
+                          <div 
                             ref={el => {
                               if (el) {
                                 uomDropdownRefs.current[item.id.toString()] = el;
@@ -692,13 +692,13 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
           </div>
 
           <div className="mt-6">
-            <button
-              type="submit"
+              <button
+                type="submit"
               disabled={isSubmitting}
               className="flex items-center px-4 py-2 bg-[#007bff] text-sm text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
+              >
               {isSubmitting ? 'Saving...' : 'Save'}
-            </button>
+              </button>
           </div>
         </form>
       </div>

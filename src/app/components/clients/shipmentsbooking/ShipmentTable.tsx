@@ -554,7 +554,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ view, onSeeAll }) => {
               placeholder="Search by route, city, or carrier..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 text-sm text-gray-900 w-full border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="pl-10 pr-4 py-2 text-sm text-gray-900 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
           <div className="flex items-center gap-4">
@@ -562,7 +562,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ view, onSeeAll }) => {
               <button 
                 ref={modeButtonRef}
                 onClick={() => setShowModeDropdown(!showModeDropdown)}
-                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 {selectedMode}
                 <ChevronDown className={`w-4 h-4 transition-transform ${showModeDropdown ? 'rotate-180' : ''}`} />
@@ -575,7 +575,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ view, onSeeAll }) => {
               <button 
                 ref={columnButtonRef}
                 onClick={() => setShowColumnDropdown(!showColumnDropdown)}
-                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Add/Remove Columns
                 <ChevronDown className={`w-4 h-4 transition-transform ${showColumnDropdown ? 'rotate-180' : ''}`} />

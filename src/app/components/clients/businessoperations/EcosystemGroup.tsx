@@ -1,81 +1,14 @@
 import React, { useState } from 'react';
 import { Plus, Facebook, Instagram, Github, Twitter, Search, Filter } from 'lucide-react';
-
-interface EcosystemGroup {
-  id: number;
-  name: string;
-  members: number;
-  type: string;
-  lastActivity: string;
-  color: string;
-  status?: 'active' | 'inactive' | 'pending';
-}
+import { EcosystemGroup, ecosystemGroups } from '@/store/ecosystemMockData';
 
 interface EcosystemGroupProps {
   ecosystemGroups?: EcosystemGroup[];
   view?: 'list' | 'grid';
 }
 
-// Mock data for ecosystem groups
-const mockEcosystemGroups: EcosystemGroup[] = [
-  {
-    id: 1,
-    name: "Asia-Pacific Trade",
-    members: 15,
-    type: "Regional",
-    lastActivity: "2 hours ago",
-    color: "bg-blue-500",
-    status: "active"
-  },
-  {
-    id: 2,
-    name: "Electronics Supply Chain",
-    members: 23,
-    type: "Industry",
-    lastActivity: "1 day ago",
-    color: "bg-green-500",
-    status: "active"
-  },
-  {
-    id: 3,
-    name: "EU Compliance Network",
-    members: 12,
-    type: "Regulatory",
-    lastActivity: "3 hours ago",
-    color: "bg-purple-500",
-    status: "pending"
-  },
-  {
-    id: 4,
-    name: "Cold Chain Alliance",
-    members: 8,
-    type: "Specialized",
-    lastActivity: "5 hours ago",
-    color: "bg-cyan-500",
-    status: "active"
-  },
-  {
-    id: 5,
-    name: "North American Logistics",
-    members: 19,
-    type: "Regional",
-    lastActivity: "1 hour ago",
-    color: "bg-red-500",
-    status: "inactive"
-  },
-  {
-    id: 6,
-    name: "Automotive Supply Chain",
-    members: 27,
-    type: "Industry",
-    lastActivity: "2 days ago",
-    color: "bg-yellow-500",
-    status: "active"
-  }
-];
-
 const EcosystemGroupComponent: React.FC<EcosystemGroupProps> = ({ 
-  ecosystemGroups = mockEcosystemGroups,
+  ecosystemGroups: propEcosystemGroups = ecosystemGroups,
   view = 'list'
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -83,7 +16,7 @@ const EcosystemGroupComponent: React.FC<EcosystemGroupProps> = ({
   const [filterStatus, setFilterStatus] = useState('All Status');
 
   // Filter ecosystem groups based on search term, filter type, and status
-  const filteredGroups = ecosystemGroups.filter(group => {
+  const filteredGroups = propEcosystemGroups.filter(group => {
     const matchesSearch = group.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterType === 'All Types' || group.type === filterType;
     const matchesStatus = filterStatus === 'All Status' || group.status === filterStatus.toLowerCase();
@@ -91,11 +24,11 @@ const EcosystemGroupComponent: React.FC<EcosystemGroupProps> = ({
   });
 
   // Get unique types for filter dropdown
-  const groupTypes = ['All Types', ...Array.from(new Set(ecosystemGroups.map(group => group.type)))];
+  const groupTypes = ['All Types', ...Array.from(new Set(propEcosystemGroups.map(group => group.type)))];
   const statusOptions = ['All Status', 'Active', 'Inactive', 'Pending'];
 
   return (
-    <div className={view === 'list' ? '' : 'bg-white rounded-lg border border-gray-200 p-6'}>
+    <div className={view === 'list' ? '' : 'bg-white rounded-lg border border-gray-200 p-4'}>
       {view === 'grid' && (
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-md font-semibold text-gray-900">Ecosystem Groups</h2>
@@ -184,8 +117,8 @@ const EcosystemGroupComponent: React.FC<EcosystemGroupProps> = ({
         </div>
       ) : (
         // Grid View
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {ecosystemGroups.map(group => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {propEcosystemGroups.map(group => (
             <div key={group.id} className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow">
               <div className="flex flex-col items-center text-center">
                 <div className={`w-16 h-16 rounded-full ${group.color} flex items-center justify-center text-white font-bold text-xl mb-3`}>
@@ -213,7 +146,7 @@ const EcosystemGroupComponent: React.FC<EcosystemGroupProps> = ({
             </div>
           ))}
           
-          <div className="bg-white border border-gray-200 border-dashed rounded-lg flex items-center justify-center hover:bg-gray-50 cursor-pointer">
+          <div className="py-16 bg-white border border-gray-200 border-dashed rounded-lg flex items-center justify-center hover:bg-gray-50 cursor-pointer">
             <div className="flex flex-col items-center text-center">
               <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 mb-3">
                 <Plus size={20} />
