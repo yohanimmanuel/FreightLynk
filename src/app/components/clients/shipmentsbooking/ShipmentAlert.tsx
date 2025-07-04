@@ -95,7 +95,7 @@ const ShipmentAlerts = () => {
   const filteredAlerts = filter === 'all' ? alerts : alerts.filter(alert => alert.status === filter);
 
   return (
-    <div className="w-full mx-auto p-3 border border-gray-200">
+    <div className="w-full mx-auto p-3 border border-gray-200 rounded-lg shadow-sm">
       {/* Header */}
       <div className="mb-2">
         <div className="flex items-center justify-between mb-2">

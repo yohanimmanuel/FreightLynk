@@ -127,9 +127,11 @@ const PartnerTable: React.FC<PartnerTableProps> = ({
                   {partner.lastContact}
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap text-right text-xs font-medium">
-                  <button className="border border-gray-300 rounded-lg px-3 py-1 text-gray-600 hover:bg-gray-100">
-                    View Details
-                  </button>
+                  <Link href={`/business/partners/details`}>
+                    <button className="border border-gray-300 rounded-lg px-3 py-1 text-gray-600 hover:bg-gray-100">
+                      View Details
+                    </button>
+                  </Link>
                 </td>
               </tr>
             ))}
