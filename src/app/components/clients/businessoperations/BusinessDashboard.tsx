@@ -4,7 +4,7 @@ import PartnerExplore from './PartnerExplore';
 import EcosystemGroup from './EcosystemGroup';
 import PartnerTable from './PartnerTable';
 import MessageList from './MessageList';
-import { businessStats } from '@/store/partnerMockData';
+import { businessStats } from '@/store/businessStats';
 
 const BusinessDashboard = () => {
   return (
