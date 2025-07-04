@@ -42,8 +42,8 @@ const ClientDetailsUI = () => {
       value ? parseFloat(value.replace('$', '').replace(',', '')) : 0;
 
     return {
-      id: `item-${item.id}`,
-      lineNumber: item.id,
+      id: Number(item.id),
+      lineNumber: Number(item.id),
       productSKU: item.productCode || '',
       productName: item.productName || '',
       crd: item.cargoReadyDate || '',
@@ -73,9 +73,9 @@ const ClientDetailsUI = () => {
         status: parsedPO.status,
         progress: parsedPO.progress,
         exceptions: [parsedPO.exceptions],
-        items: parsedPO.items.map((item: PODetail) => ({
-          id: `item-${item.id}`,
-          lineNumber: item.id,
+        items: parsedPO.items.map((item: PODetail, idx: number) => ({
+          id: idx + 1,
+          lineNumber: idx + 1,
           productSKU: item.productCode,
           productName: item.productName,
           crd: item.cargoReadyDate,
@@ -115,7 +115,7 @@ const ClientDetailsUI = () => {
 
       // Update PO details
       const updatedPODetails: PODetail[] = updatedData.items.map((item: any) => ({
-        id: Number(item.id.replace('item-', '')),
+        id: item.id,
         poOrderNumber: poNumber,
         productCode: item.productSKU,
         productName: item.productName,
@@ -134,10 +134,9 @@ const ClientDetailsUI = () => {
         po.id === updatedPO.id ? updatedPO : po
       ));
 
-      setPODetails(poDetails.map(detail => {
-        const updatedDetail = updatedPODetails.find(u => u.id === detail.id);
-        return updatedDetail && detail.poOrderNumber === poNumber ? updatedDetail : detail;
-      }));
+      // Remove all existing items for this PO and add all items from the form
+      const filteredPODetails = poDetails.filter(detail => detail.poOrderNumber !== poNumber);
+      setPODetails([...filteredPODetails, ...updatedPODetails]);
 
       router.push('/orders');
     } catch (error) {

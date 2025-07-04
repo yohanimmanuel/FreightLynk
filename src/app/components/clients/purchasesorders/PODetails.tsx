@@ -5,7 +5,7 @@ import type { PurchaseOrder, PODetail } from '@/store/poMockData';
 
 // Reuse the same type definitions from POCreation
 export interface POItem {
-  id: string;
+  id: number;
   lineNumber: number;
   productSKU: string;
   productName: string;
@@ -140,14 +140,9 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
     }));
   };
 
-  let lastId = Date.now();
-  function generateUniqueId() {
-    return ++lastId + Math.floor(Math.random() * 10000);
-  }
-
-  // Create new item
+  // Create new item with sequential ID and line number
   const createNewItem = (): POItem => ({
-    id: generateUniqueId().toString(),
+    id: formData.items.length + 1, // Sequential ID
     lineNumber: formData.items.length + 1,
     productSKU: '',
     productName: '',
@@ -166,7 +161,7 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
   // Add new item row
   const addItem = () => {
     const newItem = createNewItem();
-    const updatedItems = [...formData.items, newItem].map((item, idx) => ({ ...item, lineNumber: idx + 1 }));
+    const updatedItems = [...formData.items, newItem].map((item, idx) => ({ ...item, id: idx + 1, lineNumber: idx + 1 }));
     setFormData(prev => ({
       ...prev,
       items: updatedItems,
@@ -174,17 +169,16 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
     }));
   };
 
-  // Remove item row
-  const removeItem = (itemId: string) => {
+  // Remove item row and resequence IDs and line numbers
+  const removeItem = (itemId: number) => {
     const updatedItems = formData.items
       .filter(item => item.id !== itemId)
-      .map((item, index) => ({ ...item, lineNumber: index + 1 }));
-    
+      .map((item, index) => ({ ...item, id: index + 1, lineNumber: index + 1 }));
     handlePOFieldChange('items', updatedItems);
   };
 
   // Handle item field changes
-  const handleItemChange = (itemId: string, field: keyof POItem, value: any) => {
+  const handleItemChange = (itemId: number, field: keyof POItem, value: any) => {
     const updatedItems = formData.items.map(item => {
       if (item.id === itemId) {
         let newValue = value;
@@ -259,7 +253,7 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
     const filteredPODetails = poDetails.filter(item => item.poOrderNumber !== poNumber);
     // Add new items (ensure unique numeric id and correct poOrderNumber)
     const newPODetails: PODetail[] = data.items.map((item, idx) => ({
-      id: Number(item.id),
+      id: item.id,
       poOrderNumber: poNumber,
       productCode: item.productSKU,
       productName: item.productName,
@@ -524,19 +518,19 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
                         <button
                           type="button"
                           data-mode-dropdown={item.id}
-                          onClick={() => setShowModeDropdowns(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                          onClick={() => setShowModeDropdowns(prev => ({ ...prev, [item.id.toString()]: !prev[item.id.toString()] }))}
                           className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                         >
                           {item.mode || 'Select mode'}
-                          <ChevronDown className={`w-4 h-4 transition-transform ${showModeDropdowns[item.id] ? 'rotate-180' : ''}`} />
+                          <ChevronDown className={`w-4 h-4 transition-transform ${showModeDropdowns[item.id.toString()] ? 'rotate-180' : ''}`} />
                         </button>
-                        {showModeDropdowns[item.id] && (
+                        {showModeDropdowns[item.id.toString()] && (
                           <div
                             ref={el => {
                               if (el) {
-                                modeDropdownRefs.current[item.id] = el;
+                                modeDropdownRefs.current[item.id.toString()] = el;
                               } else {
-                                delete modeDropdownRefs.current[item.id];
+                                delete modeDropdownRefs.current[item.id.toString()];
                               }
                             }}
                             className="absolute right-0 mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 max-h-80 overflow-y-auto z-50"
@@ -548,7 +542,7 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
                                   type="button"
                                   onClick={() => {
                                     handleItemChange(item.id, 'mode', mode);
-                                    setShowModeDropdowns(prev => ({ ...prev, [item.id]: false }));
+                                    setShowModeDropdowns(prev => ({ ...prev, [item.id.toString()]: false }));
                                   }}
                                   className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${item.mode === mode ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
                                 >
@@ -575,19 +569,19 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
                         <button
                           type="button"
                           data-currency-dropdown={item.id}
-                          onClick={() => setShowCurrencyDropdowns(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                          onClick={() => setShowCurrencyDropdowns(prev => ({ ...prev, [item.id.toString()]: !prev[item.id.toString()] }))}
                           className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                         >
                           {item.currency || 'Select currency'}
-                          <ChevronDown className={`w-4 h-4 transition-transform ${showCurrencyDropdowns[item.id] ? 'rotate-180' : ''}`} />
+                          <ChevronDown className={`w-4 h-4 transition-transform ${showCurrencyDropdowns[item.id.toString()] ? 'rotate-180' : ''}`} />
                         </button>
-                        {showCurrencyDropdowns[item.id] && (
+                        {showCurrencyDropdowns[item.id.toString()] && (
                           <div
                             ref={el => {
                               if (el) {
-                                currencyDropdownRefs.current[item.id] = el;
+                                currencyDropdownRefs.current[item.id.toString()] = el;
                               } else {
-                                delete currencyDropdownRefs.current[item.id];
+                                delete currencyDropdownRefs.current[item.id.toString()];
                               }
                             }}
                             className="absolute right-0 mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 max-h-80 overflow-y-auto z-50"
@@ -599,7 +593,7 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
                                   type="button"
                                   onClick={() => {
                                     handleItemChange(item.id, 'currency', currency);
-                                    setShowCurrencyDropdowns(prev => ({ ...prev, [item.id]: false }));
+                                    setShowCurrencyDropdowns(prev => ({ ...prev, [item.id.toString()]: false }));
                                   }}
                                   className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${item.currency === currency ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
                                 >
@@ -629,19 +623,19 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
                         <button
                           type="button"
                           data-uom-dropdown={item.id}
-                          onClick={() => setShowUomDropdowns(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                          onClick={() => setShowUomDropdowns(prev => ({ ...prev, [item.id.toString()]: !prev[item.id.toString()] }))}
                           className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                         >
                           {item.uom || 'Select UoM'}
-                          <ChevronDown className={`w-4 h-4 transition-transform ${showUomDropdowns[item.id] ? 'rotate-180' : ''}`} />
+                          <ChevronDown className={`w-4 h-4 transition-transform ${showUomDropdowns[item.id.toString()] ? 'rotate-180' : ''}`} />
                         </button>
-                        {showUomDropdowns[item.id] && (
+                        {showUomDropdowns[item.id.toString()] && (
                           <div
                             ref={el => {
                               if (el) {
-                                uomDropdownRefs.current[item.id] = el;
+                                uomDropdownRefs.current[item.id.toString()] = el;
                               } else {
-                                delete uomDropdownRefs.current[item.id];
+                                delete uomDropdownRefs.current[item.id.toString()];
                               }
                             }}
                             className="absolute right-0 mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 max-h-80 overflow-y-auto z-50"
@@ -653,7 +647,7 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
                                   type="button"
                                   onClick={() => {
                                     handleItemChange(item.id, 'uom', uom);
-                                    setShowUomDropdowns(prev => ({ ...prev, [item.id]: false }));
+                                    setShowUomDropdowns(prev => ({ ...prev, [item.id.toString()]: false }));
                                   }}
                                   className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${item.uom === uom ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
                                 >

@@ -51,14 +51,14 @@ const ClientUI = () => {
   };
 
   const handleCreateOrder = () => {
-    router.push('/orders/create');
-  };
+      router.push('/orders/create');
+    };
 
   const handleCreateBooking = (bookingData: {
     poId: string;
     selectedItems: number[];
     bookedQuantities: Record<number, number>;
-  }[]) => {
+    }[]) => {
     // Clear the booking store and reset submission flag
     const bookingStore = useBookingStore.getState();
     bookingStore.clearBooking();
