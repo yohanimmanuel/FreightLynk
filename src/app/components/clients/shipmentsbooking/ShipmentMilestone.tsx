@@ -174,7 +174,7 @@ const ShipmentMilestone = ({ onSeeAll }: ShipmentMilestoneProps) => {
 
               {/* Right Column - Client & Actions */}
               <div className="col-span-3 text-right mt-1">
-                <div className="text-xs text-gray-900 mb-1 flex items-center justify-end">
+                <div className="text-xs text-gray-900 mb-2 flex items-center justify-end">
                   <span>{shipment.destination}</span>
                 </div>
                 <div className="text-xs text-gray-500 mb-2">ETA: {shipment.eta}</div>
