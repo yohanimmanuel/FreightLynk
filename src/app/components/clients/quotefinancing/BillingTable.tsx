@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Download, Upload, Plus, Eye, CreditCard, Calendar, Filter, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
-import { billingData } from '@/store/billingData';
+import { useBillingStore } from '@/store/billingData';
 
 interface BillingTableProps {
   onViewDetails?: (item: any) => void;
@@ -14,6 +14,27 @@ const FreightLynkBilling: React.FC<BillingTableProps> = ({ onViewDetails }) => {
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const statusButtonRef = useRef(null);
   const statusDropdownRef = useRef(null);
+
+  // Get billing data and setBillings from store
+  const billings = useBillingStore((state) => state.billings);
+  const setBillings = useBillingStore((state) => state.setBillings);
+
+  // Fetch billing data from backend when component mounts
+  useEffect(() => {
+    const fetchBillings = async () => {
+      try {
+        // Replace this with your actual API call
+        const response = await fetch('/api/billings');
+        const data = await response.json();
+        setBillings(data);
+      } catch (error) {
+        console.error('Failed to fetch billings:', error);
+        // Handle error appropriately (show error message, etc.)
+      }
+    };
+
+    fetchBillings();
+  }, [setBillings]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -37,7 +58,7 @@ const FreightLynkBilling: React.FC<BillingTableProps> = ({ onViewDetails }) => {
   }, [showStatusDropdown]);
 
   // Filter and search logic
-  const filteredData = billingData.filter(item => {
+  const filteredData = billings.filter(item => {
     const matchesSearch = item.bookingId.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          item.issuer.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'All Status' || item.status === statusFilter;
@@ -45,7 +66,7 @@ const FreightLynkBilling: React.FC<BillingTableProps> = ({ onViewDetails }) => {
   });
 
   // Pagination logic
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentData = filteredData.slice(startIndex, endIndex);
@@ -126,44 +147,42 @@ const FreightLynkBilling: React.FC<BillingTableProps> = ({ onViewDetails }) => {
       <div>
         {/* Filters and Search */}
         <div className="mb-4">
-          <div>
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-4">
-              <div className="flex flex-col md:flex-row md:items-center md:space-x-4 flex-1 gap-2 md:gap-0 w-full">
-                <div className="relative flex-1 max-w-md">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input
-                    type="text"
-                    placeholder="Search invoices..."
-                    className="w-full pl-10 pr-4 py-2 text-sm text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-                <div className="flex flex-col md:flex-row md:items-center gap-2 w-full md:w-auto">
-                  <div className="relative w-full md:w-auto">
-                    <button
-                      ref={statusButtonRef}
-                      onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                      className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors w-full md:w-auto"
-                    >
-                      {statusFilter}
-                      <ChevronDown className={`w-4 h-4 transition-transform ${showStatusDropdown ? 'rotate-180' : ''}`} />
-                    </button>
-                    {renderStatusFilterDropdown()}
-                  </div>
-                  <input
-                    type="date"
-                    className="px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full md:w-auto"
-                  />
-                  <span className="text-gray-400 hidden md:inline">to</span>
-                  <input
-                    type="date"
-                    className="px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full md:w-auto"
-                  />
-                </div>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-4">
+            <div className="flex flex-col md:flex-row md:items-center md:space-x-4 flex-1 gap-2 md:gap-0 w-full">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search invoices..."
+                  className="w-full pl-10 pr-4 py-2 text-sm text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
-              {/* Import/Export buttons or other controls can remain here on the right if present */}
+              <div className="flex flex-col md:flex-row md:items-center gap-2 w-full md:w-auto">
+              <div className="relative w-full md:w-auto">
+                <button
+                  ref={statusButtonRef}
+                  onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors w-full md:w-auto"
+                >
+                  {statusFilter}
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showStatusDropdown ? 'rotate-180' : ''}`} />
+                </button>
+                {renderStatusFilterDropdown()}
+              </div>
+              <input
+                type="date"
+                className="px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full md:w-auto"
+              />
+              <span className="text-gray-400 hidden md:inline">to</span>
+              <input
+                type="date"
+                className="px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full md:w-auto"
+              />
             </div>
+            </div>
+            {/* Import/Export buttons or other controls can remain here on the right if present */}
           </div>
         </div>
         {/* Billing Table for md+ screens */}
@@ -277,7 +296,10 @@ const FreightLynkBilling: React.FC<BillingTableProps> = ({ onViewDetails }) => {
         <div className="mt-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-0">
             <div className="text-sm text-gray-700">
-              Showing {filteredData.length === 0 ? 0 : startIndex + 1} to {Math.min(endIndex, filteredData.length)} of {filteredData.length} invoices
+              {filteredData.length === 0 
+                ? "No invoices found" 
+                : `Showing ${startIndex + 1} to ${Math.min(endIndex, filteredData.length)} of ${filteredData.length} invoices`
+              }
             </div>
             <div className="flex items-center space-x-2">
               <button

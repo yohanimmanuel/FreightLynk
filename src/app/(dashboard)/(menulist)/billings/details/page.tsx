@@ -1,7 +1,7 @@
 'use client';
 
 import BillingDetails from "@/app/components/clients/quotefinancing/BillingDetails";
-import { useBillingStore } from '../../../../../store/billingStore';
+import { useBillingStore } from '@/store/billingData';
 import { Download, CreditCard } from 'lucide-react';
 
 const ClientUI = () => {

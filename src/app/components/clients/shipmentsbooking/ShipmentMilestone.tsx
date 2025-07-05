@@ -13,6 +13,7 @@ import {
   Package,
   Globe
 } from 'lucide-react';
+import { useShipmentStore } from '@/store/shipmentData';
 
 interface ShipmentMilestoneProps {
   onSeeAll?: () => void;
@@ -21,6 +22,7 @@ interface ShipmentMilestoneProps {
 const ShipmentMilestone = ({ onSeeAll }: ShipmentMilestoneProps) => {
   const [filter, setFilter] = useState('all');
   const [pinnedItems, setPinnedItems] = useState(new Set(['FL-001927', 'FL-001928']));
+  const shipments = useShipmentStore((state) => state.shipments);
 
   const togglePin = (shipmentId: string) => {
     const newPinned = new Set(pinnedItems);
@@ -42,15 +44,6 @@ const ShipmentMilestone = ({ onSeeAll }: ShipmentMilestoneProps) => {
     }
   };
 
-  const getModeIcon = (mode: string) => {
-    switch (mode) {
-      case 'AIR': return <Plane className="w-5 h-5 text-[#007bff]" />;
-      case 'SEA': return <Ship className="w-5 h-5 text-[#007bff]" />;
-      case 'LAND': return <Truck className="w-5 h-5 text-[#007bff]" />;
-      default: return <Package className="w-5 h-5 text-[#007bff]" />;
-    }
-  };
-
   const getAlertColor = (alert: string) => {
     switch (alert) {
       case 'Customs Hold': return 'bg-red-50 text-red-700 border-red-200';
@@ -61,129 +54,40 @@ const ShipmentMilestone = ({ onSeeAll }: ShipmentMilestoneProps) => {
     }
   };
 
-  const shipments = [
-    {
-      id: 'FL-001927',
-      goods: 'Palm disposable paper plates',
-      priority: 'high',
-      pos: ['PO12345', 'PO12346'],
-      mode: 'AIR',
-      incoterm: 'DDP',
-      carrier: 'Maersk',
-      client: 'Philips Logistics',
-      eta: 'Jul 20',
-      lastUpdated: '3h ago',
-      status: 'Customs delay at destination',
-      alerts: ['Customs Hold', 'Action Needed'],
-      milestones: [
-        { name: 'Pickup', status: 'completed' },
-        { name: 'Origin Port', status: 'completed' },
-        { name: 'In Transit', status: 'completed' },
-        { name: 'Destination Port', status: 'issue' },
-        { name: 'Delivered', status: 'pending' }
-      ],
-      trackable: true,
-      hasDocuments: true
-    },
-    {
-      id: 'FL-001928',
-      goods: '[Re-stock] PO 28134',
-      priority: 'medium',
-      pos: ['PO28134'],
-      mode: 'SEA',
-      incoterm: 'FOB',
-      carrier: 'COSCO',
-      client: 'Philips Medisize',
-      eta: 'Jul 25',
-      lastUpdated: '1h ago',
-      status: 'Quote request - 2 quotes ready for view',
-      alerts: ['Price Change'],
-      milestones: [
-        { name: 'Booking', status: 'in-progress' },
-        { name: 'Origin Port', status: 'pending' },
-        { name: 'In Transit', status: 'pending' },
-        { name: 'Destination Port', status: 'pending' },
-        { name: 'Delivered', status: 'pending' }
-      ],
-      trackable: false,
-      hasDocuments: true
-    },
-    {
-      id: 'FL-001929',
-      goods: 'COA-J1A2747 - 199',
-      priority: 'low',
-      pos: ['COA-J1A2747'],
-      mode: 'SEA',
-      incoterm: 'CIF',
-      carrier: 'Arvato Distribution',
-      client: 'Arvato Distribution',
-      eta: 'Jul 28',
-      lastUpdated: '5h ago',
-      status: 'At arrival port - No updates',
-      alerts: [],
-      milestones: [
-        { name: 'Pickup', status: 'completed' },
-        { name: 'Origin Port', status: 'completed' },
-        { name: 'In Transit', status: 'completed' },
-        { name: 'Destination Port', status: 'completed' },
-        { name: 'Delivered', status: 'pending' }
-      ],
-      trackable: true,
-      hasDocuments: false
-    },
-    {
-      id: 'FL-001930',
-      goods: 'RRD Texas to Sarvar, Hungary',
-      priority: 'medium',
-      pos: ['PO88991'],
-      mode: 'LAND',
-      incoterm: 'DAP',
-      carrier: 'IMS Fastpak',
-      client: 'IMS Fastpak',
-      eta: 'Jul 22',
-      lastUpdated: '2h ago',
-      status: 'At arrival port - No updates',
-      alerts: [],
-      milestones: [
-        { name: 'Pickup', status: 'completed' },
-        { name: 'Origin Hub', status: 'completed' },
-        { name: 'In Transit', status: 'in-progress' },
-        { name: 'Destination Hub', status: 'pending' },
-        { name: 'Delivered', status: 'pending' }
-      ],
-      trackable: true,
-      hasDocuments: true
-    },
-    {
-      id: 'FL-001931',
-      goods: 'Carribean Kids Pack Flatware',
-      priority: 'low',
-      pos: ['PO55512'],
-      mode: 'SEA',
-      incoterm: 'EXW',
-      carrier: 'Go Direct Solutions',
-      client: 'Go Direct Solutions',
-      eta: 'Aug 5',
-      lastUpdated: '30m ago',
-      status: 'Booking - Waiting for pricing',
-      alerts: ['Delay'],
-      milestones: [
-        { name: 'Booking', status: 'in-progress' },
-        { name: 'Origin Port', status: 'pending' },
-        { name: 'In Transit', status: 'pending' },
-        { name: 'Destination Port', status: 'pending' },
-        { name: 'Delivered', status: 'pending' }
-      ],
-      trackable: false,
-      hasDocuments: false
+  // Add a function to get the icon based on transportMode
+  const getTransportModeIcon = (mode: string) => {
+    switch (mode) {
+      case 'Sea':
+        return <Ship className="w-5 h-5 text-[#007bff]" />;
+      case 'Air':
+        return <Plane className="w-5 h-5 text-[#007bff]" />;
+      case 'Road':
+        return <Truck className="w-5 h-5 text-[#007bff]" />;
+      default:
+        return <Package className="w-5 h-5 text-[#007bff]" />;
     }
-  ];
+  };
 
-  const filteredShipments = shipments.filter(shipment => {
+  // Map to simplified milestone data
+  const milestoneData = shipments.map((s) => {
+    const latestMilestone = s.milestones.length > 0 ? s.milestones[s.milestones.length - 1] : null;
+    return {
+      shipmentID: s.id,
+      goodsDescription: s.goods.description,
+      poNumbers: s.poNumbers,
+      incoterms: s.incoterms,
+      progress: s.progress,
+      latestMilestone: latestMilestone ? latestMilestone.step : '',
+      latestMilestoneDescription: latestMilestone ? latestMilestone.description : '',
+      destination: `${s.destination.city}, ${s.destination.country}`,
+      eta: new Date(s.dates.arrival).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+      transportMode: s.transportMode,
+    };
+  });
+
+  const filteredShipments = milestoneData.filter(shipment => {
     if (filter === 'all') return true;
-    if (filter === 'pinned') return pinnedItems.has(shipment.id);
-    if (filter === 'high-priority') return shipment.priority === 'high';
-    if (filter === 'alerts') return shipment.alerts.length > 0;
+    if (filter === 'pinned') return pinnedItems.has(shipment.shipmentID);
     return true;
   });
 
@@ -222,30 +126,30 @@ const ShipmentMilestone = ({ onSeeAll }: ShipmentMilestoneProps) => {
       {/* Shipment Cards */}
       <div className="space-y-2">
         {filteredShipments.map((shipment) => (
-          <div key={shipment.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-2 hover:shadow-md transition-shadow">
+          <div key={shipment.shipmentID} className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 hover:shadow-md transition-shadow">
             <div className="grid grid-cols-14 items-center gap-4">
               
               {/* Left Column - Icon & Shipment Info */}
               <div className="col-span-6 flex items-center gap-3">
                 <div className="flex-shrink-0">
                   <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                    {getModeIcon(shipment.mode)}
+                    {getTransportModeIcon(shipment.transportMode)}
                   </div>
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-bold text-gray-900 text-xs">{shipment.id}</span>
+                    <span className="font-bold text-gray-900 text-xs">{shipment.shipmentID}</span>
                     <span className="text-gray-900 text-xs">•</span>
-                    <span className="font-medium text-gray-900 text-sm truncate">{shipment.goods}</span>
+                    <span className="font-medium text-gray-900 text-sm truncate">{shipment.goodsDescription}</span>
                   </div>
                   <div className="flex items-center gap-1 flex-wrap">
-                    {shipment.pos.slice(0, 2).map(po => (
+                    {shipment.poNumbers.slice(0, 2).map(po => (
                       <span key={po} className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs">
                         {po}
                       </span>
                     ))}
                     <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs">
-                      {shipment.incoterm}
+                      {shipment.incoterms}
                     </span>
                   </div>
                 </div>
@@ -254,67 +158,26 @@ const ShipmentMilestone = ({ onSeeAll }: ShipmentMilestoneProps) => {
               {/* Middle Column - Progress & Status */}
               <div className="col-span-5">
                 {/* Progress Bar - Made longer */}
-                <div className="mb-2">
-                  <div className="flex items-center h-2 bg-gray-200 rounded-full overflow-hidden w-full max-w-xs">
-                    {shipment.milestones.map((milestone, index) => (
-                      <div
-                        key={index}
-                        className={`flex-1 h-full ${getMilestoneColor(milestone.status)}`}
-                      ></div>
-                    ))}
-                  </div>
+                <div className="relative flex items-center h-2 mt-2 bg-gray-200 rounded-full w-full max-w-xs">
+                  <div className="absolute left-0 top-0 h-2 bg-[#007bff] rounded-full z-0" style={{ width: `${shipment.progress}%` }}></div>
+                  {/* Progress circle */}
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-white bg-[#007bff] shadow z-10"
+                    style={{ left: `calc(${shipment.progress}% - 8px)` }}
+                  ></div>
                 </div>
-                
-                {/* Status */}
-                <div className="flex items-center gap-2 mb-1">
-                  <MapPin className="w-3 h-3 text-gray-400" />
-                  <span className="text-xs text-gray-900 truncate">{shipment.status}</span>
+                <div className="text-xs text-gray-500 flex items-center mt-2">
+                  <MapPin className="w-5 h-5 text-gray-400 mr-1" />
+                  <span className="truncate" style={{ maxWidth: '100%' }}>{shipment.latestMilestone} - {shipment.latestMilestoneDescription}</span>
                 </div>
-                
-                {/* Alerts */}
-                {shipment.alerts.length > 0 && (
-                  <div className="flex gap-1 flex-wrap">
-                    {shipment.alerts.slice(0, 2).map(alert => (
-                      <span key={alert} className={`px-2 py-0.5 rounded text-xs font-medium ${getAlertColor(alert)}`}>
-                        {alert}
-                      </span>
-                    ))}
-                  </div>
-                )}
               </div>
 
               {/* Right Column - Client & Actions */}
-              <div className="col-span-3 text-right">
-                <div className="flex items-center justify-end gap-2 mb-2">
-                  <span className="text-xs text-gray-700 truncate">{shipment.client}</span>
-                  <button
-                    onClick={() => togglePin(shipment.id)}
-                    className={`p-1 rounded hover:bg-gray-100 flex-shrink-0 ${pinnedItems.has(shipment.id) ? 'text-yellow-500' : 'text-gray-400'}`}
-                  >
-                    <Star className={`w-4 h-4 ${pinnedItems.has(shipment.id) ? 'fill-current' : ''}`} />
-                  </button>
+              <div className="col-span-3 text-right mt-1">
+                <div className="text-xs text-gray-900 mb-1 flex items-center justify-end">
+                  <span>{shipment.destination}</span>
                 </div>
-                
-                <div className="text-xs text-gray-500 mb-2">
-                  ETA: {shipment.eta}
-                </div>
-                
-                {/* Quick Actions */}
-                <div className="flex items-center justify-end gap-1">
-                  {shipment.hasDocuments && (
-                    <button className="p-1.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors" title="View Documents">
-                      <FileText className="w-3 h-3" />
-                    </button>
-                  )}
-                  {shipment.trackable && (
-                    <button className="p-1.5 bg-green-50 text-green-600 rounded hover:bg-green-100 transition-colors" title="Track Live">
-                      <Eye className="w-3 h-3" />
-                    </button>
-                  )}
-                  <button className="p-1.5 bg-gray-50 text-gray-600 rounded hover:bg-gray-100 transition-colors" title="Message Operations">
-                    <MessageCircle className="w-3 h-3" />
-                  </button>
-                </div>
+                <div className="text-xs text-gray-500 mb-2">ETA: {shipment.eta}</div>
               </div>
             </div>
           </div>

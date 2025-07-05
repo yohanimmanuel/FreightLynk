@@ -1,24 +1,34 @@
 import React, { useState } from 'react';
 import { MessageCircle, Archive, MoreVertical, Phone, Mail, MapPin, Star, Calendar, CheckCircle, XCircle, Menu, ChevronDown } from 'lucide-react';
+import PartnerOverview from './PartnerOverview';
+import { partnerDirectory } from '@/store/partnerCompanyData';
 
-const PartnerDetails = () => {
+interface PartnerDetailsProps {
+  partnerId?: number;
+}
+
+const PartnerDetails: React.FC<PartnerDetailsProps> = ({ partnerId }) => {
   const [activeTab, setActiveTab] = useState('Overview');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  // Find the partner by ID or use the first one as default
+  const partner = partnerId 
+    ? partnerDirectory.find(p => p.id === partnerId) || partnerDirectory[0]
+    : partnerDirectory[0];
 
   const tabs = [
     'Overview',
     'Bookings', 
     'Orders',
     'Documents',
-    'Company Ratings & Reviews'
   ];
 
   const renderTabContent = () => {
     switch (activeTab) {
       case 'Overview':
         return (
-          <div className="p-4 md:p-6 bg-white rounded-lg">
-            <p className="text-gray-500">Overview content will be displayed here</p>
+          <div className="bg-white rounded-lg">
+            <PartnerOverview partner={partner} />
           </div>
         );
       case 'Bookings':
@@ -51,9 +61,9 @@ const PartnerDetails = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Header Section */}
-      <div className="bg-white border border-gray-200 rounded-lg sshadow-sm">
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm flex-shrink-0">
         <div className="container mx-auto px-4">
           <div className="py-4 md:py-6">
             {/* Mobile Header */}
@@ -61,13 +71,13 @@ const PartnerDetails = () => {
               <div className="flex items-center justify-between mb-4 px-4">
                 <div className="flex items-center space-x-3">
                   <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-xl font-semibold text-blue-600">TO</span>
+                    <span className="text-xl font-semibold text-blue-600">{partner.avatar}</span>
                   </div>
                   <div>
-                    <h1 className="text-lg font-bold text-gray-900">TransOcean Freight Ltd.</h1>
+                    <h1 className="text-lg font-bold text-gray-900">{partner.name}</h1>
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                       <CheckCircle className="w-3 h-3 mr-1" />
-                      Verified
+                      {partner.status}
                     </span>
                   </div>
                 </div>
@@ -77,12 +87,12 @@ const PartnerDetails = () => {
               <div className="px-4 pb-4">
                 <div className="flex items-center mb-3">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    Freight Forwarder
+                    {partner.type}
                   </span>
                 </div>
                 
                 <p className="text-xs text-gray-600 leading-relaxed">
-                  Global freight forwarding and logistics solutions provider specializing in ocean, air, and ground transportation with over 15 years of experience serving international trade routes.
+                  {partner.specializations.join(", ")}
                 </p>
               </div>
 
@@ -90,14 +100,16 @@ const PartnerDetails = () => {
               <div className="px-4 py-4 flex items-center space-x-4">
                 <div className="flex-shrink-0">
                   <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-semibold text-gray-600">JD</span>
+                    <span className="text-sm font-semibold text-gray-600">
+                      {partner.contactPersons[0].initials}
+                    </span>
                   </div>
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-lg font-bold text-gray-900 mb-1">Jane Doe</h2>
+                  <h2 className="text-lg font-bold text-gray-900 mb-1">{partner.contactPersons[0].name}</h2>
                   <div className="flex items-center text-sm text-gray-600">
                     <Calendar className="w-4 h-4 mr-1" />
-                    <span>Partner Since Mar 2024</span>
+                    <span>Partner Since {partner.connectedSince}</span>
                   </div>
                 </div>
               </div>
@@ -125,28 +137,33 @@ const PartnerDetails = () => {
                   {/* Company Logo */}
                   <div className="flex-shrink-0">
                     <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-xl font-semibold text-blue-600">TO</span>
+                      <span className="text-xl font-semibold text-blue-600">{partner.avatar}</span>
                     </div>
                   </div>
 
                   {/* Company Details */}
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
-                      <h1 className="text-2xl font-bold text-gray-900">TransOcean Freight Ltd.</h1>
+                      <h1 className="text-2xl font-bold text-gray-900">{partner.name}</h1>
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                         <CheckCircle className="w-3 h-3 mr-1" />
-                        Verified
+                        {partner.status}
                       </span>
                     </div>
                     
-                    <div className="flex items-center mb-3">
+                    <div className="flex items-center mb-3 space-x-4">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        Freight Forwarder
+                        {partner.type}
                       </span>
+                      
+                      <div className="flex items-center text-xs text-gray-600">
+                        <Calendar className="w-3 h-3 mr-1" />
+                        <span>Partner Since {partner.connectedSince}</span>
+                      </div>
                     </div>
                     
                     <p className="text-xs text-gray-600 leading-relaxed">
-                      Global freight forwarding and logistics solutions provider specializing in ocean, air, and ground transportation with over 15 years of experience serving international trade routes.
+                      {partner.industry} - {partner.specializations.join(", ")}
                     </p>
                   </div>
                 </div>
@@ -161,17 +178,17 @@ const PartnerDetails = () => {
                   {/* Contact Person Avatar */}
                   <div className="flex-shrink-0">
                     <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-semibold text-gray-600">JD</span>
+                      <span className="text-sm font-semibold text-gray-600">{partner.contactPersons[0].initials}</span>
                     </div>
                   </div>
 
                   {/* Contact Person Details */}
                   <div className="flex-1">
-                    <h2 className="text-lg font-bold text-gray-900 mb-2">Jane Doe</h2>
-                    
-                    <div className="flex items-center text-sm text-gray-600 mb-4">
-                      <Calendar className="w-4 h-4 mr-1" />
-                      <span>Partner Since Mar 2024</span>
+                    <h2 className="text-lg font-bold text-gray-900">{partner.contactPersons[0].name}</h2>
+                    <div>
+                      <div className="flex items-center text-sm text-gray-600 mb-4">
+                        {partner.contactPersons[0].isAdmin ? 'Admin' : 'Member'}
+                      </div>
                     </div>
 
                     {/* Action Buttons */}
@@ -197,7 +214,7 @@ const PartnerDetails = () => {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="bg-white border-b">
+      <div className="bg-white border-b flex-shrink-0">
         <div className="container mx-auto px-4">
           {/* Mobile Dropdown */}
           <div className="md:hidden relative">
@@ -250,7 +267,7 @@ const PartnerDetails = () => {
       </div>
 
       {/* Tab Content */}
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 py-6 flex-1 overflow-hidden">
         {renderTabContent()}
       </div>
     </div>

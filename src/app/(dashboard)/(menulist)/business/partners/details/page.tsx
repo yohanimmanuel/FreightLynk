@@ -1,11 +1,15 @@
 'use client';
 
 import PartnerDetails from "@/app/components/clients/businessoperations/PartnerDetails";
+import { useSearchParams } from "next/navigation";
 
 const ClientUI = () => {
+  const searchParams = useSearchParams();
+  const partnerId = searchParams.get('id');
+  
   return (
     <div className="p-4">
-      <PartnerDetails />
+      <PartnerDetails partnerId={partnerId ? Number(partnerId) : undefined} />
     </div>
   );
 };

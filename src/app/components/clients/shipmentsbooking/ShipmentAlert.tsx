@@ -202,17 +202,6 @@ const ShipmentAlerts = () => {
           ))
         )}
       </div>
-
-      {/* Summary Footer */}
-      {filteredAlerts.length > 0 && (
-        <div className="mt-4">
-          <div className="flex items-center justify-between">
-            <button className="w-full bg-whiw-full text-sm text-white bg-[#007bff] px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-              See All
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

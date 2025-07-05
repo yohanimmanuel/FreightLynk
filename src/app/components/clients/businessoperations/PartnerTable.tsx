@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Search, Filter, MessageSquare, Eye, ArrowRight } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Search, Filter, MessageSquare, Eye, ArrowRight, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
-import { Partner, partnerDirectory } from '@/store/partnerMockData';
+import { Partner, partnerDirectory } from '@/store/partnerCompanyData';
 
 interface PartnerTableProps {
   partners?: Partner[];
@@ -15,6 +15,28 @@ const PartnerTable: React.FC<PartnerTableProps> = ({
   maxRows = 5 
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedType, setSelectedType] = useState('All Types');
+  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
+  const typeDropdownRef = useRef<HTMLDivElement>(null);
+  const typeButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (typeDropdownRef.current && !typeDropdownRef.current.contains(event.target as Node) &&
+          typeButtonRef.current && !typeButtonRef.current.contains(event.target as Node)) {
+        setShowTypeDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const partnerTypes = ['All Types', 'Client', 'Forwarder', 'Provider'];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -34,17 +56,115 @@ const PartnerTable: React.FC<PartnerTableProps> = ({
     }
   };
 
-  // Filter partners based on search term
-  const filteredPartners = partners.filter(partner => 
-    partner.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    partner.industry.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    partner.type.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter partners based on search term and selected type
+  const getFilteredPartners = () => {
+    let filtered = partners;
+    
+    // Filter by partner type
+    if (selectedType !== 'All Types') {
+      filtered = filtered.filter(partner => partner.type === selectedType);
+    }
+    
+    // Filter by search term
+    if (searchTerm.trim() !== '') {
+      const searchLower = searchTerm.toLowerCase().trim();
+      filtered = filtered.filter(partner => 
+        partner.name.toLowerCase().includes(searchLower) || 
+        partner.industry.toLowerCase().includes(searchLower) ||
+        partner.type.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    return filtered;
+  };
 
-  // Limit number of rows shown in summary view
-  const displayPartners = view === 'summary' && maxRows 
-    ? filteredPartners.slice(0, maxRows) 
-    : filteredPartners;
+  const filteredPartners = getFilteredPartners();
+
+  // Limit number of rows shown in summary view or paginate for full view
+  const displayPartners = view === 'summary' 
+    ? filteredPartners.slice(0, maxRows)
+    : filteredPartners.slice((currentPage - 1) * 5, currentPage * 5);
+
+  const totalPages = Math.ceil(filteredPartners.length / 5);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleTypeSelect = (type: string) => {
+    setSelectedType(type);
+    setShowTypeDropdown(false);
+    setCurrentPage(1); // Reset to first page when filtering
+  };
+
+  const renderTypeDropdown = () => {
+    if (!showTypeDropdown) return null;
+  
+    return (
+      <div 
+        ref={typeDropdownRef}
+        className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 w-40 max-h-80 overflow-hidden z-50"
+      >
+        <div className="p-2 max-h-64 overflow-y-auto">
+          <div className="space-y-1">
+            {partnerTypes.map((type) => (
+              <button
+                key={type}
+                onClick={() => handleTypeSelect(type)}
+                className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-sm transition-colors ${
+                  selectedType === type ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                }`}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderPagination = () => {
+    // Only show pagination in full view
+    if (view === 'summary') return null;
+    
+    return (
+      <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-white">
+        <div className="text-sm text-gray-700">
+          Showing {Math.min((currentPage - 1) * 5 + 1, filteredPartners.length)} to {Math.min(currentPage * 5, filteredPartners.length)} of {filteredPartners.length} partners
+        </div>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          {[...Array(Math.max(1, totalPages))].map((_, i) => (
+            <button
+              key={i + 1}
+              onClick={() => handlePageChange(i + 1)}
+              className={`px-3 py-1 text-sm rounded ${
+                currentPage === i + 1
+                  ? 'bg-[#007bff] text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              {i + 1}
+            </button>
+          ))}
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages || totalPages === 0}
+            className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="w-full">
@@ -62,10 +182,17 @@ const PartnerTable: React.FC<PartnerTableProps> = ({
               />
             </div>
             <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-              <button className="w-full md:w-auto px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 flex items-center gap-2 hover:bg-gray-50">
-                <Filter className="h-4 w-4" />
-                Filter
-              </button>
+              <div className="relative">
+                <button 
+                  ref={typeButtonRef}
+                  onClick={() => setShowTypeDropdown(!showTypeDropdown)}
+                  className="w-full md:w-auto px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 flex items-center gap-2 hover:bg-gray-50"
+                >
+                  {selectedType}
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showTypeDropdown ? 'rotate-180' : ''}`} />
+                </button>
+                {renderTypeDropdown()}
+              </div>
               <Link href="/business/explore" className="w-full md:w-auto">
                 <button className="w-full md:w-auto px-3 py-2 bg-[#007bff] text-white rounded-lg text-sm flex items-center gap-2 hover:bg-blue-700 transition-colors">
                   Explore More Partners
@@ -127,7 +254,7 @@ const PartnerTable: React.FC<PartnerTableProps> = ({
                   {partner.lastContact}
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap text-right text-xs font-medium">
-                  <Link href={`/business/partners/details`}>
+                  <Link href={`/business/partners/details?id=${partner.id}`}>
                     <button className="border border-gray-300 rounded-lg px-3 py-1 text-gray-600 hover:bg-gray-100">
                       View Details
                     </button>
@@ -138,6 +265,15 @@ const PartnerTable: React.FC<PartnerTableProps> = ({
           </tbody>
         </table>
       </div>
+      
+      {/* Pagination */}
+      {renderPagination()}
+      
+      {filteredPartners.length === 0 && (
+        <div className="text-center py-12 text-gray-500">
+          No partners found
+        </div>
+      )}
     </div>
   );
 };

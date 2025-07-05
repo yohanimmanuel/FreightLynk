@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Plus, ChevronRight, MapPin, Clock, Package, Truck, User, Phone, ChevronDown, ChevronUp, X, Maximize2, Minimize2 } from 'lucide-react';
+import { useShipmentStore } from '@/store/shipmentData';
 
 // TypeScript interfaces
 interface TimelineEvent {
@@ -28,6 +29,12 @@ interface Shipment {
   weight: string;
   timeline: TimelineEvent[];
   courier: Courier;
+  poNumbers?: string[];
+  origin: { city: string; country: string };
+  shipper: string;
+  consignee: string;
+  carrier: string;
+  progress: number;
 }
 
 const ShipmentTrackingList = () => {
@@ -39,109 +46,35 @@ const ShipmentTrackingList = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedTransportMode, setSelectedTransportMode] = useState('all');
 
-  // Sample shipment data with FL tracking IDs
-  const shipments: Shipment[] = [
-    {
-      id: 'FL-5023',
-      status: 'Delivered',
-      statusDot: 'bg-green-500',
-      destination: 'Jakarta, Indonesia',
-      packageCount: 2,
-      goodsDescription: 'Electronics (Laptops & Accessories)',
-      arrivalDate: '25 February 2025',
-      arrivalTime: '18:00 PM',
-      distance: '153 km',
-      deliveryTime: '2 hours 22 minutes',
-      weight: '29.86 kg',
-      timeline: [
-        { step: 'Package being checked', date: 'February 19, 2025 • 18:49 PM', location: 'Jakarta, Indonesia', completed: true },
-        { step: 'Package in transit', date: 'February 19, 2025 • 19:45 PM', location: 'Bekasi, Indonesia', completed: true },
-        { step: 'Package in transit', date: 'February 19, 2025 • 21:30 PM', location: 'Purwakarta, Indonesia', completed: true },
-        { step: 'Package arrive at final destination', date: 'February 19, 2025 • 22:12 PM', location: 'Bandung, Indonesia', completed: true }
-      ],
-      courier: { name: 'Joko Widodo', avatar: '👤' }
-    },
-    {
-      id: 'FL-5024',
-      status: 'In transit',
-      statusDot: 'bg-orange-500',
-      destination: 'Surabaya, Indonesia',
-      packageCount: 3,
-      goodsDescription: 'Furniture (Office Chairs)',
-      arrivalDate: '26 February 2025',
-      arrivalTime: '14:30 PM',
-      distance: '287 km',
-      deliveryTime: '4 hours 15 minutes',
-      weight: '45.32 kg',
-      timeline: [
-        { step: 'Package being processed', date: 'February 20, 2025 • 09:15 AM', location: 'Jakarta, Indonesia', completed: true },
-        { step: 'Package in transit', date: 'February 20, 2025 • 11:20 AM', location: 'Cirebon, Indonesia', completed: true },
-        { step: 'Package in transit', date: 'February 20, 2025 • 15:45 PM', location: 'Semarang, Indonesia', completed: false },
-        { step: 'Package arrive at final destination', date: 'Estimated', location: 'Surabaya, Indonesia', completed: false }
-      ],
-      courier: { name: 'Siti Nurhaliza', avatar: '👤' }
-    },
-    {
-      id: 'FL-5025',
-      status: 'Pending',
-      statusDot: 'bg-red-500',
-      destination: 'Medan, Indonesia',
-      packageCount: 1,
-      goodsDescription: 'Medical Equipment',
-      arrivalDate: '27 February 2025',
-      arrivalTime: '16:00 PM',
-      distance: '425 km',
-      deliveryTime: '6 hours 30 minutes',
-      weight: '12.45 kg',
-      timeline: [
-        { step: 'Package received', date: 'February 20, 2025 • 14:00 PM', location: 'Jakarta, Indonesia', completed: true },
-        { step: 'Awaiting processing', date: 'Pending', location: 'Jakarta Warehouse', completed: false },
-        { step: 'Package in transit', date: 'Scheduled', location: 'In Transit', completed: false },
-        { step: 'Package arrive at final destination', date: 'Estimated', location: 'Medan, Indonesia', completed: false }
-      ],
-      courier: { name: 'Ahmad Rahman', avatar: '👤' }
-    },
-    {
-      id: 'FL-5026',
-      status: 'In transit',
-      statusDot: 'bg-orange-500',
-      destination: 'Bali, Indonesia',
-      packageCount: 4,
-      goodsDescription: 'Art Supplies & Paintings',
-      arrivalDate: '28 February 2025',
-      arrivalTime: '12:00 PM',
-      distance: '318 km',
-      deliveryTime: '5 hours 45 minutes',
-      weight: '67.89 kg',
-      timeline: [
-        { step: 'Package being checked', date: 'February 20, 2025 • 16:30 PM', location: 'Jakarta, Indonesia', completed: true },
-        { step: 'Package in transit', date: 'February 20, 2025 • 18:15 PM', location: 'Yogyakarta, Indonesia', completed: true },
-        { step: 'Package in transit', date: 'February 21, 2025 • 08:00 AM', location: 'Surabaya, Indonesia', completed: false },
-        { step: 'Package arrive at final destination', date: 'Estimated', location: 'Denpasar, Bali', completed: false }
-      ],
-      courier: { name: 'Made Wijaya', avatar: '👤' }
-    },
-    {
-      id: 'FL-5027',
-      status: 'Delivered',
-      statusDot: 'bg-green-500',
-      destination: 'Makassar, Indonesia',
-      packageCount: 2,
-      goodsDescription: 'Clothing & Apparel',
-      arrivalDate: '24 February 2025',
-      arrivalTime: '13:45 PM',
-      distance: '198 km',
-      deliveryTime: '3 hours 20 minutes',
-      weight: '34.67 kg',
-      timeline: [
-        { step: 'Package being checked', date: 'February 18, 2025 • 10:00 AM', location: 'Jakarta, Indonesia', completed: true },
-        { step: 'Package in transit', date: 'February 18, 2025 • 15:30 PM', location: 'Surabaya, Indonesia', completed: true },
-        { step: 'Package in transit', date: 'February 19, 2025 • 09:15 AM', location: 'Makassar Port', completed: true },
-        { step: 'Package delivered', date: 'February 19, 2025 • 13:45 PM', location: 'Makassar, Indonesia', completed: true }
-      ],
-      courier: { name: 'Andi Mappasomba', avatar: '👤' }
-    }
-  ];
+  const storeShipments = useShipmentStore((state) => state.shipments);
+
+  // Map store data to the existing Shipment card structure
+  const shipments: Shipment[] = storeShipments.map((s) => ({
+    id: s.id,
+    status: s.status,
+    statusDot: s.status === 'Delivered' ? 'bg-green-500' : s.status === 'In Transit' ? 'bg-orange-500' : s.status === 'Pending' ? 'bg-red-500' : 'bg-gray-500',
+    destination: `${s.destination.city}, ${s.destination.country}`,
+    packageCount: s.goods.quantity, // or s.containerInfo?.quantity if you want container info
+    goodsDescription: `${s.goods.description} (${s.goods.type})`,
+    arrivalDate: new Date(s.dates.arrival).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }),
+    arrivalTime: s.dates.departure, // or s.dates.arrival if you want arrival time
+    distance: '', // keep as mock or calculate if you have data
+    deliveryTime: '', // keep as mock or calculate if you have data
+    weight: `${s.goods.weight} kg`,
+    timeline: s.milestones.map(m => ({
+      step: m.step,
+      date: m.date,
+      location: m.location,
+      completed: m.completed,
+    })),
+    courier: { name: '', avatar: '' }, // keep as mock if needed
+    poNumbers: s.poNumbers,
+    origin: s.origin,
+    shipper: s.shipper,
+    consignee: s.consignee,
+    carrier: s.carrier,
+    progress: s.progress,
+  }));
 
   const getStatusColors = (status: Shipment['status']) => {
   switch (status) {
@@ -150,7 +83,7 @@ const ShipmentTrackingList = () => {
         colorClass: 'bg-green-100 text-green-600',
         dotClass: 'bg-green-500'
       };
-    case 'In transit':
+    case 'In Transit':
       return {
         colorClass: 'bg-orange-100 text-orange-600',
         dotClass: 'bg-orange-500'
@@ -208,12 +141,6 @@ const ShipmentTrackingList = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-4 -mt-1">
             <h1 className="text-2xl font-bold text-gray-900">Tracking</h1>
-            <div className="flex justify-end">
-            <button className="bg-[#007bff] text-sm text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors">
-                <Plus size={16} />
-                Add Order
-            </button>
-            </div>
         </div>
 
           {/* Search */}
@@ -229,7 +156,12 @@ const ShipmentTrackingList = () => {
           </div>
 
           {/* Shipment Cards */}
-          <div className="space-y-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 190px)' }}>
+          <div className="space-y-2 overflow-y-auto scrollbar-hide" style={{ maxHeight: 'calc(100vh - 190px)', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <style jsx>{`
+              .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+              }
+            `}</style>
             {filteredShipments.map((shipment) => {
               const statusColors = getStatusColors(shipment.status);
               return (
@@ -241,7 +173,7 @@ const ShipmentTrackingList = () => {
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex items-center gap-2">
                         <div className={`w-2 h-2 rounded-full ${statusColors.dotClass}`} />
-                        <span className="font-semibold text-black">{shipment.id}</span>
+                        <span className="font-semibold text-sm text-black">{shipment.id}</span>
                       </div>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors.colorClass}`}>
                         {shipment.status}
@@ -254,50 +186,41 @@ const ShipmentTrackingList = () => {
                     </div>
                   </div>
 
-                  <div className="border-t -mt-2">
+                  <div className="border-t">
                     <button
                       onClick={() => toggleExpanded(shipment.id)}
                       className="w-full flex items-center justify-between p-3 text-xs text-gray-500 transition-colors"
                     >
-                      <span>View tracking details</span>
+                    <span>View tracking details</span>
                       {expandedShipment === shipment.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     </button>
 
                     {expandedShipment === shipment.id && (
-                      <div className="p-3 bg-gray-50 space-y-3">
-                        <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div className="p-3 white space-y-3">
+                        <div className="grid grid-cols-2 gap-4 text-xs">                          
+                          <div>
+                            <p className="text-gray-500">Shipper</p>
+                            <p className="text-gray-900 font-medium">{shipment.shipper}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Consignee</p>
+                            <p className="text-gray-900 font-medium">{shipment.consignee}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Origin</p>
+                            <p className="text-gray-900 font-medium">{`${shipment.origin.city}, ${shipment.origin.country}`}</p>
+                          </div>
                           <div>
                             <p className="text-gray-500">Destination</p>
                             <p className="text-gray-900 font-medium">{shipment.destination}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500">Total items</p>
-                            <p className="text-gray-900 font-medium">{shipment.packageCount}</p>
                           </div>
                           <div>
                             <p className="text-gray-500">Arrival time</p>
                             <p className="text-gray-900 font-medium">{shipment.arrivalTime}</p>
                           </div>
                           <div>
-                            <p className="text-gray-500">Weight</p>
-                            <p className="text-gray-900 font-medium">{shipment.weight}</p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between pt-3 border-t">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                              {shipment.courier.avatar}
-                            </div>
-                            <span className="text-xs text-gray-900">{shipment.courier.name}</span>
-                          </div>
-                          <div className="flex gap-2">
-                            <button className="p-1 border rounded hover:bg-gray-100">
-                              <MapPin size={16} />
-                            </button>
-                            <button className="p-1 border rounded hover:bg-gray-100">
-                              <Phone size={16} />
-                            </button>
+                            <p className="text-gray-500">PO Numbers</p>
+                            <p className="text-gray-900 font-medium">{shipment.poNumbers?.join(', ')}</p>
                           </div>
                         </div>
 
@@ -392,7 +315,7 @@ const ShipmentTrackingList = () => {
                             <span className="text-xs font-medium text-gray-500">Tracking ID:</span>
                             <span className="text-sm font-bold text-[#007bff]">#{selectedShipment.id}</span>
                         </div>
-                        <span className={`px-2 py-1 mr-150 rounded-full text-xs font-medium ${getStatusColors(selectedShipment.status).colorClass}`}>
+                        <span className={`px-2 py-1 mr-130 rounded-full text-xs font-medium ${getStatusColors(selectedShipment.status).colorClass}`}>
                             {selectedShipment.status}
                         </span>
                         <button 
@@ -407,52 +330,46 @@ const ShipmentTrackingList = () => {
                         <div className="bg-gray-100 rounded-lg p-3 border border-gray-200">
                         <div className="flex items-center justify-between mb-2">
                             <div className="text-xs">
-                            <p className="text-gray-500">From</p>
-                            <p className="text-gray-900 font-medium">Jakarta, Indonesia</p>
+                              <p className="text-gray-500">From</p>
+                              <p className="text-gray-900 font-medium">{`${selectedShipment.origin.city}, ${selectedShipment.origin.country}`}</p>
                             </div>
-                            <div className="text-xs text-center">
-                            <p className="text-gray-500">Distance</p>
-                            <p className="text-gray-900 font-medium">{selectedShipment.distance}</p>
+                            <div className="text-xs">
+                              <p className="text-gray-500">Carrier</p>
+                              <p className="text-gray-900 font-medium">{selectedShipment.carrier}</p>
                             </div>
                             <div className="text-xs text-right">
-                            <p className="text-gray-500">To</p>
-                            <p className="text-gray-900 font-medium">{selectedShipment.destination}</p>
+                              <p className="text-gray-500">To</p>
+                              <p className="text-gray-900 font-medium">{selectedShipment.destination}</p>
                             </div>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div className={`h-2 rounded-full ${
-                            selectedShipment.status === 'Delivered' ? 'bg-green-500 w-full' :
-                            selectedShipment.status === 'In transit' ? 'bg-blue-500 w-2/3' : 'bg-orange-500 w-1/3'
-                            }`}></div>
+                        <div className="w-full bg-gray-200 rounded-full h-2 relative">
+                          <div className={`h-2 rounded-full bg-blue-500`} style={{ width: `${selectedShipment.progress}%` }}></div>
+                          {/* Progress circle */}
+                          <div
+                            className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-white bg-blue-500 shadow"
+                            style={{
+                              left: `calc(${selectedShipment.progress}% - 8px)`
+                            }}
+                          ></div>
                         </div>
                         </div>
 
                         {/* Shipment Details - 3 columns */}
                         <div className="grid grid-cols-3 gap-4 text-xs">
-                        <div>
-                            <p className="text-gray-500 mb-1">Package shipped</p>
-                            <p className="text-gray-900 font-medium">{selectedShipment.arrivalDate} • {selectedShipment.arrivalTime}</p>
-                        </div>
-                        <div>
-                            <p className="text-gray-500 mb-1">Est. package arrival</p>
-                            <p className="text-gray-900 font-medium">{selectedShipment.arrivalDate} • {selectedShipment.arrivalTime}</p>
-                        </div>
-                        <div>
-                            <p className="text-gray-500 mb-1">Est. delivery time</p>
-                            <p className="text-gray-900 font-medium">{selectedShipment.deliveryTime}</p>
-                        </div>
-                        <div>
-                            <p className="text-gray-500 mb-1">Goods Description</p>
-                            <p className="text-gray-900 font-medium">{selectedShipment.goodsDescription}</p>
-                        </div>
-                        <div>
-                            <p className="text-gray-500 mb-1">Total items</p>
-                            <p className="text-gray-900 font-medium">{selectedShipment.packageCount}</p>
-                        </div>
-                        <div>
-                            <p className="text-gray-500 mb-1">Total weight</p>
-                            <p className="text-gray-900 font-medium">{selectedShipment.weight}</p>
-                        </div>
+                            <div>
+                              <p className="text-gray-500 mb-1">Est. package arrival</p>
+                              <p className="text-gray-900 font-medium">{selectedShipment.arrivalDate} • {selectedShipment.arrivalTime}</p>
+                          </div>
+                          
+                          <div>
+                              <p className="text-gray-500 mb-1">PO Numbers</p>
+                              <p className="text-gray-900 font-medium">{selectedShipment.poNumbers ? selectedShipment.poNumbers.join(', ') : ''}</p>
+                          </div>
+                          
+                          <div>
+                              <p className="text-gray-500 mb-1">Goods Description</p>
+                              <p className="text-gray-900 font-medium">{selectedShipment.goodsDescription}</p>
+                          </div>
                         </div>
                     </div>
                     </div>
