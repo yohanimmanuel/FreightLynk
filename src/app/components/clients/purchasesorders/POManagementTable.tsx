@@ -721,7 +721,7 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
                     <tr className="hover:bg-gray-50">
                       <td className="py-3">
                         <div className="flex items-center">
-                          <td className="px-4 py-3 text-xs font-medium text-gray-900">{po.id}</td>
+                          <span className="px-4 text-xs font-medium text-gray-900">{po.id}</span>
                           <button
                             onClick={() => setExpandedPO(expandedPO === po.id ? null : po.id)}
                             className="p-1 -ml-2 hover:bg-gray-200 text-gray-900 rounded"

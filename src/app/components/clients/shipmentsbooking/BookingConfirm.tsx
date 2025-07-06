@@ -166,6 +166,7 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
           {'>> Go to Bookings'}
         </button>
       </div>
+
       {/* Cargo Ready Date */}
       <div className="mb-4">
         <h4 className="text-xs font-semibold text-gray-900 mb-2">Cargo Ready Date</h4>
@@ -198,20 +199,11 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
         </div>
         {/* Destination */}
         <div className="flex items-start gap-2">
-          <div className="w-2 h-2 bg-green-400 rounded-full mt-2"></div>
+          <div className="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
           <div>
             <div className="text-xs font-semibold text-gray-900">{displayData.consignee || displayData.consigneeValue || '-'}</div>
             <div className="text-xs text-gray-700">{displayData.destinationLocation || '-'}</div>
           </div>
-        </div>
-        {/* Target Delivery Date */}
-        <div className="mt-4">
-          <h4 className="text-xs font-semibold text-gray-900 mb-2">Target Delivery Date</h4>
-          <p className="text-xs text-gray-900">{(() => {
-            if (!displayData?.eta) return 'Not specified';
-            const date = new Date(displayData.eta);
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-          })()}</p>
         </div>
       </div>
     </div>
@@ -537,17 +529,6 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
                 </>
               )}
             </div>
-            {/* Shipment Tags */}
-            <div className="mt-1">
-              {displayData?.requireShipmentTags ? (
-                <div className="text-sm text-gray-600">
-                  <div>PO number: {displayData.poNumber}</div>
-                  <div>SKU Number: #{displayData.skuNumber}</div>
-                </div>
-              ) : (
-                <div className="text-sm text-gray-600">No shipment tags</div>
-              )}
-            </div>
           </div>
         </div>
       </div>
@@ -865,6 +846,23 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
           {/* Right Column (narrower) */}
           <div className="w-full lg:w-110 flex-shrink-0">
             <CurrentStatusCard />
+
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 mb-4">Shipment Tags</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center">
+                    <span className="text-xs text-gray-500 w-24">PO Number:</span>
+                    <span className="text-xs text-gray-900">{formData.poNumber || 'Not specified'}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="text-xs text-gray-500 w-24">SKU Number:</span>
+                    <span className="text-xs text-gray-900">{formData.skuNumber || 'Not specified'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>

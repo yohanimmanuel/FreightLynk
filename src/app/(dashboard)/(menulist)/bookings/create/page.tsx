@@ -27,9 +27,29 @@ const ClientUI = () => {
   );
 };
 
-const ForwarderUI = () => <div></div>;
-const LogisticsProviderUI = () => <div><h2>Logistics Provider Invoice Interface</h2><p>Coming Soon...</p></div>;
-const AdminUI = () => <div><h2>Admin Invoice Interface</h2><p>Coming Soon...</p></div>;
+const ForwarderUI = () => {
+  return (
+    <div>
+    </div>
+  );
+};
+
+const LogisticsProviderUI = () => {
+  return (
+    <div>
+      <h2>Logistics Provider Invoice Interface</h2>
+      <p>Coming Soon...</p>
+    </div>
+  );
+};
+const AdminUI = () => {
+  return (
+    <div>
+      <h2>Admin Invoice Interface</h2>
+      <p>Coming Soon...</p>
+    </div>
+  );
+};
 
 const Create = ({ userType }: { userType: string }) => {
   const testUserType: string = 'client';

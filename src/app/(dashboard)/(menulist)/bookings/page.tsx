@@ -134,14 +134,14 @@ const ClientUI = () => {
               <div className="flex flex-col md:flex-row items-stretch md:items-center space-y-2 md:space-y-0 md:space-x-2">
               <button
                   onClick={handleImportCSV}
-                  className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-200"
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-200"
               >
                   <Upload className="w-4 h-4" />
                   Import CSV
               </button>
               <button
                   onClick={handleExportCSV}
-                  className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-200"
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-200"
               >
                   <Download className="w-4 h-4" />
                   Export CSV

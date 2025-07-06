@@ -95,7 +95,7 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking }) => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-2">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Review and book</h1>
-          <p className="text-sm text-gray-600">{shipmentName}</p>
+          <p className="text-sm text-gray-600">{formData?.shipmentName}</p>
         </div>
         <div className="flex gap-2 mt-2 md:mt-0">
           <button className="px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-200 flex items-center gap-2">
@@ -311,24 +311,24 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking }) => {
             <div className="bg-gray-50 p-4 border-b border-gray-200">
               <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                 <FileText className="w-5 h-5 text-blue-600" />
-                Shipment tags
+                Shipment Tags
               </h2>
             </div>
             <div className="p-4">
-              {formData?.requireShipmentTags ? (
-                <div className="space-y-2">
-                  <div className="text-xs text-gray-600">
-                    <span className="font-medium">PO Number:</span> <span className="text-gray-900 font-semibold">PO</span>{formData.poNumber ? ` ${formData.poNumber}` : ' N/A'}
-                  </div>
-                  <div className="text-xs text-gray-600">
-                    <span className="font-medium">SKU Number:</span> <span className="text-gray-900 font-semibold">#</span>{formData.skuNumber ? ` ${formData.skuNumber}` : ' N/A'}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-xs font-medium text-gray-500 mb-2">PO Number</h4>
+                  <div className="text-xs text-gray-900">
+                    {formData.poNumber || 'Not specified'}
                   </div>
                 </div>
-              ) : (
-                <div className="text-xs text-gray-900">
-                  No shipment tags required
+                <div>
+                  <h4 className="text-xs font-medium text-gray-500 mb-2">SKU Number</h4>
+                  <div className="text-xs text-gray-900">
+                    {formData.skuNumber || 'Not specified'}
+                  </div>
+                </div>
               </div>
-              )}
             </div>
           </div>
 

@@ -150,17 +150,30 @@ const menuItems: MenuSection[] = [
     },
 ]
 
+// This function will be replaced with real backend auth check later
+const useAuthCheck = () => {
+  const pathname = usePathname();
+  
+  // This will be replaced with real backend check
+  const isClient = pathname.startsWith('/client');
+  
+  const userType = isClient ? 'client' : 
+            pathname.startsWith('/forwarder') ? 'forwarder' :
+            pathname.startsWith('/logisticsprovider') ? 'logisticsprovider' : 
+            pathname.startsWith('/admin') ? 'admin' : 'client'; // Default to client instead of null
+  
+  return {
+    canCreateBooking: isClient,
+    userType
+  };
+};
+
 const Menu = () => {
   const pathname = usePathname();
   const { isCollapsed, toggleMenu } = useMenuContext();
   const [expandedMenus, setExpandedMenus] = useState<{[key: string]: boolean}>({});
-
-  // Helper function to check if current path matches dashboard for any user type
-  const isDashboardActive = (pathname: string) => {
-    const userTypes = ['/client', '/forwarder', '/admin', '/logisticsprovider'];
-    return userTypes.some(type => pathname === type);
-  };
-
+  const { canCreateBooking, userType } = useAuthCheck();
+  
   // Function to get current user type with fallback to localStorage
   const getCurrentUserTypeFromPath = () => {
     if (typeof window === 'undefined') return 'client'; // SSR safety
@@ -180,6 +193,16 @@ const Menu = () => {
     }
     
     return 'client'; // Default fallback
+  };
+  
+  // Get the current user type from the first part of the path
+  const currentUserType = getCurrentUserTypeFromPath();
+  const isClientSection = currentUserType === 'client';
+
+  // Helper function to check if current path matches dashboard for any user type
+  const isDashboardActive = (pathname: string) => {
+    const userTypes = ['/client', '/forwarder', '/admin', '/logisticsprovider'];
+    return userTypes.some(type => pathname === type);
   };
 
   // Function to get dashboard href based on current user type
@@ -291,14 +314,30 @@ const Menu = () => {
         )}
       </div>
 
-      {/* Main Menu Section - Scrollable */}
+      {/* Menu Items */}
       <div className="flex-1 overflow-y-auto">
         {menuItems.map(i => (
           i.title === "MENU" && (
             <div className="flex flex-col space-y-2" key={i.title}>
+              {!isCollapsed && (
+                <div>
+                  {/* Create Booking Button - Show for all client section pages */}
+                  {isClientSection && (
+                    <Link
+                      href="/bookings/create"
+                      className="flex items-center justify-center px-4 py-2.5 rounded-lg
+                               bg-[#007bff] text-white font-medium w-full
+                               hover:bg-blue-600 transition-colors duration-200
+                               shadow-sm mb-2"
+                    >
+                      <Plus size={18} className="mr-2" />
+                      Create Booking
+                    </Link>
+                  )}
+                </div>
+              )}
               {i.items
               .filter(item => {
-                const currentUserType = getCurrentUserTypeFromPath();
                 return item.visible.length > 0 && item.visible.includes(currentUserType);
               })
               .map(item => {
@@ -312,7 +351,7 @@ const Menu = () => {
                     <div 
                       className={`flex items-center gap-3 px-2.5 py-2 rounded-lg transition-all duration-100 group relative
                         ${isActive 
-                          ? 'bg-blue-200 text-[#007bff] shadow-sm' 
+                          ? 'bg-blue-100 text-[#007bff] shadow-sm' 
                           : 'text-gray-500 hover:bg-gray-200 hover:text-gray-800'
                         }`}
                     >
