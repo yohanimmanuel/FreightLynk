@@ -5,7 +5,6 @@ import POManagementTable from "@/app/components/clients/purchasesorders/POManage
 import { Download, Plus, Upload } from 'lucide-react';
 import { useBookingStore } from '@/store/bookingStore';
 import { usePOStore } from '@/store/poStore';
-import type { PurchaseOrder, PODetail } from '@/store/poMockData';
 
 const ClientUI = () => {
   const router = useRouter();

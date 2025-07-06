@@ -57,6 +57,7 @@ export interface PODetail {
   booked: number;
   currency: string;
   unitCost: number;
+  uom: string;
 }
 
 // --- Mock Data ---
@@ -99,6 +100,7 @@ export const poDetailsData: PODetail[] = [
     booked: 80,
     currency: 'USD',
     unitCost: 10,
+    uom: 'PC',
   },
   {
     id: 2,
@@ -113,6 +115,7 @@ export const poDetailsData: PODetail[] = [
     booked: 50,
     currency: 'USD',
     unitCost: 20,
+    uom: 'KG',
   },
   {
     id: 3,
@@ -127,6 +130,7 @@ export const poDetailsData: PODetail[] = [
     booked: 0,
     currency: 'USD',
     unitCost: 5,
+    uom: 'CBM',
   },
   {
     id: 4,
@@ -141,6 +145,7 @@ export const poDetailsData: PODetail[] = [
     booked: 0,
     currency: 'USD',
     unitCost: 2,
+    uom: 'LBS',
   },
   {
     id: 5,
@@ -155,6 +160,7 @@ export const poDetailsData: PODetail[] = [
     booked: 0,
     currency: 'USD',
     unitCost: 3,
+    uom: 'TON',
   },
 ];
 

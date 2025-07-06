@@ -1,7 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import PODetails, { POData, POItem } from "@/app/components/clients/purchasesorders/PODetails";
-import type { PurchaseOrder, PODetail } from '@/store/poMockData';
+import PODetails from "@/app/components/clients/purchasesorders/PODetails";
+import { POData, POItem, PurchaseOrder, PODetail } from '@/store/poStore';
 import { useEffect, useState } from 'react';
 import { usePOStore } from '@/store/poStore';
 
@@ -51,7 +51,7 @@ const ClientDetailsUI = () => {
       mode: (item.transportMode as 'Sea' | 'Air' | 'Road' | 'Rail') || '',
       destination: item.destination || '',
       currency: (item.currency?.replace('$', '') as 'USD' | 'CNY' | 'EUR' | 'IDR' | 'JPY' | 'GBP') || '',
-      unitCost: cleanCurrency(item.unitCost),
+      unitCost: parseUnitCost(item.unitCost),
       uom: (item.uom as 'PC' | 'KG' | 'CBM' | 'LBS' | 'TON') || '',
       requestedQty: item.requested || 0,
       bookedQty: 0,
@@ -79,7 +79,7 @@ const ClientDetailsUI = () => {
         status: parsedPO.status,
         progress: parsedPO.progress,
         exceptions: [parsedPO.exceptions],
-        items: parsedPO.items.map((item: PODetail, idx: number) => ({
+        items: (parsedPO.items as any[]).map((item, idx) => ({
           id: idx + 1,
           lineNumber: idx + 1,
           productSKU: item.productCode,
@@ -88,9 +88,9 @@ const ClientDetailsUI = () => {
           mabd: item.mustArriveDate || '',
           mode: item.transportMode,
           destination: item.destination,
-          currency: item.currency?.replace('$', ''),
-          unitCost: Number(item.unitCost?.replace(/[^0-9.-]+/g, '') || 0),
-          uom: item.uom,
+          currency: typeof item.currency === 'string' ? item.currency : '',
+          unitCost: parseUnitCost(item.unitCost),
+          uom: typeof item.uom === 'string' ? item.uom : '',
           requestedQty: item.requested,
           bookedQty: 0,
           bookingProgress: 0
@@ -138,8 +138,8 @@ const ClientDetailsUI = () => {
         transportMode: item.mode,
         destination: item.destination,
         currency: item.currency,
-        unitCost: `$${item.unitCost.toFixed(2)}`,
-        uom: item.uom,
+        unitCost: parseUnitCost(item.unitCost),
+        uom: typeof item.uom === 'string' ? item.uom : '',
         requested: Number(item.requestedQty)
       }));
 
@@ -214,5 +214,16 @@ const OrderDetailsPage = () => {
   
   return <div className="p-4">Access denied</div>;
 };
+
+// Helper to safely parse unitCost
+function parseUnitCost(val: unknown): number {
+  if (typeof val === 'string') {
+    return Number((val as string).replace(/[^0-9.-]+/g, '') || 0);
+  }
+  if (typeof val === 'number') {
+    return val;
+  }
+  return 0;
+}
 
 export default OrderDetailsPage;
