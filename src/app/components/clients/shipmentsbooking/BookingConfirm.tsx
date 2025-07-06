@@ -149,7 +149,7 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
         </p>
         <div className="flex items-center gap-2 mt-2">
           <p className="text-xs text-gray-500">Want to Request Quote?</p>
-          <button className="text-xs text-[#007bff]">Request Quote here!</button>
+          <button className="text-xs text-[#007bff] hover:text-blue-700">Request Quote here!</button>
         </div>
         <button
           className={`mt-4 w-full px-4 py-3 rounded-lg text-xs font-semibold transition-colors duration-200 ${pricingReady ? 'bg-[#007bff] text-white hover:bg-blue-700 cursor-pointer' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
@@ -158,7 +158,7 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
           Proceed to Payment
         </button>
         <button
-          className="mt-2 w-full px-4 py-3 rounded-lg text-xs font-semibold bg-white text-[#007bff] hover:bg-blue-50 border border-[#007bff] transition-colors duration-200"
+          className="mt-2 w-full px-4 py-3 rounded-lg text-xs font-semibold bg-white text-gray-500 hover:bg-gray-200 border border-gray-300 transition-colors duration-200"
           onClick={() => {
             router.replace('/bookings');
           }}
