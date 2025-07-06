@@ -1,6 +1,6 @@
 import React from 'react';
 import { Trash2 } from 'lucide-react';
-import type { PurchaseOrder, PODetail } from '@/store/poMockData';
+import { PurchaseOrder, PODetail } from '@/store/poStore';
 
 interface POSummaryTableProps {
   selectedPOs: {

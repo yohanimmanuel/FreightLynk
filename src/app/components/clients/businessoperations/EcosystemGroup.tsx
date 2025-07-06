@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Facebook, Instagram, Github, Twitter, Search, Filter } from 'lucide-react';
-import { EcosystemGroup, ecosystemGroups } from '@/store/ecosystemMockData';
+import { EcosystemGroup, ecosystemGroups } from '@/store/ecosystemData';
 
 interface EcosystemGroupProps {
   ecosystemGroups?: EcosystemGroup[];

@@ -1,57 +1,40 @@
 import React, { useState } from 'react';
 import { AlertTriangle, Clock, MapPin, Ship, Truck, Plane, Star, Bookmark } from 'lucide-react';
+import { useShipmentAlertStore, ShipmentAlert } from '../../../../store/shipmentAlertStore';
+
+// Define the type for the local alert object used in the component
+interface AlertDisplay {
+  id: string;
+  type: string;
+  priority: 'high' | 'medium' | 'low';
+  title: string;
+  description: string;
+  location: string;
+  timeAgo: string;
+  shipmentMode: string;
+  details: string;
+  status: 'active' | 'resolved';
+  resolvedText?: string;
+}
 
 const ShipmentAlerts = () => {
-  const [alerts, setAlerts] = useState([
-    {
-      id: 'FL-298765',
-      type: 'delay',
-      priority: 'high',
-      title: 'Vessel Delay - Port Congestion',
-      description: 'In Transit to Arrival Port',
-      location: 'Los Angeles, CA',
-      timeAgo: '2 hours ago',
-      shipmentMode: 'ocean',
-      details: 'Expected delay of 3-5 days due to port congestion',
-      status: 'active'
-    },
-    {
-      id: 'FL-287432',
-      type: 'customs',
-      priority: 'medium',
-      title: 'Customs Documentation Required',
-      description: 'Additional paperwork needed',
-      location: 'Newark, NJ',
-      timeAgo: '4 hours ago',
-      shipmentMode: 'air',
-      details: 'Commercial invoice requires certification',
-      status: 'active'
-    },
-    {
-      id: 'FL-291847',
-      type: 'weather',
-      priority: 'medium',
-      title: 'Weather Impact - Route Diversion',
-      description: 'Alternative route selected',
-      location: 'Houston, TX',
-      timeAgo: '6 hours ago',
-      shipmentMode: 'truck',
-      details: 'Severe weather conditions affecting primary route',
-      status: 'active'
-    },
-    {
-      id: 'FL-284629',
-      type: 'delivery',
-      priority: 'low',
-      title: 'Delivery Window Updated',
-      description: 'New estimated arrival time',
-      location: 'Miami, FL',
-      timeAgo: '1 day ago',
-      shipmentMode: 'ocean',
-      details: 'Delivery rescheduled to accommodate receiver availability',
-      status: 'resolved'
-    }
-  ]);
+  // Get alerts from Zustand store
+  const alertsRaw = useShipmentAlertStore((state) => state.alerts);
+
+  // Map store data to display format
+  const alerts: AlertDisplay[] = alertsRaw.map((alert: ShipmentAlert): AlertDisplay => ({
+    id: alert.code,
+    type: alert.icon,
+    priority: alert.priority,
+    title: alert.title,
+    description: alert.description,
+    location: alert.location,
+    timeAgo: alert.timeAgo,
+    shipmentMode: 'ocean', // fallback, or you can add this to store if needed
+    details: alert.description,
+    status: alert.status,
+    resolvedText: alert.resolvedText,
+  }));
 
   const [filter, setFilter] = useState('all');
   const [bookmarkedAlerts, setBookmarkedAlerts] = useState(new Set<string>());
@@ -92,7 +75,7 @@ const ShipmentAlerts = () => {
     }
   };
 
-  const filteredAlerts = filter === 'all' ? alerts : alerts.filter(alert => alert.status === filter);
+  const filteredAlerts = filter === 'all' ? alerts : alerts.filter((alert: AlertDisplay) => alert.status === filter);
 
   return (
     <div className="w-full mx-auto p-3 border border-gray-200 rounded-lg shadow-sm">
@@ -136,9 +119,9 @@ const ShipmentAlerts = () => {
       <div className="space-y-2">
         {filteredAlerts.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg shadow-sm border">
-            <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <h3 className="text-xs font-medium text-gray-900 mb-2">No alerts found</h3>
-            <p className="text-gray-500">There are no shipment alerts matching your current filter.</p>
+            <AlertTriangle className="w-10 h-10 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-sm font-medium text-gray-900 mb-2">No alerts found</h3>
+            <p className="text-gray-500 text-xs">There are no shipment alerts matching your current filter.</p>
           </div>
         ) : (
           filteredAlerts.map((alert) => (

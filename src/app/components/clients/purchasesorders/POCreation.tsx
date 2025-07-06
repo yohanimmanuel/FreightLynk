@@ -1,39 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Plus, Trash2, Calendar, Package, Truck, DollarSign, MapPin, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { usePOStore } from '@/store/poStore';
-import type { PurchaseOrder, PODetail } from '@/store/poMockData';
-
-// Type definitions
-interface POItem {
-  id: number;
-  lineNumber: number;
-  productSKU: string;
-  productName: string;
-  crd: string;
-  mabd: string;
-  mode: 'Sea' | 'Air' | 'Road' | 'Rail' | '';
-  destination: string;
-  currency: 'USD' | 'CNY' | 'EUR' | 'IDR' | 'JPY' | 'GBP' | 'AUD' | ''; 
-  unitCost: number | '';
-  uom: 'PC' | 'KG' | 'CBM' | 'LBS' | 'TON' | '';
-  requestedQty: number | '';
-  bookedQty: number;
-  bookingProgress: number;
-}
-
-interface POData {
-  poNumber: string;
-  cargoReadyBy: string;
-  mustArriveBy: string;
-  buyer: string;
-  seller: string;
-  subjectedCarrier: string;
-  status: 'Open' | 'Closed' | 'Pending';
-  progress: string;
-  exceptions: string[];
-  items: POItem[];
-}
+import { usePOStore, PurchaseOrder, PODetail, POItem, POData } from '@/store/poStore';
 
 const POCreation: React.FC = () => {
   const router = useRouter();
@@ -283,7 +251,7 @@ const POCreation: React.FC = () => {
         subjectedCarrier: formData.subjectedCarrier,
         status: formData.status,
         progress: formData.progress,
-        exceptions: formData.exceptions[0] || '--'
+        exceptions: formData.exceptions,
       };
 
       // Create PO details
@@ -296,10 +264,10 @@ const POCreation: React.FC = () => {
         mustArriveDate: item.mabd,
         transportMode: item.mode,
         destination: item.destination,
+        requested: Number(item.requestedQty),
+        booked: Number(item.bookedQty) || 0,
         currency: item.currency,
-        unitCost: `$${Number(item.unitCost).toFixed(2)}`,
-        uom: item.uom,
-        requested: Number(item.requestedQty)
+        unitCost: Number(item.unitCost) || 0,
       }));
 
       // Update store

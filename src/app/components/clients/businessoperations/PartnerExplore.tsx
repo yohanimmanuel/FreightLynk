@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Filter, MapPin, Star } from 'lucide-react';
-import { recommendedPartners, RecommendedPartner } from '@/store/partnerExploreMockData';
+import { recommendedPartners, RecommendedPartner } from '@/store/partnerExploredata';
 
 interface PartnerExploreProps {
   view?: 'full' | 'recommended';

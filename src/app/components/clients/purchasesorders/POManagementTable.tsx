@@ -1,7 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronRight, ChevronLeft, Search, Upload, Download, Plus, Filter, MoreHorizontal, Check, X, Edit, Trash2 } from 'lucide-react';
-import { usePOStore } from '@/store/poStore';
-import type { PurchaseOrder, PODetail, POSelection } from '@/store/poMockData';
+import { usePOStore, PurchaseOrder, PODetail } from '@/store/poStore';
+
+// Define POSelection locally if needed
+export interface POSelection {
+  poId: string;
+  selectedItems: Set<number>;
+  bookedQuantities: Record<number, number>;
+}
 
 export interface POManagementTableProps {
   onEditOrder: (poId: string) => void;
@@ -258,7 +264,7 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
     return poDetails.filter(item => item.poOrderNumber === poNumber).length;
   };
 
-  const handleStatusChange = (poId: string, newStatus: string) => {
+  const handleStatusChange = (poId: string, newStatus: 'Open' | 'Closed' | 'Pending') => {
     setPurchaseOrders(purchaseOrders.map(po => po.id === poId ? { ...po, status: newStatus } : po));
     setStatusDropdowns(prev => ({ ...prev, [poId]: false }));
   };
@@ -494,7 +500,7 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
               {statusOptions.map((status) => (
                 <button
                   key={status}
-                  onClick={() => handleStatusChange(po.id, status)}
+                  onClick={() => handleStatusChange(po.id, status as 'Open' | 'Closed' | 'Pending')}
                   className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs text-gray-900 transition-colors ${
                     po.status === status ? 'bg-blue-50' : ''
                   }`}
@@ -515,7 +521,7 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
       po.buyer.toLowerCase().includes(filters.search.toLowerCase()) ||
       po.seller.toLowerCase().includes(filters.search.toLowerCase()) ||
       po.subjectedCarrier.toLowerCase().includes(filters.search.toLowerCase()) ||
-      po.exceptions.toLowerCase().includes(filters.search.toLowerCase());
+      po.exceptions.join(', ').toLowerCase().includes(filters.search.toLowerCase());
     
     const matchesStatus = filters.status === 'All' || po.status === filters.status;
     
@@ -729,7 +735,11 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
                         </div>
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-900">
-                        {po.exceptions !== '--' ? (
+                        {Array.isArray(po.exceptions) && po.exceptions.length > 0 ? (
+                          <span className="px-2 py-1 bg-red-100 text-red-900 rounded-full text-xs">
+                            {po.exceptions.join(', ')}
+                          </span>
+                        ) : po.exceptions && typeof po.exceptions === 'string' && po.exceptions !== '' && po.exceptions !== '--' ? (
                           <span className="px-2 py-1 bg-red-100 text-red-900 rounded-full text-xs">
                             {po.exceptions}
                           </span>
@@ -786,7 +796,6 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
                                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Destination</th>
                                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Currency</th>
                                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Unit Cost</th>
-                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">UoM</th>
                                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Requested</th>
                                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Booked</th>
                                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">
@@ -818,7 +827,6 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
                                       <td className="px-4 py-3 text-xs text-gray-600">{item.destination}</td>
                                       <td className="px-4 py-3 text-xs text-gray-600">{item.currency}</td>
                                       <td className="px-4 py-3 text-xs text-gray-600">{item.unitCost}</td>
-                                      <td className="px-4 py-3 text-xs text-gray-600">{item.uom}</td>
                                       <td className="px-4 py-3 text-xs text-gray-600">{item.requested}</td>
                                       <td className="px-4 py-3">
                                         <div className="text-xs text-gray-900">

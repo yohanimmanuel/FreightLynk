@@ -1,38 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, Calendar, Package, Truck, DollarSign, MapPin, Check, X, ChevronDown } from 'lucide-react';
-import { usePOStore } from '@/store/poStore';
-import type { PurchaseOrder, PODetail } from '@/store/poMockData';
-
-// Reuse the same type definitions from POCreation
-export interface POItem {
-  id: number;
-  lineNumber: number;
-  productSKU: string;
-  productName: string;
-  crd: string;
-  mabd: string;
-  mode: 'Sea' | 'Air' | 'Road' | 'Rail' | '';
-  destination: string;
-  currency: 'USD' | 'CNY' | 'EUR' | 'IDR' | 'JPY' | 'GBP' | 'AUD' | '';
-  unitCost: number | '';
-  uom: 'PC' | 'KG' | 'CBM' | 'LBS' | 'TON' | '';
-  requestedQty: number | '';
-  bookedQty: number;
-  bookingProgress: number;
-}
-
-export interface POData {
-  poNumber: string;
-  cargoReadyBy: string;
-  mustArriveBy: string;
-  buyer: string;
-  seller: string;
-  subjectedCarrier: string;
-  status: 'Open' | 'Closed' | 'Pending';
-  progress: string;
-  exceptions: string[];
-  items: POItem[];
-}
+import { usePOStore, PurchaseOrder, PODetail, POItem, POData } from '@/store/poStore';
 
 interface PODetailsProps {
   poData: POData;
@@ -242,7 +210,7 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
       subjectedCarrier: data.subjectedCarrier,
       status: data.status,
       progress: data.progress,
-      exceptions: data.exceptions[0] || '--',
+      exceptions: data.exceptions,
     };
     const updatedPurchaseOrders = purchaseOrders.map(po =>
       po.id === updatedPO.id ? updatedPO : po
@@ -263,10 +231,10 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
       mustArriveDate: item.mabd,
       transportMode: item.mode,
       destination: item.destination,
+      requested: Number(item.requestedQty),
+      booked: Number(item.bookedQty) || 0,
       currency: item.currency,
-      unitCost: `$${Number(item.unitCost).toFixed(2)}`,
-      uom: item.uom,
-      requested: Number(item.requestedQty)
+      unitCost: Number(item.unitCost) || 0,
     }));
     setPODetails([...filteredPODetails, ...newPODetails]);
 

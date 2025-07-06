@@ -183,7 +183,7 @@ const PartnerOverview: React.FC<PartnerOverviewProps> = ({ partner }) => {
           
           {/* View All Button */}
           <div className="pt-2">
-            <Link href="/business/billings">
+            <Link href="/billings">
               <button className="w-full px-4 py-2 bg-[#007bff] text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors">
                 View All Billings & Payments
               </button>
