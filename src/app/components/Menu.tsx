@@ -108,8 +108,8 @@ const menuItems: MenuSection[] = [
           },
           {
             icon: FileText,
-            label: "Documents",
-            href: "/documents",
+            label: "Reports",
+            href: "/reports",
             visible: ["forwarder", "logisticsprovider"],
           },
           {
@@ -328,22 +328,28 @@ const Menu = () => {
         {menuItems.map(i => (
           i.title === "MENU" && (
             <div className="flex flex-col space-y-2" key={i.title}>
-              {!isCollapsed && (
-                <div>
-                  {/* Create Booking Button - Show for all client section pages */}
-                  {isClientSection && (
-                    <Link
-                      href="/bookings/create"
-                      className="flex items-center justify-center px-4 py-2.5 rounded-lg
-                               bg-[#007bff] text-white font-medium w-full
-                               hover:bg-blue-600 transition-colors duration-200
-                               shadow-sm"
-                    >
-                      <Plus size={18} className="mr-2" />
-                      Create Booking
-                    </Link>
-                  )}
-                </div>
+              {/* Create Booking Button - Show for all client section pages */}
+              {isClientSection && (
+                isCollapsed ? (
+                  <Link
+                    href="/bookings/create"
+                    className="flex items-center justify-center p-2 rounded-lg bg-[#007bff] text-white hover:bg-blue-600 transition-colors duration-200 shadow-sm"
+                    title="Create Booking"
+                  >
+                    <Plus size={22} />
+                  </Link>
+                ) : (
+                  <Link
+                    href="/bookings/create"
+                    className="flex items-center justify-center px-4 py-2.5 rounded-lg
+                             bg-[#007bff] text-white font-medium w-full
+                             hover:bg-blue-600 transition-colors duration-200
+                             shadow-sm"
+                  >
+                    <Plus size={18} className="mr-2" />
+                    Create Booking
+                  </Link>
+                )
               )}
               {i.items
               .filter(item => {
@@ -358,7 +364,7 @@ const Menu = () => {
                   <div key={item.label} className="overflow-hidden">
                     {/* Main Menu Item */}
                     <div 
-                      className={`flex items-center gap-3 px-2.5 py-2 rounded-lg transition-all duration-100 group relative
+                      className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-100 group relative
                         ${isActive 
                           ? 'bg-blue-100 text-[#007bff] shadow-sm' 
                           : 'text-gray-500 hover:bg-gray-200 hover:text-gray-800'
