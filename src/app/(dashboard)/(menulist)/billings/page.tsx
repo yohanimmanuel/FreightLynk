@@ -4,6 +4,9 @@ import BillingTable from "@/app/components/clients/quotefinancing/BillingTable";
 import { Download, Upload } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { useBillingStore } from '@/store/billingData';
+import { useEffect, useState } from 'react';
+import { useAuthStore, UserRole } from '@/store/authStore';
+import ProtectedRoute from '@/app/components/ProtectedRoute';
 
 const ClientUI = () => {
   const router = useRouter();
@@ -64,16 +67,39 @@ const AdminUI = () => {
   );
 };
 
-const BillingsUI = ({ userType }: { userType: string }) => {
-  // Manually set userType for testing - change this value to test different UIs
-  const testUserType: string = 'client'; // Change to: 'client', 'forwarder', 'logistics', 'admin'
-  
-  if (testUserType === 'client') return <ClientUI />;
-  if (testUserType === 'forwarder') return <ForwarderUI />;
-  if (testUserType === 'logistics') return <LogisticsProviderUI />;
-  if (testUserType === 'admin') return <AdminUI />;
-  
-  return <div>Access denied</div>;
+const BillingsPage = () => {
+  const { user } = useAuthStore();
+  const [roleBasedUI, setRoleBasedUI] = useState<React.ReactNode | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+
+    switch (user.role) {
+      case UserRole.ADMIN:
+        setRoleBasedUI(<AdminUI />);
+        break;
+      case UserRole.CLIENT:
+        setRoleBasedUI(<ClientUI />);
+        break;
+      case UserRole.FORWARDER:
+        setRoleBasedUI(<ForwarderUI />);
+        break;
+      case UserRole.LOGISTICS_PROVIDER:
+        setRoleBasedUI(<LogisticsProviderUI />);
+        break;
+      default:
+        setRoleBasedUI(<div>Access denied</div>);
+    }
+  }, [user]);
+
+  return (
+    <ProtectedRoute 
+      allowedRoles={[UserRole.ADMIN, UserRole.CLIENT, UserRole.FORWARDER, UserRole.LOGISTICS_PROVIDER]} 
+      requiredPermissions={['view_own_billings', 'manage_own_account']}
+    >
+      {roleBasedUI}
+    </ProtectedRoute>
+  );
 };
 
-export default BillingsUI;
+export default BillingsPage;

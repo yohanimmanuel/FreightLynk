@@ -1,11 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-
-interface BookingSubmittedProps {
-  userType?: string;
-}
+import { useAuthStore, UserRole } from '@/store/authStore';
+import ProtectedRoute from '@/app/components/ProtectedRoute';
 
 const ClientUI = () => {
   const router = useRouter();
@@ -52,12 +50,38 @@ const AdminUI = () => (
   </div>
 );
 
-const BookingSubmitted: React.FC<BookingSubmittedProps> = ({ userType = 'client' }) => {
-  if (userType === 'client') return <ClientUI />;
-  if (userType === 'forwarder') return <ForwarderUI />;
-  if (userType === 'logistics') return <LogisticsProviderUI />;
-  if (userType === 'admin') return <AdminUI />;
-  return <div>Access denied</div>;
+const BookingSubmittedPage = () => {
+  const { user } = useAuthStore();
+  const [roleBasedUI, setRoleBasedUI] = useState<React.ReactNode | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+
+    switch (user.role) {
+      case UserRole.ADMIN:
+        setRoleBasedUI(<AdminUI />);
+        break;
+      case UserRole.CLIENT:
+        setRoleBasedUI(<ClientUI />);
+        break;
+      case UserRole.FORWARDER:
+        setRoleBasedUI(<ForwarderUI />);
+        break;
+      case UserRole.LOGISTICS_PROVIDER:
+        setRoleBasedUI(<LogisticsProviderUI />);
+        break;
+      default:
+        setRoleBasedUI(<div>Access denied</div>);
+    }
+  }, [user]);
+
+  return (
+    <ProtectedRoute 
+      allowedRoles={[UserRole.ADMIN, UserRole.CLIENT, UserRole.FORWARDER, UserRole.LOGISTICS_PROVIDER]} 
+    >
+      {roleBasedUI}
+    </ProtectedRoute>
+  );
 };
 
-export default BookingSubmitted; 
+export default BookingSubmittedPage; 

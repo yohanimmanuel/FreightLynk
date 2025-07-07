@@ -4,6 +4,8 @@ import PODetails from "@/app/components/clients/purchasesorders/PODetails";
 import { POData, POItem, PurchaseOrder, PODetail } from '@/store/poStore';
 import { useEffect, useState } from 'react';
 import { usePOStore } from '@/store/poStore';
+import { useAuthStore, UserRole } from '@/store/authStore';
+import ProtectedRoute from '@/app/components/ProtectedRoute';
 
 const ClientDetailsUI = () => {
   const router = useRouter();
@@ -177,10 +179,9 @@ const ClientDetailsUI = () => {
 };
 
 const ForwarderDetailsUI = () => {
-
   return (
     <div>
-      <h2>Forwarder Invoice Interface</h2>
+      <h2>Forwarder Order Details</h2>
       <p>Coming Soon...</p>
     </div>
   );
@@ -205,14 +206,37 @@ const AdminDetailsUI = () => {
 };
 
 const OrderDetailsPage = () => {
-  const userType: string = 'client'; // Change to: 'client', 'forwarder', 'logistics', 'admin'
-  
-  if (userType === 'client') return <ClientDetailsUI />;
-  if (userType === 'forwarder') return <ForwarderDetailsUI />;
-  if (userType === 'logistics') return <LogisticsDetailsUI />;
-  if (userType === 'admin') return <AdminDetailsUI />;
-  
-  return <div className="p-4">Access denied</div>;
+  const { user } = useAuthStore();
+  const [roleBasedUI, setRoleBasedUI] = useState<React.ReactNode | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+
+    switch (user.role) {
+      case UserRole.ADMIN:
+        setRoleBasedUI(<AdminDetailsUI />);
+        break;
+      case UserRole.CLIENT:
+        setRoleBasedUI(<ClientDetailsUI />);
+        break;
+      case UserRole.FORWARDER:
+        setRoleBasedUI(<ForwarderDetailsUI />);
+        break;
+      case UserRole.LOGISTICS_PROVIDER:
+        setRoleBasedUI(<LogisticsDetailsUI />);
+        break;
+      default:
+        setRoleBasedUI(<div className="p-4">Access denied</div>);
+    }
+  }, [user]);
+
+  return (
+    <ProtectedRoute 
+      allowedRoles={[UserRole.ADMIN, UserRole.CLIENT, UserRole.FORWARDER, UserRole.LOGISTICS_PROVIDER]} 
+    >
+      {roleBasedUI}
+    </ProtectedRoute>
+  );
 };
 
 // Helper to safely parse unitCost

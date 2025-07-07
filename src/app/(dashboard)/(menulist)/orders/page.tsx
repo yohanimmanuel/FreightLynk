@@ -1,10 +1,12 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import POManagementTable from "@/app/components/clients/purchasesorders/POManagementTable";
 import { Download, Plus, Upload } from 'lucide-react';
 import { useBookingStore } from '@/store/bookingStore';
 import { usePOStore } from '@/store/poStore';
+import { useAuthStore, UserRole } from '@/store/authStore';
+import ProtectedRoute from '@/app/components/ProtectedRoute';
 
 const ClientUI = () => {
   const router = useRouter();
@@ -100,9 +102,10 @@ const ClientUI = () => {
 };
 
 const ForwarderUI = () => {
-
   return (
     <div className="p-4">
+      <h2 className="text-xl font-bold mb-4">Forwarder Purchase Orders</h2>
+      <p className="text-gray-600">Coming Soon...</p>
     </div>
   );
 };
@@ -110,7 +113,7 @@ const ForwarderUI = () => {
 const LogisticsProviderUI = () => {
   return (
     <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">Logistics Provider Invoice Interface</h2>
+      <h2 className="text-xl font-bold mb-4">Logistics Provider Purchase Orders</h2>
       <p className="text-gray-600">Coming Soon...</p>
     </div>
   );
@@ -119,21 +122,44 @@ const LogisticsProviderUI = () => {
 const AdminUI = () => {
   return (
     <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">Admin Invoice Interface</h2>
+      <h2 className="text-xl font-bold mb-4">Admin Purchase Orders</h2>
       <p className="text-gray-600">Coming Soon...</p>
     </div>
   );
 };
 
 const OrdersPage = () => {
-  const userType: string = 'client'; // Change to: 'client', 'forwarder', 'logistics', 'admin'
-  
-  if (userType === 'client') return <ClientUI />;
-  if (userType === 'forwarder') return <ForwarderUI />;
-  if (userType === 'logistics') return <LogisticsProviderUI />;
-  if (userType === 'admin') return <AdminUI />;
-  
-  return <div className="p-4">Access denied</div>;
+  const { user } = useAuthStore();
+  const [roleBasedUI, setRoleBasedUI] = useState<React.ReactNode | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+
+    switch (user.role) {
+      case UserRole.ADMIN:
+        setRoleBasedUI(<AdminUI />);
+        break;
+      case UserRole.CLIENT:
+        setRoleBasedUI(<ClientUI />);
+        break;
+      case UserRole.FORWARDER:
+        setRoleBasedUI(<ForwarderUI />);
+        break;
+      case UserRole.LOGISTICS_PROVIDER:
+        setRoleBasedUI(<LogisticsProviderUI />);
+        break;
+      default:
+        setRoleBasedUI(<div className="p-4">Access denied</div>);
+    }
+  }, [user]);
+
+  return (
+    <ProtectedRoute 
+      allowedRoles={[UserRole.ADMIN, UserRole.CLIENT, UserRole.FORWARDER, UserRole.LOGISTICS_PROVIDER]} 
+    >
+      {roleBasedUI}
+    </ProtectedRoute>
+  );
 };
 
 export default OrdersPage;

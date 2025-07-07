@@ -34,7 +34,10 @@ import {
   Target,
   ChevronDown,
   ChevronRight,
-  NotebookText
+  NotebookText,
+  DollarSign,
+  Wallet,
+  CreditCard
 } from 'lucide-react';
 
 import { useMenuContext } from '@/app/(dashboard)/layout';
@@ -68,7 +71,7 @@ const menuItems: MenuSection[] = [
             visible: ["admin", "client", "forwarder", "logisticsprovider"],
           },
           {
-            icon: FileText,
+            icon: DollarSign,
             label: "Quotes",
             href: "/quotes",
             visible: ["admin", "forwarder", "logisticsprovider"],
@@ -77,7 +80,7 @@ const menuItems: MenuSection[] = [
             icon: NotebookText,
             label: "Orders",
             href: "/orders",
-            visible: ["admin", "client", "forwarder", "logisticsprovider"],
+            visible: ["admin", "client"],
           },
           {
             icon: CalendarCheck,
@@ -92,19 +95,25 @@ const menuItems: MenuSection[] = [
             visible: ["admin", "client", "forwarder", "logisticsprovider"],
           },
           {
-            icon: Warehouse,
-            label: "Warehouse",
-            href: "/warehouse",
-            visible: [],
-          },
-          {
             icon: Truck,
             label: "Transportation",
             href: "/transportation",
-            visible: [],
+            visible: ["forwarder", "logisticsprovider"],
           },
           {
-            icon: Receipt,
+            icon: Warehouse,
+            label: "Warehouse",
+            href: "/warehouse",
+            visible: ["forwarder"],
+          },
+          {
+            icon: FileText,
+            label: "Documents",
+            href: "/documents",
+            visible: ["forwarder", "logisticsprovider"],
+          },
+          {
+            icon: CreditCard,
             label: "Billings",
             href: "/billings",
             visible: ["admin", "client", "forwarder", "logisticsprovider"],
@@ -137,13 +146,13 @@ const menuItems: MenuSection[] = [
           {
             icon: HelpCircle,
             label: "Help",
-            href: "/menulist/help",
+            href: "/support",
             visible: ["admin", "client", "forwarder", "logisticsprovider"],
           },
           {
             icon: Settings,
             label: "Settings",
-            href: "/menulist/settings",
+            href: "/settings",
             visible: ["admin", "client", "forwarder", "logisticsprovider"],
           },
       ]
@@ -255,7 +264,7 @@ const Menu = () => {
   return (
     <div className="text-sm h-full flex flex-col bg-white" data-menu>
       {/* Logo Section */}
-      <div className={`${isCollapsed ? 'mb-2' : 'mb-4'} ${!isCollapsed ? 'border-b border-gray-200 pb-4' : ''}`}>
+      <div className={`${isCollapsed ? 'mb-2' : 'mb-2'} ${!isCollapsed ? 'border-b border-gray-200 pb-4' : ''}`}>
         {/* When expanded: logo and button side by side */}
         {!isCollapsed && (
           <div className="flex items-center justify-between">
@@ -328,7 +337,7 @@ const Menu = () => {
                       className="flex items-center justify-center px-4 py-2.5 rounded-lg
                                bg-[#007bff] text-white font-medium w-full
                                hover:bg-blue-600 transition-colors duration-200
-                               shadow-sm mb-2"
+                               shadow-sm"
                     >
                       <Plus size={18} className="mr-2" />
                       Create Booking

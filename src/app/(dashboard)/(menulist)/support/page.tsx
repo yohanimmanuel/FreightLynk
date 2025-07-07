@@ -1,9 +1,13 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { useAuthStore, UserRole } from '@/store/authStore';
+import ProtectedRoute from '@/app/components/ProtectedRoute';
+
 const ClientUI = () => {
   return (
     <div>
-      <h2>Client</h2>
+      <h2>Client Support</h2>
       <p>Coming Soon...</p>
     </div>
   );
@@ -12,7 +16,7 @@ const ClientUI = () => {
 const ForwarderUI = () => {
   return (
     <div>
-      <h2>Forwarder</h2>
+      <h2>Forwarder Support</h2>
       <p>Coming Soon...</p>
     </div>
   );
@@ -21,7 +25,7 @@ const ForwarderUI = () => {
 const LogisticsProviderUI = () => {
   return (
     <div>
-      <h2>Logistics Provider Invoice Interface</h2>
+      <h2>Logistics Provider Support</h2>
       <p>Coming Soon...</p>
     </div>
   );
@@ -30,22 +34,44 @@ const LogisticsProviderUI = () => {
 const AdminUI = () => {
   return (
     <div>
-      <h2>Admin Invoice Interface</h2>
+      <h2>Admin Support</h2>
       <p>Coming Soon...</p>
     </div>
   );
 };
 
-const SupportUI = ({ userType }: { userType: string }) => {
-  // Manually set userType for testing - change this value to test different UIs
-  const testUserType: string = 'client'; // Change to: 'client', 'forwarder', 'logistics', 'admin'
-  
-  if (testUserType === 'client') return <ClientUI />;
-  if (testUserType === 'forwarder') return <ForwarderUI />;
-  if (testUserType === 'logistics') return <LogisticsProviderUI />;
-  if (testUserType === 'admin') return <AdminUI />;
-  
-  return <div>Access denied</div>;
+const SupportPage = () => {
+  const { user } = useAuthStore();
+  const [roleBasedUI, setRoleBasedUI] = useState<React.ReactNode | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+
+    switch (user.role) {
+      case UserRole.ADMIN:
+        setRoleBasedUI(<AdminUI />);
+        break;
+      case UserRole.CLIENT:
+        setRoleBasedUI(<ClientUI />);
+        break;
+      case UserRole.FORWARDER:
+        setRoleBasedUI(<ForwarderUI />);
+        break;
+      case UserRole.LOGISTICS_PROVIDER:
+        setRoleBasedUI(<LogisticsProviderUI />);
+        break;
+      default:
+        setRoleBasedUI(<div>Access denied</div>);
+    }
+  }, [user]);
+
+  return (
+    <ProtectedRoute 
+      allowedRoles={[UserRole.ADMIN, UserRole.CLIENT, UserRole.FORWARDER, UserRole.LOGISTICS_PROVIDER]} 
+    >
+      {roleBasedUI}
+    </ProtectedRoute>
+  );
 };
 
-export default SupportUI;
+export default SupportPage;

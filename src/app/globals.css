@@ -26,7 +26,7 @@ body {
 }
 
 html {
-  font-size: 15px; /* reduce base sizing */
+  font-size: 14px; /* reduce base sizing */
 }
 
 /* Hide scrollbars for elements with the scrollbar-hide class */
