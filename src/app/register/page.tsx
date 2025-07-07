@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useAuthStore, UserRole } from "@/store/authStore";
 
 // Define user types
 const userTypes = [
@@ -12,7 +13,11 @@ const userTypes = [
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { register } = useAuthStore();
   const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  
   // Add proper type for errors
   interface FormErrors {
     [key: string]: string;
@@ -161,13 +166,48 @@ export default function RegisterPage() {
     setStep(prev => prev - 1);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (validateStep(step)) {
-      // Here you would typically send the data to your backend
-      console.log("Form submitted:", formData);
-      // Redirect to dashboard or confirmation page
-      router.push("/dashboard");
+      setIsSubmitting(true);
+      setError("");
+      
+      try {
+        // Register user with auth store
+        const success = await register(formData);
+        
+        if (success) {
+          // Get user from store after registration
+          const user = useAuthStore.getState().user;
+          
+          // Redirect based on role
+          if (user) {
+            switch (user.role) {
+              case UserRole.ADMIN:
+                router.push('/admin');
+                break;
+              case UserRole.CLIENT:
+                router.push('/client');
+                break;
+              case UserRole.FORWARDER:
+                router.push('/forwarder');
+                break;
+              case UserRole.LOGISTICS_PROVIDER:
+                router.push('/logisticsprovider');
+                break;
+              default:
+                router.push('/');
+            }
+          }
+        } else {
+          setError("Registration failed. Please try again.");
+        }
+      } catch (err) {
+        setError("An error occurred during registration");
+        console.error(err);
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 

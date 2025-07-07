@@ -2,15 +2,58 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStore, UserRole } from "@/store/authStore";
 
 export default function Login() {
+  const router = useRouter();
+  const { login } = useAuthStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle login logic here
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const success = await login(email, password);
+      
+      if (success) {
+        // Get user from store after login
+        const user = useAuthStore.getState().user;
+        
+        // Redirect based on role
+        if (user) {
+          switch (user.role) {
+            case UserRole.ADMIN:
+              router.push('/admin');
+              break;
+            case UserRole.CLIENT:
+              router.push('/client');
+              break;
+            case UserRole.FORWARDER:
+              router.push('/forwarder');
+              break;
+            case UserRole.LOGISTICS_PROVIDER:
+              router.push('/logisticsprovider');
+              break;
+            default:
+              router.push('/');
+          }
+        }
+      } else {
+        setError("Invalid email or password");
+      }
+    } catch (err) {
+      setError("An error occurred during login");
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -71,6 +114,11 @@ export default function Login() {
 
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-4 animate-fade-in-up delay-400">
+            {error && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                <span className="block sm:inline">{error}</span>
+              </div>
+            )}
             <div>
               <input
                 type="email"
@@ -80,6 +128,13 @@ export default function Login() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:scale-[1.02] transition-all duration-300 text-gray-900 placeholder:text-gray-500"
                 required
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Hint: Use email prefixes for different roles: 
+                <span className="font-semibold"> admin@</span>, 
+                <span className="font-semibold"> forwarder@</span>, 
+                <span className="font-semibold"> logistics@</span>, 
+                or any other for client role
+              </p>
             </div>
             <div>
               <input
@@ -125,9 +180,10 @@ export default function Login() {
 
             <button
               type="submit"
-              className="w-full bg-[#007bff] text-white py-2 rounded-lg hover:bg-blue-700 transition-all duration-300"
+              disabled={isLoading}
+              className={`w-full bg-[#007bff] text-white py-2 rounded-lg hover:bg-blue-700 transition-all duration-300 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
             >
-              Sign In
+              {isLoading ? 'Signing In...' : 'Sign In'}
             </button>
           </form>
 
