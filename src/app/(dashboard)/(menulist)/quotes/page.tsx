@@ -1,7 +1,7 @@
 'use client';
 
-import QuoteTable from "@/app/components/clients/quotefinancing/QuoteTable";
-import RateTable from "@/app/components/clients/quotefinancing/RateTable";
+import QuoteTable from "@/app/components/forwarder/quotefinancing/QuoteTable";
+import RateTable from "@/app/components/forwarder/quotefinancing/RateTable";
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuthStore, UserRole } from '@/store/authStore';
@@ -22,6 +22,11 @@ const ForwarderUI = () => {
   const handleViewAll = () => {
     router.push('/quotes/rates');
   };
+
+  const handleSearchQuote = () => {
+    router.push('/quotes/search');
+  };
+
   return (
    <div>
       {/* Header and Rate Table Layout */}
@@ -34,6 +39,12 @@ const ForwarderUI = () => {
                 <h1 className="text-2xl font-semibold text-gray-900">Your Quotes</h1>
                 <p className="text-sm text-gray-600 mt-1">Review your freight quotes</p>
               </div>
+              <button
+                onClick={handleSearchQuote}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#007bff] rounded-lg hover:bg-blue-700"
+              >
+                Search quote
+              </button>
             </div>
           </div>
           <QuoteTable />

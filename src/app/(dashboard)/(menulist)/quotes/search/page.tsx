@@ -1,15 +1,15 @@
 'use client';
 
-import RateTable from "@/app/components/forwarder/quotefinancing/RateTable";
-import { Upload, Download, Plus } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuthStore, UserRole } from '@/store/authStore';
 import ProtectedRoute from '@/app/components/ProtectedRoute';
+import QuoteSearch from '@/app/components/forwarder/quotefinancing/QuoteSearch';
 
 const ClientUI = () => {
   return (
     <div>
-      <h2>Client Rates</h2>
+      <h2>Client Search Quote</h2>
       <p>Coming Soon...</p>
     </div>
   );
@@ -18,7 +18,11 @@ const ClientUI = () => {
 const ForwarderUI = () => {
   return (
     <div className="p-4">
-      <RateTable view="full" />
+      <div className="mb-4">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Search Quote</h1>
+          <p className="text-gray-600 text-sm">Find the best freight rates for your shipments</p>
+      </div>
+      <QuoteSearch />
     </div>
   );
 };
@@ -26,7 +30,7 @@ const ForwarderUI = () => {
 const LogisticsProviderUI = () => {
   return (
     <div>
-      <h2>Logistics Provider Rates</h2>
+      <h2>Logistics Provider Search Quote</h2>
       <p>Coming Soon...</p>
     </div>
   );
@@ -35,13 +39,13 @@ const LogisticsProviderUI = () => {
 const AdminUI = () => {
   return (
     <div>
-      <h2>Admin Rates</h2>
+      <h2>Admin Search Quote</h2>
       <p>Coming Soon...</p>
     </div>
   );
 };
 
-const RatesPage = () => {
+const SearchQuotePage = () => {
   const { user } = useAuthStore();
   const [roleBasedUI, setRoleBasedUI] = useState<React.ReactNode | null>(null);
 
@@ -75,4 +79,4 @@ const RatesPage = () => {
   );
 };
 
-export default RatesPage;
+export default SearchQuotePage;

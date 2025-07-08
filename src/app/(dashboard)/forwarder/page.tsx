@@ -2,13 +2,7 @@
 
 import React, { useState } from 'react';
 import { MapPin, Ship, Clock, DollarSign, AlertTriangle, Bell, TrendingUp, Package, Calendar, FileText, Navigation, Truck } from 'lucide-react';
-import ShipmentMapTracker from '@/app/components/clients/shipmentsbooking/ShipmentMapTracker';
-import BookingCalendar from '@/app/components/clients/shipmentsbooking/BookingCalendar';
 import Image from 'next/image';
-import ShipmentTable from '@/app/components/clients/shipmentsbooking/ShipmentTable';
-import ShipmentMilestone from '@/app/components/clients/shipmentsbooking/ShipmentMilestone';
-import IndustryNews from '@/app/components/clients/shipmentsbooking/IndustryNews';
-import ShipmentAlert from '@/app/components/clients/shipmentsbooking/ShipmentAlert';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/app/components/ProtectedRoute';
 import { UserRole } from '@/store/authStore';
@@ -53,19 +47,12 @@ const FreightLynkDashboard = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 w-full">
             {/* Left side - Map and Table (75% width on large screens) */}
             <div className="lg:col-span-2 space-y-4">
-              <ShipmentMapTracker onSeeAll={handleSeeAllTracking} />     
-              <ShipmentTable 
-                view="summary" 
-                onSeeAll={handleSeeAllShipments}
-              />  
-              <ShipmentMilestone onSeeAll={handleSeeAllMilestone} />
+             
             </div>
             
             {/* Right side - Calendar (25% width on large screens) */}
             <div className="lg:col-span-1 space-y-4">
-              <BookingCalendar bookings={[]} />
-              <IndustryNews />
-              <ShipmentAlert />
+
             </div>
           </div>
         </div>

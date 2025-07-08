@@ -37,7 +37,8 @@ import {
   NotebookText,
   DollarSign,
   Wallet,
-  CreditCard
+  CreditCard,
+  BriefcaseBusiness
 } from 'lucide-react';
 
 import { useMenuContext } from '@/app/(dashboard)/layout';
@@ -71,7 +72,7 @@ const menuItems: MenuSection[] = [
             visible: ["admin", "client", "forwarder", "logisticsprovider"],
           },
           {
-            icon: DollarSign,
+            icon: BriefcaseBusiness,
             label: "Quotes",
             href: "/quotes",
             visible: ["admin", "forwarder", "logisticsprovider"],
@@ -89,12 +90,6 @@ const menuItems: MenuSection[] = [
             visible: ["admin", "client", "forwarder", "logisticsprovider"],
           },
           {
-            icon: Package,
-            label: "Shipments",
-            href: "/shipments",
-            visible: ["admin", "client", "forwarder", "logisticsprovider"],
-          },
-          {
             icon: Truck,
             label: "Transportation",
             href: "/transportation",
@@ -108,9 +103,15 @@ const menuItems: MenuSection[] = [
           },
           {
             icon: FileText,
-            label: "Reports",
-            href: "/reports",
+            label: "Documents",
+            href: "/documents",
             visible: ["forwarder", "logisticsprovider"],
+          },
+          {
+            icon: Package,
+            label: "Shipments",
+            href: "/shipments",
+            visible: ["admin", "client", "forwarder", "logisticsprovider"],
           },
           {
             icon: CreditCard,
@@ -364,7 +365,7 @@ const Menu = () => {
                   <div key={item.label} className="overflow-hidden">
                     {/* Main Menu Item */}
                     <div 
-                      className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-100 group relative
+                      className={`flex items-center gap-3 px-2.5 py-2 rounded-lg transition-all duration-100 group relative
                         ${isActive 
                           ? 'bg-blue-100 text-[#007bff] shadow-sm' 
                           : 'text-gray-500 hover:bg-gray-200 hover:text-gray-800'

@@ -132,7 +132,10 @@ const ClientUI = () => {
         <div className="md:col-span-2 col-span-1">
           {/* Header Controls */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 mt-3 pb-3 border-b border-gray-200 gap-2">
+              <div>
               <h1 className="text-2xl font-semibold text-gray-900">Bookings</h1>
+                <p className="text-sm text-gray-600 mt-1">View and manage your shipment bookings.</p>
+              </div>
               <div className="flex flex-col md:flex-row items-stretch md:items-center space-y-2 md:space-y-0 md:space-x-2">
               <button
                   onClick={handleImportCSV}
