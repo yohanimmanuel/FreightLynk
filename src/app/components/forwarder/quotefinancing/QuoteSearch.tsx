@@ -308,7 +308,7 @@ const QuoteSearch = () => {
                     </div>
                     {/* TT and Validity */}
                     <div className="flex flex-col items-end ml-auto">
-                      <span className="text-xs text-gray-500">Travel Time: <span className="text-gray-900 font-medium">{result.transitTime}</span></span>
+                      <span className="text-xs text-gray-500">Transit Time: <span className="text-gray-900 font-medium">{result.transitTime}</span></span>
                       <span className="text-xs text-gray-500">Validity: <span className="text-gray-900 font-medium">{result.validity}</span></span>
                     </div>
                   </div>
