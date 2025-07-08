@@ -1,29 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Truck, Ship, Plane, ChevronUp, Edit, Plus, Search, Filter, Download, Upload, Trash2, MoreHorizontal, X, ChevronRight, ChevronLeft, Train } from 'lucide-react';
-
-interface Rate {
-  id: number;
-  lane: string;
-  mode: 'ocean' | 'air' | 'truck';
-  rateBasis: string;
-  weight: string;
-  volume: string;
-  containertype: string;
-  currency: string;
-  price: string;
-  baseRate: number;
-  originCity: string;
-  destinationCity: string;
-  transitTime: string;
-  carrier: string;
-  surcharges: string;
-  incoterm: string;
-  validFrom: string;
-  validTo: string;
-  notes: string;
-  provider: string;
-  status: string;
-}
+import { ChevronDown, Truck, Ship, Plane, ChevronUp, Edit, Plus, Search, Filter, Download, Upload, Trash2, MoreHorizontal, X, ChevronRight, ChevronLeft, Train, Send } from 'lucide-react';
+import { useQuoteRateStore, Rate } from '../../../../store/quoterate';
+import ReactDOM from 'react-dom';
 
 interface RateTableProps {
   view?: 'summary' | 'full';
@@ -31,6 +9,7 @@ interface RateTableProps {
 }
 
 const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () => {} }) => {  
+  const { rates, setRates, addRate, updateRate, deleteRate, addQuote } = useQuoteRateStore();
   const [isExpanded, setIsExpanded] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterMode, setFilterMode] = useState<'all' | 'ocean' | 'air' | 'truck'>('all');
@@ -55,14 +34,38 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
   const [showAddCurrencyDropdown, setShowAddCurrencyDropdown] = useState(false);
   const [addIncoterm, setAddIncoterm] = useState('FOB');
   const [showAddIncotermDropdown, setShowAddIncotermDropdown] = useState(false);
-  const [addStatus, setAddStatus] = useState('draft');
-  const [showAddStatusDropdown, setShowAddStatusDropdown] = useState(false);
+  const [addShipmentType, setAddShipmentType] = useState('FCL');
+  const [showAddShipmentTypeDropdown, setShowAddShipmentTypeDropdown] = useState(false);
 
   const [showEditTransportModeDropdown, setShowEditTransportModeDropdown] = useState(false);
   const [showEditContainerTypeDropdown, setShowEditContainerTypeDropdown] = useState(false);
   const [showEditCurrencyDropdown, setShowEditCurrencyDropdown] = useState(false);
   const [showEditIncotermDropdown, setShowEditIncotermDropdown] = useState(false);
-  const [showEditStatusDropdown, setShowEditStatusDropdown] = useState(false);
+  const [showEditShipmentTypeDropdown, setShowEditShipmentTypeDropdown] = useState(false);
+
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [quoteSuccess, setQuoteSuccess] = useState(false);
+
+  const [showRemoveModal, setShowRemoveModal] = useState(false);
+
+  // Add Rate form state variables
+  const [addFormData, setAddFormData] = useState({
+    originCity: '',
+    destinationCity: '',
+    carrier: '',
+    shipmentType: '',
+    weight: '',
+    volume: '',
+    price: '',
+    baseRate: '',
+    transitTime: '',
+    surcharges: '',
+    notes: '',
+    validFrom: '',
+    validTo: ''
+  });
+
+  const [surchargeTooltipAnchor, setSurchargeTooltipAnchor] = useState<HTMLElement | null>(null);
 
   const transportModeOptions = [
     { value: 'ocean', label: 'Ocean' },
@@ -88,11 +91,9 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
     { value: 'DAP', label: 'DAP' },
     { value: 'CIP', label: 'CIP' },
   ];
-  const statusOptions = [
-    { value: 'draft', label: 'Draft' },
-    { value: 'active', label: 'Active' },
-    { value: 'expired', label: 'Expired' },
-    { value: 'archived', label: 'Archived' },
+  const shipmentTypeOptions = [
+    { value: 'FCL', label: 'FCL' },
+    { value: 'LCL', label: 'LCL' },
   ];
 
   // Add refs for add/edit modal dropdowns
@@ -104,8 +105,8 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
   const addCurrencyButtonRef = useRef<HTMLButtonElement>(null);
   const addIncotermDropdownRef = useRef<HTMLDivElement>(null);
   const addIncotermButtonRef = useRef<HTMLButtonElement>(null);
-  const addStatusDropdownRef = useRef<HTMLDivElement>(null);
-  const addStatusButtonRef = useRef<HTMLButtonElement>(null);
+  const addShipmentTypeDropdownRef = useRef<HTMLDivElement>(null);
+  const addShipmentTypeButtonRef = useRef<HTMLButtonElement>(null);
   const editTransportModeDropdownRef = useRef<HTMLDivElement>(null);
   const editTransportModeButtonRef = useRef<HTMLButtonElement>(null);
   const editContainerTypeDropdownRef = useRef<HTMLDivElement>(null);
@@ -114,8 +115,12 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
   const editCurrencyButtonRef = useRef<HTMLButtonElement>(null);
   const editIncotermDropdownRef = useRef<HTMLDivElement>(null);
   const editIncotermButtonRef = useRef<HTMLButtonElement>(null);
-  const editStatusDropdownRef = useRef<HTMLDivElement>(null);
-  const editStatusButtonRef = useRef<HTMLButtonElement>(null);
+  const editShipmentTypeDropdownRef = useRef<HTMLDivElement>(null);
+  const editShipmentTypeButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Get all existing quote keys for deduplication
+  const { quotes } = useQuoteRateStore();
+  const quoteKeys = quotes.map(q => `${q.lane}|${q.mode}|${q.containertype}|${q.carrier}`);
 
   // Update your useEffect for click outside handling
   useEffect(() => {
@@ -149,9 +154,9 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
           addIncotermButtonRef.current && !addIncotermButtonRef.current.contains(event.target as Node)) {
         setShowAddIncotermDropdown(false);
       }
-      if (addStatusDropdownRef.current && !addStatusDropdownRef.current.contains(event.target as Node) &&
-          addStatusButtonRef.current && !addStatusButtonRef.current.contains(event.target as Node)) {
-        setShowAddStatusDropdown(false);
+      if (addShipmentTypeDropdownRef.current && !addShipmentTypeDropdownRef.current.contains(event.target as Node) &&
+          addShipmentTypeButtonRef.current && !addShipmentTypeButtonRef.current.contains(event.target as Node)) {
+        setShowAddShipmentTypeDropdown(false);
       }
       // Edit modal dropdowns
       if (editTransportModeDropdownRef.current && !editTransportModeDropdownRef.current.contains(event.target as Node) &&
@@ -170,9 +175,9 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
           editIncotermButtonRef.current && !editIncotermButtonRef.current.contains(event.target as Node)) {
         setShowEditIncotermDropdown(false);
       }
-      if (editStatusDropdownRef.current && !editStatusDropdownRef.current.contains(event.target as Node) &&
-          editStatusButtonRef.current && !editStatusButtonRef.current.contains(event.target as Node)) {
-        setShowEditStatusDropdown(false);
+      if (editShipmentTypeDropdownRef.current && !editShipmentTypeDropdownRef.current.contains(event.target as Node) &&
+          editShipmentTypeButtonRef.current && !editShipmentTypeButtonRef.current.contains(event.target as Node)) {
+        setShowEditShipmentTypeDropdown(false);
       }
     };
 
@@ -186,7 +191,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
     id: true,
     lane: true,
     mode: true,
-    rateBasis: true,
+    shipmentType: true,
     weight: true,
     volume: true,
     containertype: true,
@@ -202,174 +207,10 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
     validFrom: true,
     validTo: true,
     notes: true,
-    provider: true,
     status: true
   });  
 
-  // Extended mock data with all properties
-  const [rates, setRates] = useState<Rate[]>([
-    {
-      id: 1,
-      lane: 'Asia → North America',
-      mode: 'ocean',
-      rateBasis: 'per container',
-      containertype: '40ft',
-      weight: '200 kg',
-      volume: '20 CBM',
-      currency: 'USD',
-      price: '$2,100 - $2,800',
-      baseRate: 2100,
-      originCity: 'Shanghai',
-      destinationCity: 'Los Angeles',
-      transitTime: '18-22 days',
-      carrier: 'COSCO Shipping',
-      surcharges: 'BAF: $150, CAF: $200',
-      incoterm: 'FOB',
-      validFrom: '2024-06-01',
-      validTo: '2024-07-31',
-      notes: 'Peak season surcharge may apply',
-      provider: 'Pacific Logistics',
-      status: 'draft'
-    },
-    {
-      id: 2,
-      lane: 'Europe → Asia',
-      mode: 'ocean',
-      rateBasis: 'per container',
-      containertype: '40ft',
-      weight: '200 kg',
-      volume: '20 CBM',
-      currency: 'USD',
-      price: '$1,650 - $2,200',
-      baseRate: 1650,
-      originCity: 'Hamburg',
-      destinationCity: 'Singapore',
-      transitTime: '25-30 days',
-      carrier: 'Maersk Line',
-      surcharges: 'THC: $100, DOC: $50',
-      incoterm: 'CIF',
-      validFrom: '2024-05-15',
-      validTo: '2024-06-30',
-      notes: 'Express service available',
-      provider: 'Euro Freight',
-      status: 'draft'
-    },
-    {
-      id: 3,
-      lane: 'Asia → Europe',
-      mode: 'air',
-      rateBasis: 'per container',
-      containertype: '40ft',
-      weight: '200 kg',
-      volume: '20 CBM',
-      currency: 'USD',
-      price: '$7,500 - $9,200',
-      baseRate: 7500,
-      originCity: 'Hong Kong',
-      destinationCity: 'Frankfurt',
-      transitTime: '2-3 days',
-      carrier: 'Cathay Pacific Cargo',
-      surcharges: 'FSC: $300, SSC: $150',
-      incoterm: 'EXW',
-      validFrom: '2024-06-01',
-      validTo: '2024-07-15',
-      notes: 'Temperature controlled available',
-      provider: 'Air Cargo Express',
-      status: 'draft'
-    },
-    {
-      id: 4,
-      lane: 'North America → Asia',
-      mode: 'ocean',
-      rateBasis: 'per container',
-      containertype: '40ft',
-      weight: '200 kg',
-      volume: '20 CBM',
-      currency: 'USD',
-      price: '$1,890 - $2,450',
-      baseRate: 1890,
-      originCity: 'Long Beach',
-      destinationCity: 'Tokyo',
-      transitTime: '12-15 days',
-      carrier: 'ONE (Ocean Network Express)',
-      surcharges: 'PCS: $200, EBS: $100',
-      incoterm: 'FOB',
-      validFrom: '2024-07-01',
-      validTo: '2024-08-15',
-      notes: 'Weekly service available',
-      provider: 'Trans Pacific Shipping',
-      status: 'draft'
-    },
-    {
-      id: 5,
-      lane: 'Europe → North America',
-      mode: 'truck',
-      rateBasis: 'per container',
-      containertype: '40ft',
-      weight: '200 kg',
-      volume: '20 CBM',
-      currency: 'USD',
-      price: '$1,200 - $1,500',
-      baseRate: 1200,
-      originCity: 'Berlin',
-      destinationCity: 'Chicago',
-      transitTime: '5-7 days',
-      carrier: 'DB Schenker',
-      surcharges: 'Fuel: $150, Toll: $75',
-      incoterm: 'DAP',
-      validFrom: '2024-06-15',
-      validTo: '2024-09-30',
-      notes: 'Express delivery available',
-      provider: 'Continental Trucking',
-      status: 'draft'
-    },
-    {
-      id: 6,
-      lane: 'Middle East → Africa',
-      mode: 'ocean',
-      rateBasis: 'per container',
-      containertype: '40ft',
-      weight: '200 kg',
-      volume: '20 CBM',
-      currency: 'USD',
-      price: '$1,750 - $2,100',
-      baseRate: 1750,
-      originCity: 'Dubai',
-      destinationCity: 'Mombasa',
-      transitTime: '10-14 days',
-      carrier: 'MSC',
-      surcharges: 'WRS: $120, PCS: $80',
-      incoterm: 'FOB',
-      validFrom: '2024-07-01',
-      validTo: '2024-08-31',
-      notes: 'Direct service',
-      provider: 'Red Sea Shipping',
-      status: 'draft'
-    },
-    {
-      id: 7,
-      lane: 'South America → Europe',
-      mode: 'air',
-      rateBasis: 'per container',
-      containertype: '40ft',
-      weight: '200 kg',
-      volume: '20 CBM',
-      currency: 'USD',
-      price: '$6,800 - $8,400',
-      baseRate: 6800,
-      originCity: 'São Paulo',
-      destinationCity: 'Amsterdam',
-      transitTime: '1-2 days',
-      carrier: 'LATAM Cargo',
-      surcharges: 'FSC: $350, SEC: $120',
-      incoterm: 'CIP',
-      validFrom: '2024-06-10',
-      validTo: '2024-07-20',
-      notes: 'Perishable goods specialist',
-      provider: 'Atlantic Air Freight',
-      status: 'draft'
-    },
-  ]);
+
 
   const getModeIcon = (mode: 'ocean' | 'air' | 'truck' | 'rail') => {
     switch (mode) {
@@ -433,23 +274,81 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
     e.preventDefault();
     if (!currentRate) return;
     
-    setRates(prevRates => 
-      prevRates.map(rate => 
-        rate.id === currentRate.id ? currentRate : rate
-      )
-    );
+    updateRate(currentRate);
     setShowEditModal(false);
     setCurrentRate(null);
   };
 
+  const handleRemoveRate = (rateId: number) => {
+    if (window.confirm('Are you sure you want to remove this rate?')) {
+      deleteRate(rateId);
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    if (!currentRate) return;
-    
     const { name, value } = e.target;
-    setCurrentRate(prev => ({
-      ...prev!,
-      [name]: value
-    }));
+    setCurrentRate(prev => {
+      if (!prev) return null;
+      let updated = { ...prev, [name]: value };
+      if (name === 'originCity' || name === 'destinationCity') {
+        updated.lane = `${name === 'originCity' ? value : prev.originCity} - ${name === 'destinationCity' ? value : prev.destinationCity}`;
+      }
+      return updated;
+    });
+  };
+    
+  // Add Rate form input change handler
+  const handleAddFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setAddFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Add Rate form submission handler
+  const handleAddRate = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const newRate: Rate = {
+      id: Date.now(),
+      lane: `${addFormData.originCity} - ${addFormData.destinationCity}`,
+      mode: addTransportMode as 'ocean' | 'air' | 'truck',
+      shipmentType: addShipmentType,
+      weight: addFormData.weight,
+      volume: addFormData.volume,
+      containertype: addContainerType,
+      currency: addCurrency,
+      price: addFormData.price,
+      baseRate: parseFloat(addFormData.baseRate) || 0,
+      originCity: addFormData.originCity,
+      destinationCity: addFormData.destinationCity,
+      transitTime: addFormData.transitTime,
+      carrier: addFormData.carrier,
+      surcharges: addFormData.surcharges,
+      incoterm: addIncoterm,
+      validFrom: addFormData.validFrom,
+      validTo: addFormData.validTo,
+      notes: addFormData.notes,
+      status: 'draft'
+    };
+
+    addRate(newRate);
+    setShowAddModal(false);
+    
+    // Reset form data
+    setAddFormData({
+      originCity: '',
+      destinationCity: '',
+      carrier: '',
+      shipmentType: '',
+      weight: '',
+      volume: '',
+      price: '',
+      baseRate: '',
+      transitTime: '',
+      surcharges: '',
+      notes: '',
+      validFrom: '',
+      validTo: ''
+    });
   };
 
   const renderPagination = () => {
@@ -524,14 +423,13 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                     }}
                     className="absolute top-2 right-2 p-1 rounded transition-colors"
                   >
-                    <Edit className="w-4 h-4 text-gray-400 hover:text-gray-600" />
                   </button>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       {getModeIcon(rate.mode)}
                       <span className="text-sm font-medium text-gray-900 capitalize">{rate.mode}</span>
                       <span className="text-gray-900">-</span>
-                      <span className="text-sm font-semibold text-gray-900 capitalize">{rate.provider}</span>
+                      <span className="text-sm font-semibold text-gray-900 capitalize">{rate.carrier}</span>
                     </div>
                   </div>
                   <div className="text-sm text-gray-600 mb-1">{rate.lane}</div>
@@ -562,11 +460,11 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-2 md:gap-0">
         <h2 className="text-2xl font-semibold text-gray-900">Rate Management</h2>
         <div className="flex flex-col md:flex-row gap-2 md:gap-3 w-full md:w-auto mt-2 md:mt-0">
-          <button className="w-full md:w-auto flex items-center text-sm text-gray-900 gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-200">
+          <button className="w-full md:w-auto flex items-center text-sm text-gray-900 gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-200">
             <Upload className="w-4 h-4" />
             Import CSV
           </button>
-          <button className="w-full md:w-auto flex items-center text-sm text-gray-900 gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-200">
+          <button className="w-full md:w-auto flex items-center text-sm text-gray-900 gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-200">
             <Download className="w-4 h-4" />
             Export CSV
           </button>
@@ -589,13 +487,13 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
             placeholder="Search by route, city, or carrier..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-4 py-2 text-sm text-gray-900 w-full border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="pl-10 pr-4 py-2 text-sm text-gray-900 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
         <div className="relative">
             <button 
               onClick={() => setShowModeDropdown(!showModeDropdown)}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               {filterMode === 'all' ? 'All Modes' : filterMode.charAt(0).toUpperCase() + filterMode.slice(1)}
               <ChevronDown className={`w-4 h-4 transition-transform ${showModeDropdown ? 'rotate-180' : ''}`} />
@@ -625,7 +523,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
           <div className="relative">
             <button 
               onClick={() => setShowColumnModal(!showColumnModal)}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               Add/Remove Columns
               <ChevronDown className={`w-4 h-4 transition-transform ${showColumnModal ? 'rotate-180' : ''}`} />
@@ -655,49 +553,79 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
             )}
           </div>
       </div>
+
       {/* Bulk Actions */}
       {selectedRates.length > 0 && (
-        <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-blue-700">
-              {selectedRates.length} rate{selectedRates.length > 1 ? 's' : ''} selected
+        <div className="p-3 mt-4 bg-white border border-blue-200 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-2 flex-wrap">
+            {selectedRates.map((id) => {
+              const rate = rates.find(r => r.id === id);
+              if (!rate) return null;
+              return (
+                <span key={id} className="flex items-center bg-blue-100 text-blue-800 text-sm font-medium px-3 py-2 rounded-full mr-2 mb-1">
+                  {rate.lane}
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      setSelectedRates(selectedRates.filter(rid => rid !== id));
+                    }}
+                    className="ml-2 text-blue-400 hover:text-blue-700 focus:outline-none"
+                    title="Remove"
+                    style={{ lineHeight: 1 }}
+                  >
+                    <X className="w-4 h-4 text-gray-500 hover:text-gray-700" />
+                  </button>
             </span>
-            <div className="flex items-center gap-2">
-              <button className="flex items-center gap-1 px-3 py-1 text-sm text-[#007bff] hover:text-blue-700">
-                Post Quote
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-3">
+            {/* Remove button without confirmation */}
+            <button
+              onClick={() => {
+                selectedRates.forEach(id => deleteRate(id));
+                setSelectedRates([]);
+              }}
+              className="px-4 py-2 text-sm font-medium text-red-600 bg-white hover:text-red-700 focus:outline-none"
+            >
+              Remove
               </button>
-              <button className="flex items-center gap-1 px-3 py-1 text-sm text-red-600 hover:text-red-800">
-                <Trash2 className="w-4 h-4" />
-                Delete
+            {selectedRates.length === 1 && (
+              <button
+                onClick={() => {
+                  const rate = rates.find(r => r.id === selectedRates[0]);
+                  if (rate) handleEditRate(rate);
+                }}
+                className="px-4 py-2 text-sm font-medium text-[#007bff] bg-white hover:text-blue-700 focus:outline-none"
+              >
+                Edit
               </button>
-              <button className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800">
-                Archive
+            )}
+            {/* Quote button only for 1 rate with confirmation */}
+            {selectedRates.length === 1 && (
+              <button
+                onClick={() => setShowQuoteModal(true)}
+                className="px-5 py-2 text-sm font-semibold text-white bg-[#007bff] rounded-lg hover:bg-blue-700 focus:outline-none"
+              >
+                Post Rate
               </button>
-            </div>
+            )}
           </div>
         </div>
       )}
 
       {/* Table Container with horizontal scrolling */}
-      <div className="mt-4">
+      <div className="mt-3">
         <div className="overflow-x-auto">
           <div className="inline-block min-w-full align-middle">
             <div className="overflow-hidden shadow-sm border border-gray-200 rounded-lg">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      <input
-                        type="checkbox"
-                        checked={selectedRates.length === paginatedRates.length && paginatedRates.length > 0}
-                        onChange={handleSelectAll}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                    </th>
                     {columnVisibility.id && <th scope="col" className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>}
                     {columnVisibility.lane && <th scope="col" className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lane</th>}
                     {columnVisibility.mode && <th scope="col" className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mode</th>}
-                    {columnVisibility.rateBasis && <th scope="col" className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rate Basis</th>}
+                    {columnVisibility.shipmentType && <th scope="col" className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shipment Type</th>}
                     {columnVisibility.weight && <th scope="col" className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Weight</th>}
                     {columnVisibility.volume && <th scope="col" className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Volume</th>}
                     {columnVisibility.containertype && <th scope="col" className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Container Type</th>}
@@ -713,23 +641,23 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                     {columnVisibility.validFrom && <th scope="col" className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valid From</th>}
                     {columnVisibility.validTo && <th scope="col" className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valid Until</th>}
                     {columnVisibility.notes && <th scope="col" className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>}   
-                    {columnVisibility.provider && <th scope="col" className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Provider</th>}               
                     {columnVisibility.status && <th scope="col" className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>}
-                    <th scope="col" className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {paginatedRates.length > 0 ? (
                     paginatedRates.map((rate) => (
-                      <tr key={rate.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <input
-                            type="checkbox"
-                            checked={selectedRates.includes(rate.id)}
-                            onChange={() => handleSelectRate(rate.id)}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          />
-                        </td>
+                      <tr
+                        key={rate.id}
+                        className={`hover:bg-gray-50 cursor-pointer ${selectedRates.includes(rate.id) ? 'bg-blue-50' : ''}`}
+                        onClick={() => {
+                          setSelectedRates((prev) =>
+                            prev.includes(rate.id)
+                              ? prev.filter((id) => id !== rate.id)
+                              : [...prev, rate.id]
+                          );
+                        }}
+                      >
                         {columnVisibility.id && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{rate.id}</td>}
                         {columnVisibility.lane && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{rate.lane}</td>}
                         {columnVisibility.mode && (
@@ -740,7 +668,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                             </div>
                           </td>
                         )}
-                        {columnVisibility.rateBasis && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{rate.rateBasis}</td>}
+                        {columnVisibility.shipmentType && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{rate.shipmentType}</td>}
                         {columnVisibility.weight && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{rate.weight}</td>}
                         {columnVisibility.volume && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{rate.volume}</td>}
                         {columnVisibility.containertype && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{rate.containertype}</td>}
@@ -756,7 +684,6 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                         {columnVisibility.validFrom && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">{rate.validFrom}</td>}
                         {columnVisibility.validTo && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">{rate.validTo}</td>}
                         {columnVisibility.notes && <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate overflow-hidden text-ellipsis">{rate.notes}</td>}
-                        {columnVisibility.provider && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">{rate.provider}</td>}
                         {columnVisibility.status && (
                           <td className="px-4 py-4 whitespace-nowrap">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(rate.status)}`}>
@@ -764,16 +691,6 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                             </span>
                           </td>
                         )}
-                        <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-500">
-                          <div className="flex items-center gap-2 relative">
-                            <button 
-                              onClick={() => handleEditRate(rate)}
-                              className="p-1 text-gray-400 hover:text-gray-600 rounded"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
                       </tr>
                     ))
                   ) : (
@@ -795,10 +712,15 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
       {/* Add Rate Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-sm max-w-4xl w-full max-h-[90vh] overflow-y-auto border-t-7 border-[#007bff]">
+          <div className="bg-white rounded-lg shadow-sm max-w-4xl w-full max-h-[90vh] overflow-y-auto border-t-7 border-[#007bff] hide-scrollbar">
             <div className="p-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
                 <h3 className="text-lg font-semibold text-gray-900">Add New Rate</h3>
+                  <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-600">
+                    Draft
+                  </span>
+                </div>
                 <button
                   onClick={() => setShowAddModal(false)}
                   className="p-1 text-gray-400 hover:text-gray-600 rounded"
@@ -808,15 +730,30 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
               </div>
             </div>
             <div className="p-4">
+              <form onSubmit={handleAddRate}>
               <div className="space-y-2">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">Origin City</label>
-                    <input type="text" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                      <input 
+                        type="text" 
+                        name="originCity"
+                        value={addFormData.originCity}
+                        onChange={handleAddFormChange}
+                        placeholder="e.g. Shanghai, China"
+                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                      />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">Destination City</label>
-                    <input type="text" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                      <input 
+                        type="text" 
+                        name="destinationCity"
+                        value={addFormData.destinationCity}
+                        onChange={handleAddFormChange}
+                        placeholder="e.g. New York, USA"
+                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                      />
                   </div>
                 </div>
                 
@@ -854,49 +791,41 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">Carrier</label>
-                    <input type="text" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                      <input 
+                        type="text" 
+                        name="carrier"
+                        value={addFormData.carrier}
+                        onChange={handleAddFormChange}
+                        placeholder="e.g. Maersk Line"
+                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                      />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Rate Basis</label>
-                    <input type="text" placeholder="per container" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Weight</label>
-                    <input type="text" placeholder="200 kg" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Volume</label>
-                    <input type="text" placeholder="20 CBM" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Container Type</label>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Shipment Type</label>
                     <div className="relative">
                       <button
                         type="button"
-                        ref={addContainerTypeButtonRef}
-                        onClick={() => setShowAddContainerTypeDropdown((v) => !v)}
+                          ref={addShipmentTypeButtonRef}
+                          onClick={() => setShowAddShipmentTypeDropdown((v) => !v)}
                         className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       >
-                        {containerTypeOptions.find(opt => opt.value === addContainerType)?.label || 'Select container type'}
-                        <ChevronDown className={`w-4 h-4 transition-transform ${showAddContainerTypeDropdown ? 'rotate-180' : ''}`} />
+                          {shipmentTypeOptions.find(opt => opt.value === addShipmentType)?.label || 'Select shipment type'}
+                          <ChevronDown className={`w-4 h-4 transition-transform ${showAddShipmentTypeDropdown ? 'rotate-180' : ''}`} />
                       </button>
-                      {showAddContainerTypeDropdown && (
-                        <div ref={addContainerTypeDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
-                          {containerTypeOptions.map((option) => (
+                        {showAddShipmentTypeDropdown && (
+                          <div ref={addShipmentTypeDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                            {shipmentTypeOptions.map((option) => (
                             <button
                               key={option.value}
                               type="button"
                               onClick={() => {
-                                setAddContainerType(option.value);
-                                setShowAddContainerTypeDropdown(false);
+                                  setAddShipmentType(option.value);
+                                  setShowAddShipmentTypeDropdown(false);
                               }}
-                              className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${addContainerType === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                                className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${addShipmentType === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
                             >
                               {option.label}
                             </button>
@@ -938,19 +867,54 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">Price Range</label>
-                    <input type="text" placeholder="$2,100 - $2,800" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                      <input 
+                        type="text" 
+                        name="price"
+                        value={addFormData.price}
+                        onChange={handleAddFormChange}
+                        placeholder="e.g. $2,100 - $2,800"
+                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                      />
                   </div>
                 </div>
                 
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">Base Rate ($)</label>
-                    <input type="number" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                    <input
+                      type="number"
+                      name="baseRate"
+                      value={addFormData.baseRate}
+                      onChange={handleAddFormChange}
+                      placeholder="e.g. 2100"
+                      className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Transit Time</label>
-                    <input type="text" placeholder="18-22 days" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Weight</label>
+                    <input
+                      type="text"
+                      name="weight"
+                      value={addFormData.weight}
+                      onChange={handleAddFormChange}
+                      placeholder="e.g. 120 kg"
+                      className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
                   </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Volume</label>
+                    <input
+                      type="text"
+                      name="volume"
+                      value={addFormData.volume}
+                      onChange={handleAddFormChange}
+                      placeholder="e.g. 12 cbm"
+                      className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">Incoterm</label>
                     <div className="relative">
@@ -982,70 +946,70 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                       )}
                     </div>
                   </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Valid From</label>
-                    <input type="date" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Valid To</label>
-                    <input type="date" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Transit Time</label>
+                    <input
+                      type="text"
+                      name="transitTime"
+                      value={addFormData.transitTime}
+                      onChange={handleAddFormChange}
+                      placeholder="e.g. 18-22 days"
+                      className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
                   </div>
                 </div>
                 
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Surcharges</label>
-                  <textarea placeholder="BAF: $150, CAF: $200" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows={2}></textarea>
+                  <label className="block text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">
+                    Surcharges
+                    <span
+                      className="relative"
+                      onMouseEnter={e => setSurchargeTooltipAnchor(e.currentTarget as HTMLElement)}
+                      onMouseLeave={() => setSurchargeTooltipAnchor(null)}
+                      tabIndex={0}
+                      onFocus={e => setSurchargeTooltipAnchor(e.currentTarget as HTMLElement)}
+                      onBlur={() => setSurchargeTooltipAnchor(null)}
+                      style={{ outline: 'none' }}
+                    >
+                      <svg className="w-3 h-3 text-gray-400 cursor-pointer" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                      <Tooltip anchorEl={surchargeTooltipAnchor} visible={!!surchargeTooltipAnchor}>
+                        <strong>Common Surcharges:</strong><br/>
+                        BAF: Bunker Adjustment Factor<br/>
+                        CAF: Currency Adjustment Factor<br/>
+                        THC: Terminal Handling Charge<br/>
+                        DOC: Documentation Fee<br/>
+                        SSC: Security Surcharge<br/>
+                        FSC: Fuel Surcharge
+                      </Tooltip>
+                    </span>
+                  </label>
+                    <textarea 
+                      name="surcharges"
+                      value={addFormData.surcharges}
+                      onChange={handleAddFormChange}
+                      placeholder="e.g. BAF: $150, CAF: $200"
+                      className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                      rows={2}
+                    ></textarea>
                 </div>
                 
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">Notes</label>
-                  <textarea placeholder="Peak season surcharge may apply" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows={3}></textarea>
+                    <textarea 
+                      name="notes"
+                      value={addFormData.notes}
+                      onChange={handleAddFormChange}
+                      placeholder="e.g. Peak season surcharge may apply"
+                      className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                      rows={3}
+                    ></textarea>
                 </div>
                 
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Provider</label>
-                  <input type="text" placeholder="Pacific Logistics" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Status</label>
-                  <div className="relative">
-                    <button
-                      type="button"
-                      ref={addStatusButtonRef}
-                      onClick={() => setShowAddStatusDropdown((v) => !v)}
-                      className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    >
-                      {statusOptions.find(opt => opt.value === addStatus)?.label || 'Select status'}
-                      <ChevronDown className={`w-4 h-4 transition-transform ${showAddStatusDropdown ? 'rotate-180' : ''}`} />
-                    </button>
-                    {showAddStatusDropdown && (
-                      <div ref={addStatusDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
-                        {statusOptions.map((option) => (
-                          <button
-                            key={option.value}
-                            type="button"
-                            onClick={() => {
-                              setAddStatus(option.value);
-                              setShowAddStatusDropdown(false);
-                            }}
-                            className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${addStatus === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
                       </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="p-4 border-t border-gray-200 flex justify-end gap-3">
+                <div className="pt-4 border-t border-gray-200 flex justify-end gap-3">
               <button
+                    type="button"
                 onClick={() => setShowAddModal(false)}
                 className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-200"
               >
@@ -1054,6 +1018,8 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
               <button className="px-4 py-2 text-sm text-white bg-[#007bff] rounded-lg hover:bg-blue-700">
                 Save Rate
               </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
@@ -1062,10 +1028,15 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
       {/* Edit Rate Modal */}
       {showEditModal && currentRate && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-sm max-w-4xl w-full max-h-[90vh] overflow-y-auto border-t-7 border-[#007bff]">
+          <div className="bg-white rounded-lg shadow-sm max-w-4xl w-full max-h-[90vh] overflow-y-auto border-t-7 border-[#007bff] hide-scrollbar">
             <div className="p-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
                 <h3 className="text-lg font-semibold text-gray-900">Edit Rate</h3>
+                  <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-600">
+                    Draft
+                  </span>
+                </div>
                 <button
                   onClick={() => setShowEditModal(false)}
                   className="p-1 text-gray-400 hover:text-gray-600 rounded"
@@ -1149,64 +1120,31 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
 
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Rate Basis</label>
-                      <input 
-                        type="text" 
-                        name="rateBasis"
-                        value={currentRate.rateBasis}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Weight</label>
-                      <input 
-                        type="text" 
-                        name="weight"
-                        value={currentRate.weight}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Volume</label>
-                      <input 
-                        type="text" 
-                        name="volume"
-                        value={currentRate.volume}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Container Type</label>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Shipment Type</label>
                       <div className="relative">
                         <button
                           type="button"
-                          ref={editContainerTypeButtonRef}
-                          onClick={() => setShowEditContainerTypeDropdown((v) => !v)}
+                          ref={editShipmentTypeButtonRef}
+                          onClick={() => setShowEditShipmentTypeDropdown((v) => !v)}
                           className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                         >
-                          {containerTypeOptions.find(opt => opt.value === currentRate.containertype)?.label || 'Select container type'}
-                          <ChevronDown className={`w-4 h-4 transition-transform ${showEditContainerTypeDropdown ? 'rotate-180' : ''}`} />
+                          {shipmentTypeOptions.find(opt => opt.value === currentRate.shipmentType)?.label || 'Select shipment type'}
+                          <ChevronDown className={`w-4 h-4 transition-transform ${showEditShipmentTypeDropdown ? 'rotate-180' : ''}`} />
                         </button>
-                        {showEditContainerTypeDropdown && (
-                          <div ref={editContainerTypeDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
-                            {containerTypeOptions.map((option) => (
+                        {showEditShipmentTypeDropdown && (
+                          <div ref={editShipmentTypeDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                            {shipmentTypeOptions.map((option) => (
                               <button
                                 key={option.value}
                                 type="button"
                                 onClick={() => {
                                   setCurrentRate(prev => ({
                                     ...prev!,
-                                    containertype: option.value
+                                    shipmentType: option.value
                                   }));
-                                  setShowEditContainerTypeDropdown(false);
+                                  setShowEditShipmentTypeDropdown(false);
                                 }}
-                                className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${currentRate.containertype === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                                className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${currentRate.shipmentType === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
                               >
                                 {option.label}
                               </button>
@@ -1264,24 +1202,40 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                   <div className="grid grid-cols-3 gap-4">
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Base Rate ($)</label>
-                      <input 
-                        type="number" 
+                      <input
+                        type="number"
                         name="baseRate"
                         value={currentRate.baseRate}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                        placeholder="e.g. 2100"
+                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Transit Time</label>
-                      <input 
-                        type="text" 
-                        name="transitTime"
-                        value={currentRate.transitTime}
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Weight</label>
+                      <input
+                        type="text"
+                        name="weight"
+                        value={currentRate.weight}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                        placeholder="e.g. 120 kg"
+                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Volume</label>
+                      <input
+                        type="text"
+                        name="volume"
+                        value={currentRate.volume}
+                        onChange={handleInputChange}
+                        placeholder="e.g. 12 cbm"
+                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Incoterm</label>
                       <div className="relative">
@@ -1316,27 +1270,15 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                         )}
                       </div>
                     </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Valid From</label>
-                      <input 
-                        type="date" 
-                        name="validFrom"
-                        value={currentRate.validFrom}
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Transit Time</label>
+                      <input
+                        type="text"
+                        name="transitTime"
+                        value={currentRate.transitTime}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Valid To</label>
-                      <input 
-                        type="date" 
-                        name="validTo"
-                        value={currentRate.validTo}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                        placeholder="e.g. 18-22 days"
+                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                   </div>
@@ -1363,61 +1305,17 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                     ></textarea>
                   </div>
                   
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Provider</label>
-                    <input 
-                      type="text" 
-                      name="provider"
-                      value={currentRate.provider}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                    />
-                  </div>
 
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Status</label>
-                    <div className="relative">
+                </div>             
+                <div className="pt-4 border-t border-gray-200 flex justify-end gap-3">
                       <button
                         type="button"
-                        ref={editStatusButtonRef}
-                        onClick={() => setShowEditStatusDropdown((v) => !v)}
-                        className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                      >
-                        {statusOptions.find(opt => opt.value === currentRate.status)?.label || 'Select status'}
-                        <ChevronDown className={`w-4 h-4 transition-transform ${showEditStatusDropdown ? 'rotate-180' : ''}`} />
-                      </button>
-                      {showEditStatusDropdown && (
-                        <div ref={editStatusDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
-                          {statusOptions.map((option) => (
-                            <button
-                              key={option.value}
-                              type="button"
-                              onClick={() => {
-                                setCurrentRate(prev => ({
-                                  ...prev!,
-                                  status: option.value
-                                }));
-                                setShowEditStatusDropdown(false);
-                              }}
-                              className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${currentRate.status === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
-                            >
-                              {option.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>             
-                <div className="p-4 border-t border-gray-200 flex justify-end gap-3">
-                  <button
-                    type="button"
                     onClick={() => setShowEditModal(false)}
                     className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-200"
-                  >
+                      >
                     Cancel
-                  </button>
-                  <button 
+                      </button>
+                            <button
                     type="submit"
                     className="px-4 py-2 text-sm text-white bg-[#007bff] rounded-lg hover:bg-blue-700"
                   >
@@ -1429,7 +1327,156 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
           </div>
         </div>
       )}
+
+      {/* Quote Confirmation Modal */}
+      {showQuoteModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
+            <h2 className="text-lg text-gray-900 font-semibold mb-4">Post Rate</h2>
+            <div>
+              <div className="text-sm text-gray-700 mb-2">Are you sure you want to post this rate?</div>
+              {selectedRates.length === 1 && (() => {
+                const rate = rates.find(r => r.id === selectedRates[0]);
+                if (!rate) return null;
+                const key = `${rate.lane}|${rate.mode}|${rate.containertype}|${rate.carrier}`;
+                const isDuplicate = quoteKeys.includes(key);
+                return (
+                  <>
+                    <div className="mb-2">
+                      <div className="text-sm text-gray-900 font-medium">{rate.lane}</div>
+                      <div className="text-sm text-gray-700">{rate.mode} • {rate.containertype} • {rate.carrier}</div>
+                      <div className="text-sm text-gray-700">{rate.currency} {rate.price}</div>
+                      {isDuplicate && (
+                        <div className="text-sm text-red-600 mt-2">⚠️ This rate already exists in the quote table</div>
+                      )}
+                    </div>
+                    <div className="flex justify-end gap-2 mt-4">
+                      <button
+                        onClick={() => setShowQuoteModal(false)}
+                        className="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded hover:bg-gray-200"
+                      >
+                        Cancel
+                      </button>
+                      {!isDuplicate && (
+                        <button
+                          onClick={() => {
+                            addQuote({
+                              id: `QT-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`,
+                              lane: rate.lane,
+                              mode: rate.mode,
+                              containertype: rate.containertype,
+                              currency: rate.currency,
+                              baseRate: rate.baseRate,
+                              price: rate.price,
+                              transitTime: rate.transitTime,
+                              carrier: rate.carrier,
+                              validity: `Valid until ${rate.validTo}`,
+                              status: 'draft',
+                            });
+                            setQuoteSuccess(true);
+                            setTimeout(() => setQuoteSuccess(false), 2000);
+                            setShowQuoteModal(false);
+                            setSelectedRates([]);
+                          }}
+                          className="px-5 py-2 text-sm font-semibold text-white bg-[#007bff] rounded-lg hover:bg-blue-700 focus:outline-none"
+                        >
+                          Post Rate
+                        </button>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal after posting quote */}
+      {quoteSuccess && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-xs w-full p-6 flex flex-col items-center">
+            <div className="mb-4 flex items-center justify-center">
+              <span className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+              </span>
+            </div>
+            <div className="text-base font-semibold text-gray-800 mb-1 text-center">Your rate is posted in the quote table</div>
+          </div>
+        </div>
+      )}
+
+      {/* Remove Confirmation Modal */}
+      {showRemoveModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
+            <h2 className="text-lg font-semibold mb-4">Remove Rates</h2>
+            <div className="mb-4">
+              <div className="text-sm text-gray-700 mb-2">Are you sure you want to remove the following rates?</div>
+              <ul className="mb-2">
+                {selectedRates.map(id => {
+                  const rate = rates.find(r => r.id === id);
+                  if (!rate) return null;
+                  return (
+                    <li key={id} className="flex items-center gap-2 text-sm text-gray-900">{rate.lane}</li>
+                  );
+                })}
+              </ul>
+                </div>             
+            <div className="flex justify-end gap-2 mt-4">
+                  <button
+                onClick={() => setShowRemoveModal(false)}
+                className="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded hover:bg-gray-200"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                onClick={() => {
+                  selectedRates.forEach(id => deleteRate(id));
+                  setShowRemoveModal(false);
+                  setSelectedRates([]);
+                }}
+                className="px-5 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 focus:outline-none"
+              >
+                Remove
+                  </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  );
+};
+
+// Tooltip component using portal
+const Tooltip: React.FC<{ anchorEl: HTMLElement | null, children: React.ReactNode, visible: boolean }> = ({ anchorEl, children, visible }) => {
+  const [coords, setCoords] = React.useState<{ top: number; left: number }>({ top: 0, left: 0 });
+
+  React.useEffect(() => {
+    if (anchorEl && visible) {
+      const rect = anchorEl.getBoundingClientRect();
+      setCoords({
+        top: rect.bottom + window.scrollY + 8, // 8px below
+        left: rect.left + window.scrollX + rect.width / 2,
+      });
+    }
+  }, [anchorEl, visible]);
+
+  if (!visible || !anchorEl) return null;
+  return ReactDOM.createPortal(
+    <div
+      style={{
+        position: 'absolute',
+        top: coords.top,
+        left: coords.left,
+        transform: 'translateX(-50%)',
+        zIndex: 9999,
+      }}
+      className="w-56 p-2 bg-white border border-gray-200 rounded shadow-lg text-xs text-gray-700"
+    >
+      {children}
+    </div>,
+    document.body
   );
 };
 
@@ -1438,7 +1485,5 @@ export default RateTable;
 function setShowColumnDropdown(arg0: boolean) {
   throw new Error('Function not implemented.');
 }
-function setShowModeDropdown(arg0: boolean) {
-  throw new Error('Function not implemented.');
-}
+
 

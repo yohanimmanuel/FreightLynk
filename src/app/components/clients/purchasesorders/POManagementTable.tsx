@@ -656,7 +656,7 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
                     setSelectedPOs([]);
                     setShowBulkActions(false);
                   }}
-                  className="flex items-center gap-1 px-3 py-1 text-sm text-[#007bff] hover:text-blue-700"
+                  className="flex items-center gap-1 px-3 py-1 text-sm text-[#007bff] hover:text-red-700"
                 >
                   Clear All
                 </button>

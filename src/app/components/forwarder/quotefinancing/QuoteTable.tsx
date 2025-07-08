@@ -1,18 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Filter, Plus, Edit, Send, Eye, MoreVertical, Truck, Ship, Plane, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
-
-interface Quote {
-  id: string;
-  lane: string;
-  mode: 'ocean' | 'air' | 'truck';
-  price: string;
-  validity: string;
-  transitTime: string;
-  carrier: string;
-  status: 'sent' | 'draft' | 'requested' | 'expired';
-}
+import { Search, Filter, Plus, Edit, Send, Eye, MoreVertical, Truck, Ship, Plane, ChevronLeft, ChevronRight, ChevronDown, X } from 'lucide-react';
+import { useQuoteRateStore, Quote } from '../../../../store/quoterate';
 
 const QuotesPage = () => {
+  const { quotes, generateQuotesFromRates, deleteQuote } = useQuoteRateStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
@@ -21,6 +12,9 @@ const QuotesPage = () => {
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const statusButtonRef = useRef<HTMLButtonElement>(null);
   const itemsPerPage = 5;
+  const [selectedQuotes, setSelectedQuotes] = useState<string[]>([]);
+  const [showRemoveModal, setShowRemoveModal] = useState(false);
+  const [showSendModal, setShowSendModal] = useState(false);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -37,79 +31,11 @@ const QuotesPage = () => {
     };
   }, []);
 
-  // Simplified mock data with only essential customer-facing information
-  const quotes: Quote[] = [
-    {
-      id: 'QT-2025-001',
-      lane: 'Shanghai → Los Angeles',
-      mode: 'ocean',
-      price: '$2,100 - $2,800',
-      validity: 'Valid until Jul 31, 2024',
-      transitTime: '18-22 days',
-      carrier: 'COSCO Shipping',
-      status: 'sent'
-    },
-    {
-      id: 'QT-2025-002',
-      lane: 'Hamburg → Singapore',
-      mode: 'ocean',
-      price: '$1,650 - $2,200',
-      validity: 'Valid until Jun 30, 2024',
-      transitTime: '25-30 days',
-      carrier: 'Maersk Line',
-      status: 'sent'
-    },
-    {
-      id: 'QT-2025-003',
-      lane: 'Hong Kong → New York',
-      mode: 'air',
-      price: '$7,500 - $9,200',
-      validity: 'Valid until Jul 15, 2024',
-      transitTime: '2-3 days',
-      carrier: 'Cathay Pacific Cargo',
-      status: 'sent'
-    },
-    {
-      id: 'QT-2025-004',
-      lane: 'Long Beach → Tokyo',
-      mode: 'ocean',
-      price: '$1,890 - $2,450',
-      validity: 'Valid until Aug 15, 2024',
-      transitTime: '12-15 days',
-      carrier: 'ONE (Ocean Network Express)',
-      status: 'expired'
-    },
-    {
-      id: 'QT-2025-005',
-      lane: 'Singapore → Rotterdam',
-      mode: 'ocean',
-      price: '$1,950 - $2,300',
-      validity: 'Valid until Aug 31, 2024',
-      transitTime: '20-25 days',
-      carrier: 'MSC',
-      status: 'sent'
-    },
-    {
-      id: 'QT-2025-006',
-      lane: 'Tokyo → Sydney',
-      mode: 'air',
-      price: '$4,500 - $5,800',
-      validity: 'Valid until Jul 10, 2024',
-      transitTime: '1-2 days',
-      carrier: 'ANA Cargo',
-      status: 'expired'
-    },
-    {
-      id: 'QT-2025-007',
-      lane: 'Los Angeles → Chicago',
-      mode: 'truck',
-      price: '$1,200 - $1,500',
-      validity: 'Valid until Sep 30, 2024',
-      transitTime: '3-5 days',
-      carrier: 'J.B. Hunt',
-      status: 'sent'
+  useEffect(() => {
+    if (quotes.some(q => !q.price)) {
+      generateQuotesFromRates();
     }
-  ];
+  }, [quotes, generateQuotesFromRates]);
 
   const statusOptions = [
     { value: 'all', label: 'All Status' },
@@ -233,6 +159,20 @@ const QuotesPage = () => {
     );
   };
 
+  const handleView = () => {
+    // Implementation of handleView function
+  };
+
+  const canSend = selectedQuotes.length > 0 && selectedQuotes.every(id => quotes.find(q => q.id === id)?.status !== 'sent');
+
+  const handleRowClick = (id: string) => {
+    if (selectedQuotes.includes(id)) {
+      setSelectedQuotes(selectedQuotes.filter(qid => qid !== id));
+    } else {
+      setSelectedQuotes([...selectedQuotes, id]);
+    }
+  };
+
   return (
     <div className="bg-white">
       <div className="flex">
@@ -266,6 +206,51 @@ const QuotesPage = () => {
             </div>
           </div>
 
+          {/* Selected Quotes Bar */}
+          {selectedQuotes.length > 0 && (
+            <div className="p-3 mb-2 bg-white border border-blue-200 rounded-lg flex items-center justify-between">
+              <div className="flex items-center gap-2 flex-wrap">
+                {selectedQuotes.map((id) => {
+                  const quote = quotes.find(q => q.id === id);
+                  if (!quote) return null;
+                  return (
+                    <span key={id} className="flex items-center bg-blue-100 text-blue-800 text-sm font-medium px-3 py-2 rounded-full mr-2 mb-1">
+                      {quote.lane}
+                      <button
+                        onClick={e => {
+                          e.stopPropagation();
+                          setSelectedQuotes(selectedQuotes.filter(qid => qid !== id));
+                        }}
+                        className="ml-2 text-blue-400 hover:text-blue-700 focus:outline-none"
+                        title="Remove"
+                        style={{ lineHeight: 1 }}
+                      >
+                        <X className="w-4 h-4 text-gray-500 hover:text-gray-700" />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+              <div className="flex items-center gap-3">
+                {selectedQuotes.length === 1 && (
+                  <button
+                    onClick={handleView}
+                    className="px-4 py-2 text-sm font-medium text-[#007bff] bg-white hover:text-blue-700 focus:outline-none"
+                  >
+                    View
+                  </button>
+                )}
+                {/* Always show Remove button if any selected */}
+                <button
+                  onClick={() => setShowRemoveModal(true)}
+                  className="px-4 py-2 text-sm font-medium text-red-600 bg-white hover:text-red-700 focus:outline-none"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Quotes Table - Simplified for customers */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
@@ -273,20 +258,25 @@ const QuotesPage = () => {
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quote ID</th>
-                    <th className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Route</th>
-                    <th className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mode</th>
-                    <th className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                    <th className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Route/Lane</th>
+                    <th className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transport Mode</th>
+                    <th className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Container Type</th>
+                    <th className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Currency</th>
+                    <th className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price Range</th>
                     <th className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transit Time</th>
-                    <th className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valid Until</th>
                     <th className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Carrier</th>
+                    <th className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Validity</th>
                     <th className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {paginatedQuotes.length > 0 ? (
                     paginatedQuotes.map((quote) => (
-                      <tr key={quote.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setSelectedQuote(quote)}>
+                      <tr
+                        key={quote.id}
+                        onClick={() => handleRowClick(quote.id)}
+                        className={`hover:bg-gray-50 cursor-pointer ${selectedQuotes.includes(quote.id) ? 'bg-blue-50' : ''}`}
+                      >
                         <td className="px-4 py-4 whitespace-nowrap">
                           <div className="text-xs font-medium text-gray-900">{quote.id}</div>
                         </td>
@@ -300,37 +290,31 @@ const QuotesPage = () => {
                           </div>
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
+                          <div className="text-xs text-gray-900">{quote.containertype}</div>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <div className="text-xs text-gray-900">{quote.currency}</div>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
                           <div className="text-xs font-medium text-gray-900">{quote.price}</div>
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
                           <div className="text-xs text-gray-900">{quote.transitTime}</div>
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
-                          <div className="text-xs text-gray-900">{quote.validity}</div>
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
                           <div className="text-xs text-gray-900">{quote.carrier}</div>
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(quote.status)}`}>
-                            {quote.status.charAt(0).toUpperCase() + quote.status.slice(1)}
-                          </span>
+                          <div className="text-xs text-gray-900">{quote.validity}</div>
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <div className="flex items-center gap-2">
-                            <button className="text-gray-400 hover:text-blue-600 transition-colors" title="View">
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button className="text-gray-400 hover:text-blue-600 transition-colors" title="Accept">
-                              <Send className="w-4 h-4" />
-                            </button>
-                          </div>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(quote.status)}`}>{quote.status.charAt(0).toUpperCase() + quote.status.slice(1)}</span>
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={9} className="px-6 py-4 text-center text-sm text-gray-500">
+                      <td colSpan={10} className="px-6 py-4 text-center text-sm text-gray-500">
                         No quotes found matching your criteria
                       </td>
                     </tr>
@@ -344,6 +328,45 @@ const QuotesPage = () => {
           {filteredQuotes.length > 0 && renderPagination()}
         </div>
       </div>
+
+      {/* Remove Confirmation Modal */}
+      {showRemoveModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
+            <h2 className="text-lg text-gray-900 font-semibold mb-4">Remove Quotes</h2>
+            <div className="mb-4">
+              <div className="text-sm text-gray-700 mb-2">Are you sure you want to remove the following quotes?</div>
+              <ul className="mb-2">
+                {selectedQuotes.map(id => {
+                  const quote = quotes.find(q => q.id === id);
+                  if (!quote) return null;
+                  return (
+                    <li key={id} className="flex items-center gap-2 text-sm text-gray-900">{quote.lane}</li>
+                  );
+                })}
+              </ul>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                onClick={() => setShowRemoveModal(false)}
+                className="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  selectedQuotes.forEach(id => deleteQuote(id));
+                  setShowRemoveModal(false);
+                  setSelectedQuotes([]);
+                }}
+                className="px-5 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 focus:outline-none"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

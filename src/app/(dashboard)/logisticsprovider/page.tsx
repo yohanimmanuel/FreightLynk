@@ -3,7 +3,7 @@ import ProtectedRoute from '@/app/components/ProtectedRoute';
 import { UserRole } from '@/store/authStore';
 
 export default function LogisticsProviderDashboard() {
-  return (
+    return (
     <ProtectedRoute allowedRoles={[UserRole.LOGISTICS_PROVIDER]}>
       <div className="p-6">
         <h1 className="text-2xl font-bold mb-6">Logistics Provider Dashboard</h1>
