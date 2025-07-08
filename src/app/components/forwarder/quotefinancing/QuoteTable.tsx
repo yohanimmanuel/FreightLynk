@@ -159,10 +159,6 @@ const QuotesPage = () => {
     );
   };
 
-  const handleView = () => {
-    // Implementation of handleView function
-  };
-
   const canSend = selectedQuotes.length > 0 && selectedQuotes.every(id => quotes.find(q => q.id === id)?.status !== 'sent');
 
   const handleRowClick = (id: string) => {
@@ -215,7 +211,7 @@ const QuotesPage = () => {
                   if (!quote) return null;
                   return (
                     <span key={id} className="flex items-center bg-blue-100 text-blue-800 text-sm font-medium px-3 py-2 rounded-full mr-2 mb-1">
-                      {quote.lane}
+                      {quote.lane.toUpperCase()}
                       <button
                         onClick={e => {
                           e.stopPropagation();
@@ -232,21 +228,14 @@ const QuotesPage = () => {
                 })}
               </div>
               <div className="flex items-center gap-3">
-                {selectedQuotes.length === 1 && (
+                <div className="flex items-center gap-2">
                   <button
-                    onClick={handleView}
-                    className="px-4 py-2 text-sm font-medium text-[#007bff] bg-white hover:text-blue-700 focus:outline-none"
+                    onClick={() => setShowRemoveModal(true)}
+                    className="px-4 py-2 text-sm font-medium text-red-600 bg-white hover:text-red-700 focus:outline-none"
                   >
-                    View
+                    Remove
                   </button>
-                )}
-                {/* Always show Remove button if any selected */}
-                <button
-                  onClick={() => setShowRemoveModal(true)}
-                  className="px-4 py-2 text-sm font-medium text-red-600 bg-white hover:text-red-700 focus:outline-none"
-                >
-                  Remove
-                </button>
+                </div>
               </div>
             </div>
           )}
@@ -281,7 +270,7 @@ const QuotesPage = () => {
                           <div className="text-xs font-medium text-gray-900">{quote.id}</div>
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
-                          <div className="text-xs text-gray-900">{quote.lane}</div>
+                          <div className="text-xs text-gray-900 uppercase">{quote.lane}</div>
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">
@@ -341,7 +330,7 @@ const QuotesPage = () => {
                   const quote = quotes.find(q => q.id === id);
                   if (!quote) return null;
                   return (
-                    <li key={id} className="flex items-center gap-2 text-sm text-gray-900">{quote.lane}</li>
+                    <li key={id} className="flex items-center gap-2 text-sm text-gray-900 uppercase">{quote.lane}</li>
                   );
                 })}
               </ul>

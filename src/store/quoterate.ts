@@ -23,6 +23,12 @@ export interface Rate {
   validTo: string;
   notes: string;
   status: string;
+  weightMin?: string;
+  weightMax?: string;
+  volumeMin?: string;
+  volumeMax?: string;
+  readOnly?: boolean;
+  ratePerCbmKg?: string;
 }
 
 // Quote interface (simplified version of Rate)
@@ -62,7 +68,12 @@ const mockRates: Rate[] = [
     validFrom: '2024-06-01',
     validTo: '2024-07-31',
     notes: 'Peak season surcharge may apply',
-    status: 'draft'
+    status: 'draft',
+    weightMin: '',
+    weightMax: '',
+    volumeMin: '',
+    volumeMax: '',
+    readOnly: false
   },
   {
     id: 2,
@@ -84,7 +95,12 @@ const mockRates: Rate[] = [
     validFrom: '2024-05-15',
     validTo: '2024-06-30',
     notes: 'Express service available',
-    status: 'draft'
+    status: 'draft',
+    weightMin: '',
+    weightMax: '',
+    volumeMin: '',
+    volumeMax: '',
+    readOnly: false
   },
   {
     id: 3,
@@ -106,7 +122,12 @@ const mockRates: Rate[] = [
     validFrom: '2024-06-01',
     validTo: '2024-07-15',
     notes: 'Temperature controlled available',
-    status: 'draft'
+    status: 'draft',
+    weightMin: '',
+    weightMax: '',
+    volumeMin: '',
+    volumeMax: '',
+    readOnly: false
   },
 ];
 

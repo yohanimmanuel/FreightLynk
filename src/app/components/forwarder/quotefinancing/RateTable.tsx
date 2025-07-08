@@ -8,6 +8,22 @@ interface RateTableProps {
   onViewAll?: () => void;
 }
 
+// Place this at the top of the RateTable component, after other consts but before any JSX:
+const getShipmentTypeOptions = (mode: string) => {
+  if (mode === 'road') return [
+    { value: 'FTL', label: 'FTL' },
+    { value: 'LTL', label: 'LTL' },
+  ];
+  if (mode === 'air') return [
+    { value: 'LCL', label: 'LCL' },
+  ];
+  // Default to ocean
+  return [
+    { value: 'FCL', label: 'FCL' },
+    { value: 'LCL', label: 'LCL' },
+  ];
+};
+
 const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () => {} }) => {  
   const { rates, setRates, addRate, updateRate, deleteRate, addQuote } = useQuoteRateStore();
   const [isExpanded, setIsExpanded] = useState(true);
@@ -62,7 +78,14 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
     surcharges: '',
     notes: '',
     validFrom: '',
-    validTo: ''
+    validTo: '',
+    weightMin: '',
+    weightMax: '',
+    volumeMin: '',
+    volumeMax: '',
+    ratePerCbmKg: '',
+    minimumCharge: '',
+    containertype: '',
   });
 
   const [surchargeTooltipAnchor, setSurchargeTooltipAnchor] = useState<HTMLElement | null>(null);
@@ -70,7 +93,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
   const transportModeOptions = [
     { value: 'ocean', label: 'Ocean' },
     { value: 'air', label: 'Air' },
-    { value: 'truck', label: 'Truck' },
+    { value: 'road', label: 'Road' },
   ];
   const containerTypeOptions = [
     { value: '20ft', label: '20ft' },
@@ -249,21 +272,6 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
 
   const totalPages = Math.ceil(filteredRates.length / itemsPerPage);
 
-  const handleSelectRate = (rateId: number) => {
-    setSelectedRates(prev => 
-      prev.includes(rateId) 
-        ? prev.filter(id => id !== rateId)
-        : [...prev, rateId]
-    );
-  };
-
-  const handleSelectAll = () => {
-    if (selectedRates.length === paginatedRates.length && paginatedRates.length > 0) {
-      setSelectedRates([]);
-    } else {
-      setSelectedRates(paginatedRates.map(rate => rate.id));
-    }
-  };
 
   const handleEditRate = (rate: Rate) => {
     setCurrentRate(rate);
@@ -277,12 +285,6 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
     updateRate(currentRate);
     setShowEditModal(false);
     setCurrentRate(null);
-  };
-
-  const handleRemoveRate = (rateId: number) => {
-    if (window.confirm('Are you sure you want to remove this rate?')) {
-      deleteRate(rateId);
-    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -327,7 +329,11 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
       validFrom: addFormData.validFrom,
       validTo: addFormData.validTo,
       notes: addFormData.notes,
-      status: 'draft'
+      status: 'draft',
+      weightMin: addFormData.weightMin,
+      weightMax: addFormData.weightMax,
+      volumeMin: addFormData.volumeMin,
+      volumeMax: addFormData.volumeMax,
     };
 
     addRate(newRate);
@@ -347,7 +353,14 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
       surcharges: '',
       notes: '',
       validFrom: '',
-      validTo: ''
+      validTo: '',
+      weightMin: '',
+      weightMax: '',
+      volumeMin: '',
+      volumeMax: '',
+      ratePerCbmKg: '',
+      minimumCharge: '',
+      containertype: '',
     });
   };
 
@@ -432,7 +445,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                       <span className="text-sm font-semibold text-gray-900 capitalize">{rate.carrier}</span>
                     </div>
                   </div>
-                  <div className="text-sm text-gray-600 mb-1">{rate.lane}</div>
+                  <div className="text-sm text-gray-600 mb-1 uppercase">{rate.lane}</div>
                   <div className="text-sm font-semibold text-gray-900 mb-2">{rate.price}</div>
                   <div className="text-xs text-gray-500">
                     Validity date: {rate.validFrom} - {rate.validTo}
@@ -659,7 +672,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                         }}
                       >
                         {columnVisibility.id && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{rate.id}</td>}
-                        {columnVisibility.lane && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{rate.lane}</td>}
+                        {columnVisibility.lane && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900 uppercase">{rate.lane}</td>}
                         {columnVisibility.mode && (
                           <td className="px-4 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-2">
@@ -668,17 +681,23 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                             </div>
                           </td>
                         )}
-                        {columnVisibility.shipmentType && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{rate.shipmentType}</td>}
-                        {columnVisibility.weight && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{rate.weight}</td>}
-                        {columnVisibility.volume && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{rate.volume}</td>}
-                        {columnVisibility.containertype && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{rate.containertype}</td>}
+                        {columnVisibility.shipmentType && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900 uppercase">{rate.shipmentType}</td>}
+                        {columnVisibility.weight && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{rate.weightMin && rate.weightMax ? `${rate.weightMin} kg - ${rate.weightMax} kg` : rate.weightMin ? `${rate.weightMin} kg` : rate.weightMax ? `${rate.weightMax} kg` : rate.weight}</td>}
+                        {columnVisibility.volume && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{rate.volumeMin && rate.volumeMax ? `${rate.volumeMin} cbm - ${rate.volumeMax} cbm` : rate.volumeMin ? `${rate.volumeMin} cbm` : rate.volumeMax ? `${rate.volumeMax} cbm` : rate.volume}</td>}
+                        {columnVisibility.containertype && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900 uppercase">{rate.containertype}</td>}
                         {columnVisibility.currency && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{rate.currency}</td>}
                         {columnVisibility.price && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{rate.price}</td>}
-                        {columnVisibility.baseRate && <td className="px-4 py-4 whitespace-nowrap text-xs font-semibold text-gray-900">${rate.baseRate.toLocaleString()}</td>}
-                        {columnVisibility.originCity && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{rate.originCity}</td>}
-                        {columnVisibility.destinationCity && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{rate.destinationCity}</td>}
+                        {columnVisibility.baseRate && (
+                          <td className="px-4 py-4 whitespace-nowrap text-xs font-semibold text-gray-900">
+                            {((rate.shipmentType === 'LCL') || (rate.shipmentType === 'LTL') || (rate.mode === 'air'))
+                              ? (rate.ratePerCbmKg || '-')
+                              : (rate.baseRate ? `$${rate.baseRate.toLocaleString()}` : '-')}
+                          </td>
+                        )}
+                        {columnVisibility.originCity && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900 uppercase">{rate.originCity}</td>}
+                        {columnVisibility.destinationCity && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900 uppercase">{rate.destinationCity}</td>}
                         {columnVisibility.transitTime && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">{rate.transitTime}</td>}
-                        {columnVisibility.carrier && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{rate.carrier}</td>}
+                        {columnVisibility.carrier && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900 uppercase">{rate.carrier}</td>}
                         {columnVisibility.surcharges && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{rate.surcharges}</td>}                    
                         {columnVisibility.incoterm && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">{rate.incoterm}</td>}
                         {columnVisibility.validFrom && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">{rate.validFrom}</td>}
@@ -731,32 +750,20 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
             </div>
             <div className="p-4">
               <form onSubmit={handleAddRate}>
-              <div className="space-y-2">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-6">
+                {/* Location & Transport Details */}
+                <div>
+                  <div className="mb-2 text-xs font-semibold text-gray-900 uppercase tracking-wide">Location & Transport Details</div>
+                  <div className="grid grid-cols-2 gap-4 mb-2">
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">Origin City</label>
-                      <input 
-                        type="text" 
-                        name="originCity"
-                        value={addFormData.originCity}
-                        onChange={handleAddFormChange}
-                        placeholder="e.g. Shanghai, China"
-                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                      />
+                      <input type="text" name="originCity" value={addFormData.originCity} onChange={handleAddFormChange} placeholder="e.g. Shanghai, China" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">Destination City</label>
-                      <input 
-                        type="text" 
-                        name="destinationCity"
-                        value={addFormData.destinationCity}
-                        onChange={handleAddFormChange}
-                        placeholder="e.g. New York, USA"
-                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                      />
+                      <input type="text" name="destinationCity" value={addFormData.destinationCity} onChange={handleAddFormChange} placeholder="e.g. New York, USA" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                   </div>
                 </div>
-                
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">Transport Mode</label>
@@ -791,223 +798,225 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">Carrier</label>
-                      <input 
-                        type="text" 
-                        name="carrier"
-                        value={addFormData.carrier}
-                        onChange={handleAddFormChange}
-                        placeholder="e.g. Maersk Line"
-                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                      />
+                      <input type="text" name="carrier" value={addFormData.carrier} onChange={handleAddFormChange} placeholder="e.g. Maersk Line" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                   </div>
                 </div>
-
-                <div className="grid grid-cols-3 gap-4">
+                  </div>
+                <div className="border-t border-gray-200"></div>
+                {/* Cargo & Shipping Details */}
+                  <div>
+                  <div className="-mt-2 mb-2 text-xs font-semibold text-gray-900 uppercase tracking-wide">Cargo & Shipping Details</div>
+                  <div className="grid grid-cols-2 gap-4 mb-2">
                   <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Shipment Type</label>
-                    <div className="relative">
-                      <button
-                        type="button"
+                      <div className="relative">
+                        <button
+                          type="button"
                           ref={addShipmentTypeButtonRef}
-                          onClick={() => setShowAddShipmentTypeDropdown((v) => !v)}
-                        className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                      >
-                          {shipmentTypeOptions.find(opt => opt.value === addShipmentType)?.label || 'Select shipment type'}
+                          onClick={() => {
+                            if (getShipmentTypeOptions(addTransportMode).length > 1) setShowAddShipmentTypeDropdown((v) => !v);
+                          }}
+                          className={`flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${getShipmentTypeOptions(addTransportMode).length === 1 ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                          disabled={getShipmentTypeOptions(addTransportMode).length === 1}
+                        >
+                          {(addTransportMode === 'air')
+                            ? 'LCL'
+                            : (getShipmentTypeOptions(addTransportMode).find(opt => opt.value === addShipmentType)?.label || 'Select shipment type')}
                           <ChevronDown className={`w-4 h-4 transition-transform ${showAddShipmentTypeDropdown ? 'rotate-180' : ''}`} />
-                      </button>
-                        {showAddShipmentTypeDropdown && (
+                        </button>
+                        {showAddShipmentTypeDropdown && getShipmentTypeOptions(addTransportMode).length > 1 && (
                           <div ref={addShipmentTypeDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
-                            {shipmentTypeOptions.map((option) => (
-                            <button
-                              key={option.value}
-                              type="button"
-                              onClick={() => {
+                            {getShipmentTypeOptions(addTransportMode).map((option) => (
+                              <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => {
                                   setAddShipmentType(option.value);
                                   setShowAddShipmentTypeDropdown(false);
-                              }}
+                                }}
                                 className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${addShipmentType === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
-                            >
-                              {option.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
+                              >
+                                {option.label}
+                              </button>
+                            ))}
+                  </div>
+                        )}
+                </div>
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Currency</label>
-                    <div className="relative">
-                      <button
-                        type="button"
-                        ref={addCurrencyButtonRef}
-                        onClick={() => setShowAddCurrencyDropdown((v) => !v)}
-                        className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                      >
-                        {currencyOptions.find(opt => opt.value === addCurrency)?.label || 'Select currency'}
-                        <ChevronDown className={`w-4 h-4 transition-transform ${showAddCurrencyDropdown ? 'rotate-180' : ''}`} />
-                      </button>
-                      {showAddCurrencyDropdown && (
-                        <div ref={addCurrencyDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
-                          {currencyOptions.map((option) => (
-                            <button
-                              key={option.value}
-                              type="button"
-                              onClick={() => {
-                                setAddCurrency(option.value);
-                                setShowAddCurrencyDropdown(false);
-                              }}
-                              className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${addCurrency === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
-                            >
-                              {option.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Price Range</label>
-                      <input 
-                        type="text" 
-                        name="price"
-                        value={addFormData.price}
-                        onChange={handleAddFormChange}
-                        placeholder="e.g. $2,100 - $2,800"
-                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                      />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Base Rate ($)</label>
-                    <input
-                      type="number"
-                      name="baseRate"
-                      value={addFormData.baseRate}
-                      onChange={handleAddFormChange}
-                      placeholder="e.g. 2100"
-                      className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Weight</label>
-                    <input
-                      type="text"
-                      name="weight"
-                      value={addFormData.weight}
-                      onChange={handleAddFormChange}
-                      placeholder="e.g. 120 kg"
-                      className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Volume</label>
-                    <input
-                      type="text"
-                      name="volume"
-                      value={addFormData.volume}
-                      onChange={handleAddFormChange}
-                      placeholder="e.g. 12 cbm"
-                      className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Incoterm</label>
-                    <div className="relative">
-                      <button
-                        type="button"
-                        ref={addIncotermButtonRef}
-                        onClick={() => setShowAddIncotermDropdown((v) => !v)}
-                        className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                      >
-                        {incotermOptions.find(opt => opt.value === addIncoterm)?.label || 'Select incoterm'}
-                        <ChevronDown className={`w-4 h-4 transition-transform ${showAddIncotermDropdown ? 'rotate-180' : ''}`} />
-                      </button>
-                      {showAddIncotermDropdown && (
-                        <div ref={addIncotermDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
-                          {incotermOptions.map((option) => (
-                            <button
-                              key={option.value}
-                              type="button"
-                              onClick={() => {
-                                setAddIncoterm(option.value);
-                                setShowAddIncotermDropdown(false);
-                              }}
-                              className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${addIncoterm === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
-                            >
-                              {option.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Transit Time</label>
-                    <input
-                      type="text"
-                      name="transitTime"
-                      value={addFormData.transitTime}
-                      onChange={handleAddFormChange}
-                      placeholder="e.g. 18-22 days"
-                      className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">
-                    Surcharges
-                    <span
-                      className="relative"
-                      onMouseEnter={e => setSurchargeTooltipAnchor(e.currentTarget as HTMLElement)}
-                      onMouseLeave={() => setSurchargeTooltipAnchor(null)}
-                      tabIndex={0}
-                      onFocus={e => setSurchargeTooltipAnchor(e.currentTarget as HTMLElement)}
-                      onBlur={() => setSurchargeTooltipAnchor(null)}
-                      style={{ outline: 'none' }}
-                    >
-                      <svg className="w-3 h-3 text-gray-400 cursor-pointer" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                      <Tooltip anchorEl={surchargeTooltipAnchor} visible={!!surchargeTooltipAnchor}>
-                        <strong>Common Surcharges:</strong><br/>
-                        BAF: Bunker Adjustment Factor<br/>
-                        CAF: Currency Adjustment Factor<br/>
-                        THC: Terminal Handling Charge<br/>
-                        DOC: Documentation Fee<br/>
-                        SSC: Security Surcharge<br/>
-                        FSC: Fuel Surcharge
-                      </Tooltip>
-                    </span>
-                  </label>
-                    <textarea 
-                      name="surcharges"
-                      value={addFormData.surcharges}
-                      onChange={handleAddFormChange}
-                      placeholder="e.g. BAF: $150, CAF: $200"
-                      className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                      rows={2}
-                    ></textarea>
-                </div>
-                
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Notes</label>
-                    <textarea 
-                      name="notes"
-                      value={addFormData.notes}
-                      onChange={handleAddFormChange}
-                      placeholder="e.g. Peak season surcharge may apply"
-                      className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                      rows={3}
-                    ></textarea>
-                </div>
-                
-
+                  {/* LCL/LTL fields */}
+                  {((addShipmentType === 'LCL') || (addShipmentType === 'LTL') || (addTransportMode === 'air')) ? (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Rate Per CBM / KG</label>
+                        <input type="text" name="ratePerCbmKg" value={addFormData.ratePerCbmKg || ''} onChange={handleAddFormChange} placeholder="e.g. $20 per CBM or $3.5/kg" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                       </div>
-                <div className="pt-4 border-t border-gray-200 flex justify-end gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Currency</label>
+                        <div className="relative">
+                          <button
+                            type="button"
+                            ref={addCurrencyButtonRef}
+                            onClick={() => setShowAddCurrencyDropdown((v) => !v)}
+                            className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                          >
+                            {currencyOptions.find(opt => opt.value === addCurrency)?.label || 'Select currency'}
+                            <ChevronDown className={`w-4 h-4 transition-transform ${showAddCurrencyDropdown ? 'rotate-180' : ''}`} />
+                          </button>
+                          {showAddCurrencyDropdown && (
+                            <div ref={addCurrencyDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                              {currencyOptions.map((option) => (
+                                <button
+                                  key={option.value}
+                                  type="button"
+                                  onClick={() => {
+                                    setAddCurrency(option.value);
+                                    setShowAddCurrencyDropdown(false);
+                                  }}
+                                  className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${addCurrency === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                                >
+                                  {option.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Weight Range (kg)</label>
+                        <div className="flex gap-2">
+                          <input type="number" name="weightMin" value={addFormData.weightMin || ''} onChange={handleAddFormChange} placeholder="Min" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                          <input type="number" name="weightMax" value={addFormData.weightMax || ''} onChange={handleAddFormChange} placeholder="Max" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Volume Range (cbm)</label>
+                        <div className="flex gap-2">
+                          <input type="number" name="volumeMin" value={addFormData.volumeMin || ''} onChange={handleAddFormChange} placeholder="Min" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                          <input type="number" name="volumeMax" value={addFormData.volumeMax || ''} onChange={handleAddFormChange} placeholder="Max" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                        </div>
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Price Range</label>
+                        <input type="text" name="price" value={addFormData.price} onChange={handleAddFormChange} placeholder="e.g. $2,100 - $2,800" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                      </div>
+                    </div>
+                  ) : ((addShipmentType === 'FCL') || (addShipmentType === 'FTL') || (addTransportMode === 'truck')) && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Truck Type</label>
+                        <input type="text" name="containertype" value={addFormData.containertype} onChange={handleAddFormChange} placeholder="e.g. 6-Wheel, 10-Wheel, Wingbox, etc." className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Base Rate</label>
+                        <input type="number" name="baseRate" value={addFormData.baseRate} onChange={handleAddFormChange} placeholder={addTransportMode === 'road' ? 'e.g. 1500' : 'e.g. 2000'} className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Price Range</label>
+                        <input type="text" name="price" value={addFormData.price} onChange={handleAddFormChange} placeholder="e.g. $2,100 - $2,800" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Currency</label>
+                        <div className="relative">
+                          <button
+                            type="button"
+                            ref={addCurrencyButtonRef}
+                            onClick={() => setShowAddCurrencyDropdown((v) => !v)}
+                            className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                          >
+                            {currencyOptions.find(opt => opt.value === addCurrency)?.label || 'Select currency'}
+                            <ChevronDown className={`w-4 h-4 transition-transform ${showAddCurrencyDropdown ? 'rotate-180' : ''}`} />
+                          </button>
+                          {showAddCurrencyDropdown && (
+                            <div ref={addCurrencyDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                              {currencyOptions.map((option) => (
+                                <button
+                                  key={option.value}
+                                  type="button"
+                                  onClick={() => {
+                                    setAddCurrency(option.value);
+                                    setShowAddCurrencyDropdown(false);
+                                  }}
+                                  className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${addCurrency === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                                >
+                                  {option.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Max Weight</label>
+                        <input type="text" name="weight" value={addFormData.weight} onChange={handleAddFormChange} placeholder="e.g. 26000 kg" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Max Volume</label>
+                        <input type="text" name="volume" value={addFormData.volume} onChange={handleAddFormChange} placeholder="e.g. 67 cbm" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="border-t border-gray-200"></div>
+                {/* Additional Requirements */}
+                <div>
+                  <div className="-mt-2 mb-2 text-xs font-semibold text-gray-900 uppercase tracking-wide">Additional Requirements</div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Incoterm</label>
+                  <div className="relative">
+                    <button
+                      type="button"
+                          ref={addIncotermButtonRef}
+                          onClick={() => setShowAddIncotermDropdown((v) => !v)}
+                      className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    >
+                          {incotermOptions.find(opt => opt.value === addIncoterm)?.label || 'Select incoterm'}
+                          <ChevronDown className={`w-4 h-4 transition-transform ${showAddIncotermDropdown ? 'rotate-180' : ''}`} />
+                    </button>
+                        {showAddIncotermDropdown && (
+                          <div ref={addIncotermDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                            {incotermOptions.map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => {
+                                  setAddIncoterm(option.value);
+                                  setShowAddIncotermDropdown(false);
+                            }}
+                                className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${addIncoterm === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Transit Time</label>
+                      <input type="text" name="transitTime" value={addFormData.transitTime} onChange={handleAddFormChange} placeholder="e.g. 18-22 days" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+              </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Valid From</label>
+                      <input type="date" name="validFrom" value={addFormData.validFrom} onChange={handleAddFormChange} className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+            </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Valid Until</label>
+                      <input type="date" name="validTo" value={addFormData.validTo} onChange={handleAddFormChange} className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">Surcharges {/* Tooltip as before */}</label>
+                      <textarea name="surcharges" value={addFormData.surcharges} onChange={handleAddFormChange} placeholder="e.g. BAF: $150, CAF: $200" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows={2}></textarea>
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Notes</label>
+                      <textarea name="notes" value={addFormData.notes} onChange={handleAddFormChange} placeholder="e.g. Peak season surcharge may apply" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows={3}></textarea>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="pt-4 border-t border-gray-200 flex justify-end gap-3">
               <button
                     type="button"
                 onClick={() => setShowAddModal(false)}
@@ -1047,30 +1056,20 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
             </div>
             <div className="p-4">
               <form onSubmit={handleSaveRate}>
-                <div className="space-y-2">
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-6">
+                  {/* Location & Transport Details */}
+                  <div>
+                    <div className="mb-2 text-xs font-semibold text-gray-900 uppercase tracking-wide">Location & Transport Details</div>
+                    <div className="grid grid-cols-2 gap-4 mb-2">
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Origin City</label>
-                      <input 
-                        type="text" 
-                        name="originCity"
-                        value={currentRate.originCity}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                      />
+                        <input type="text" name="originCity" value={currentRate.originCity} onChange={handleInputChange} placeholder="e.g. Shanghai, China" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Destination City</label>
-                      <input 
-                        type="text" 
-                        name="destinationCity"
-                        value={currentRate.destinationCity}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                      />
+                        <input type="text" name="destinationCity" value={currentRate.destinationCity} onChange={handleInputChange} placeholder="e.g. New York, USA" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                     </div>
                   </div>
-                  
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Transport Mode</label>
@@ -1108,214 +1107,327 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Carrier</label>
-                      <input 
-                        type="text" 
-                        name="carrier"
-                        value={currentRate.carrier}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                      />
+                        <input type="text" name="carrier" value={currentRate.carrier} onChange={handleInputChange} placeholder="e.g. Maersk Line" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                     </div>
                   </div>
-
-                  <div className="grid grid-cols-3 gap-4">
+                    </div>
+                  <div className="border-t border-gray-200"></div>
+                  {/* Cargo & Shipping Details */}
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Shipment Type</label>
-                      <div className="relative">
-                        <button
-                          type="button"
-                          ref={editShipmentTypeButtonRef}
-                          onClick={() => setShowEditShipmentTypeDropdown((v) => !v)}
-                          className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                        >
-                          {shipmentTypeOptions.find(opt => opt.value === currentRate.shipmentType)?.label || 'Select shipment type'}
-                          <ChevronDown className={`w-4 h-4 transition-transform ${showEditShipmentTypeDropdown ? 'rotate-180' : ''}`} />
-                        </button>
-                        {showEditShipmentTypeDropdown && (
-                          <div ref={editShipmentTypeDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
-                            {shipmentTypeOptions.map((option) => (
-                              <button
-                                key={option.value}
-                                type="button"
-                                onClick={() => {
-                                  setCurrentRate(prev => ({
-                                    ...prev!,
-                                    shipmentType: option.value
-                                  }));
-                                  setShowEditShipmentTypeDropdown(false);
-                                }}
-                                className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${currentRate.shipmentType === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
-                              >
-                                {option.label}
-                              </button>
-                            ))}
-                          </div>
-                        )}
+                    <div className="-mt-2 mb-2 text-xs font-semibold text-gray-900 uppercase tracking-wide">Cargo & Shipping Details</div>
+                    <div className="grid grid-cols-2 gap-4 mb-2">
+                    <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Shipment Type</label>
+                        <div className="relative">
+                          <button
+                            type="button"
+                            ref={editShipmentTypeButtonRef}
+                            onClick={() => {
+                              if (getShipmentTypeOptions(currentRate.mode).length > 1) setShowEditShipmentTypeDropdown((v) => !v);
+                            }}
+                            className={`flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${getShipmentTypeOptions(currentRate.mode).length === 1 ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                            disabled={getShipmentTypeOptions(currentRate.mode).length === 1}
+                          >
+                            {(currentRate.mode === 'air')
+                              ? 'LCL'
+                              : (getShipmentTypeOptions(currentRate.mode).find(opt => opt.value === currentRate.shipmentType)?.label || 'Select shipment type')}
+                            <ChevronDown className={`w-4 h-4 transition-transform ${showEditShipmentTypeDropdown ? 'rotate-180' : ''}`} />
+                          </button>
+                          {showEditShipmentTypeDropdown && getShipmentTypeOptions(currentRate.mode).length > 1 && (
+                            <div ref={editShipmentTypeDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                              {getShipmentTypeOptions(currentRate.mode).map((option) => (
+                                <button
+                                  key={option.value}
+                                  type="button"
+                                  onClick={() => {
+                                    setCurrentRate(prev => ({
+                                      ...prev!,
+                                      shipmentType: option.value
+                                    }));
+                                    setShowEditShipmentTypeDropdown(false);
+                                  }}
+                                  className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${currentRate.shipmentType === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                                >
+                                  {option.label}
+                                </button>
+                              ))}
+                    </div>
+                          )}
+                  </div>
                       </div>
                     </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Currency</label>
-                      <div className="relative">
-                        <button
-                          type="button"
-                          ref={editCurrencyButtonRef}
-                          onClick={() => setShowEditCurrencyDropdown((v) => !v)}
-                          className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                        >
-                          {currencyOptions.find(opt => opt.value === currentRate.currency)?.label || 'Select currency'}
-                          <ChevronDown className={`w-4 h-4 transition-transform ${showEditCurrencyDropdown ? 'rotate-180' : ''}`} />
-                        </button>
-                        {showEditCurrencyDropdown && (
-                          <div ref={editCurrencyDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
-                            {currencyOptions.map((option) => (
-                              <button
-                                key={option.value}
-                                type="button"
-                                onClick={() => {
-                                  setCurrentRate(prev => ({
-                                    ...prev!,
-                                    currency: option.value
-                                  }));
-                                  setShowEditCurrencyDropdown(false);
-                                }}
-                                className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${currentRate.currency === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
-                              >
-                                {option.label}
-                              </button>
-                            ))}
+                    {/* FCL/FTL fields */}
+                    {((currentRate?.shipmentType === 'FCL') || (currentRate?.shipmentType === 'FTL')) && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Container/Truck Type</label>
+                          <div className="relative">
+                            <button
+                              type="button"
+                              ref={editContainerTypeButtonRef}
+                              onClick={() => setShowEditContainerTypeDropdown((v) => !v)}
+                              className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                            >
+                              {containerTypeOptions.find(opt => opt.value === currentRate.containertype)?.label || 'Select container type'}
+                              <ChevronDown className={`w-4 h-4 transition-transform ${showEditContainerTypeDropdown ? 'rotate-180' : ''}`} />
+                            </button>
+                            {showEditContainerTypeDropdown && (
+                              <div ref={editContainerTypeDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                                {containerTypeOptions.map((option) => (
+                                  <button
+                                    key={option.value}
+                                    type="button"
+                                    onClick={() => {
+                                          setCurrentRate(prev => ({ ...prev!, containertype: option.value }));
+                                      setShowEditContainerTypeDropdown(false);
+                                    }}
+                                    className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${currentRate.containertype === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                                  >
+                                    {option.label}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Price Range</label>
-                      <input 
-                        type="text" 
-                        name="price"
-                        value={currentRate.price}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Base Rate ($)</label>
-                      <input
-                        type="number"
-                        name="baseRate"
-                        value={currentRate.baseRate}
-                        onChange={handleInputChange}
-                        placeholder="e.g. 2100"
-                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Weight</label>
-                      <input
-                        type="text"
-                        name="weight"
-                        value={currentRate.weight}
-                        onChange={handleInputChange}
-                        placeholder="e.g. 120 kg"
-                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Volume</label>
-                      <input
-                        type="text"
-                        name="volume"
-                        value={currentRate.volume}
-                        onChange={handleInputChange}
-                        placeholder="e.g. 12 cbm"
-                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Incoterm</label>
-                      <div className="relative">
-                        <button
-                          type="button"
-                          ref={editIncotermButtonRef}
-                          onClick={() => setShowEditIncotermDropdown((v) => !v)}
-                          className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                        >
-                          {incotermOptions.find(opt => opt.value === currentRate.incoterm)?.label || 'Select incoterm'}
-                          <ChevronDown className={`w-4 h-4 transition-transform ${showEditIncotermDropdown ? 'rotate-180' : ''}`} />
-                        </button>
-                        {showEditIncotermDropdown && (
-                          <div ref={editIncotermDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
-                            {incotermOptions.map((option) => (
-                              <button
-                                key={option.value}
-                                type="button"
-                                onClick={() => {
-                                  setCurrentRate(prev => ({
-                                    ...prev!,
-                                    incoterm: option.value
-                                  }));
-                                  setShowEditIncotermDropdown(false);
-                                }}
-                                className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${currentRate.incoterm === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
-                              >
-                                {option.label}
-                              </button>
-                            ))}
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Base Rate</label>
+                          <input type="number" name="baseRate" value={currentRate.baseRate} onChange={handleInputChange} placeholder={currentRate.mode === 'truck' ? 'e.g. 1500' : 'e.g. 2000'} className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Price Range</label>
+                          <input type="text" name="price" value={currentRate.price} onChange={handleInputChange} placeholder="e.g. $2,100 - $2,800" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Currency</label>
+                          <div className="relative">
+                            <button
+                              type="button"
+                              ref={editCurrencyButtonRef}
+                              onClick={() => setShowEditCurrencyDropdown((v) => !v)}
+                              className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                            >
+                              {currencyOptions.find(opt => opt.value === currentRate.currency)?.label || 'Select currency'}
+                              <ChevronDown className={`w-4 h-4 transition-transform ${showEditCurrencyDropdown ? 'rotate-180' : ''}`} />
+                            </button>
+                            {showEditCurrencyDropdown && (
+                              <div ref={editCurrencyDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                                {currencyOptions.map((option) => (
+                                  <button
+                                    key={option.value}
+                                    type="button"
+                                    onClick={() => {
+                                      setCurrentRate(prev => ({
+                                        ...prev!,
+                                        currency: option.value
+                                      }));
+                                      setShowEditCurrencyDropdown(false);
+                                    }}
+                                    className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${currentRate.currency === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                                  >
+                                    {option.label}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                        )}
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Max Weight</label>
+                          <input type="text" name="weight" value={currentRate.weight} onChange={handleInputChange} placeholder="e.g. 26000 kg" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Max Volume</label>
+                          <input type="text" name="volume" value={currentRate.volume} onChange={handleInputChange} placeholder="e.g. 67 cbm" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Transit Time</label>
-                      <input
-                        type="text"
-                        name="transitTime"
-                        value={currentRate.transitTime}
-                        onChange={handleInputChange}
-                        placeholder="e.g. 18-22 days"
-                        className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
+                    )}
+                    {/* LCL/LTL fields */}
+                    {((currentRate.shipmentType === 'LCL') || (currentRate.shipmentType === 'LTL') || (currentRate.mode === 'air')) && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Rate Per CBM / KG</label>
+                          <input type="text" name="ratePerCbmKg" value={currentRate.ratePerCbmKg || ''} onChange={handleInputChange} placeholder="e.g. $20 per CBM or $3.5/kg" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Currency</label>
+                          <div className="relative">
+                            <button
+                              type="button"
+                              ref={editCurrencyButtonRef}
+                              onClick={() => setShowEditCurrencyDropdown((v) => !v)}
+                              className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                            >
+                              {currencyOptions.find(opt => opt.value === currentRate.currency)?.label || 'Select currency'}
+                              <ChevronDown className={`w-4 h-4 transition-transform ${showEditCurrencyDropdown ? 'rotate-180' : ''}`} />
+                            </button>
+                            {showEditCurrencyDropdown && (
+                              <div ref={editCurrencyDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                                {currencyOptions.map((option) => (
+                                  <button
+                                    key={option.value}
+                                    type="button"
+                                    onClick={() => {
+                                      setCurrentRate(prev => ({ ...prev!, currency: option.value }));
+                                      setShowEditCurrencyDropdown(false);
+                                    }}
+                                    className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${currentRate.currency === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                                  >
+                                    {option.label}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Weight Range (kg)</label>
+                          <div className="flex gap-2">
+                            <input type="number" name="weightMin" value={currentRate.weightMin || ''} onChange={handleInputChange} placeholder="Min" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                            <input type="number" name="weightMax" value={currentRate.weightMax || ''} onChange={handleInputChange} placeholder="Max" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Volume Range (cbm)</label>
+                          <div className="flex gap-2">
+                            <input type="number" name="volumeMin" value={currentRate.volumeMin || ''} onChange={handleInputChange} placeholder="Min" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                            <input type="number" name="volumeMax" value={currentRate.volumeMax || ''} onChange={handleInputChange} placeholder="Max" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                          </div>
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Price Range</label>
+                          <input type="text" name="price" value={currentRate.price} onChange={handleInputChange} placeholder="e.g. $2,100 - $2,800" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                        </div>
+                      </div>
+                    )}
+                    {/* FCL/FTL fields */}
+                    {((currentRate.shipmentType === 'FCL') || (currentRate.shipmentType === 'FTL') || (currentRate.mode === 'truck')) && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Truck Type</label>
+                          <input type="text" name="containertype" value={currentRate.containertype} onChange={handleInputChange} placeholder="e.g. 6-Wheel, 10-Wheel, Wingbox, etc." className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Base Rate</label>
+                          <input type="number" name="baseRate" value={currentRate.baseRate} onChange={handleInputChange} placeholder={currentRate.mode === 'truck' ? 'e.g. 1500' : 'e.g. 2000'} className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Price Range</label>
+                          <input type="text" name="price" value={currentRate.price} onChange={handleInputChange} placeholder="e.g. $2,100 - $2,800" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Currency</label>
+                          <div className="relative">
+                            <button
+                              type="button"
+                              ref={editCurrencyButtonRef}
+                              onClick={() => setShowEditCurrencyDropdown((v) => !v)}
+                              className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                            >
+                              {currencyOptions.find(opt => opt.value === currentRate.currency)?.label || 'Select currency'}
+                              <ChevronDown className={`w-4 h-4 transition-transform ${showEditCurrencyDropdown ? 'rotate-180' : ''}`} />
+                            </button>
+                            {showEditCurrencyDropdown && (
+                              <div ref={editCurrencyDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                                {currencyOptions.map((option) => (
+                                  <button
+                                    key={option.value}
+                                    type="button"
+                                    onClick={() => {
+                                      setCurrentRate(prev => ({ ...prev!, currency: option.value }));
+                                      setShowEditCurrencyDropdown(false);
+                                    }}
+                                    className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${currentRate.currency === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                                  >
+                                    {option.label}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Max Weight</label>
+                          <input type="text" name="weight" value={currentRate.weight} onChange={handleInputChange} placeholder="e.g. 26000 kg" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Max Volume</label>
+                          <input type="text" name="volume" value={currentRate.volume} onChange={handleInputChange} placeholder="e.g. 67 cbm" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  
+                  <div className="border-t border-gray-200"></div>
+                  {/* Additional Requirements */}
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Surcharges</label>
-                    <textarea 
-                      name="surcharges"
-                      value={currentRate.surcharges}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                      rows={2}
-                    ></textarea>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Notes</label>
-                    <textarea 
-                      name="notes"
-                      value={currentRate.notes}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                      rows={3}
-                    ></textarea>
-                  </div>
-                  
-
-                </div>             
-                <div className="pt-4 border-t border-gray-200 flex justify-end gap-3">
+                    <div className="-mt-2 mb-2 text-xs font-semibold text-gray-900 uppercase tracking-wide">Additional Requirements</div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Incoterm</label>
+                    <div className="relative">
                       <button
                         type="button"
+                            ref={editIncotermButtonRef}
+                            onClick={() => setShowEditIncotermDropdown((v) => !v)}
+                        className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      >
+                            {incotermOptions.find(opt => opt.value === currentRate.incoterm)?.label || 'Select incoterm'}
+                            <ChevronDown className={`w-4 h-4 transition-transform ${showEditIncotermDropdown ? 'rotate-180' : ''}`} />
+                      </button>
+                          {showEditIncotermDropdown && (
+                            <div ref={editIncotermDropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-full mt-1">
+                              {incotermOptions.map((option) => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => {
+                                setCurrentRate(prev => ({
+                                  ...prev!,
+                                      incoterm: option.value
+                                }));
+                                    setShowEditIncotermDropdown(false);
+                              }}
+                                  className={`w-full text-left p-2 hover:bg-gray-50 rounded text-xs ${currentRate.incoterm === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Transit Time</label>
+                        <input type="text" name="transitTime" value={currentRate.transitTime} onChange={handleInputChange} placeholder="e.g. 18-22 days" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>             
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Valid From</label>
+                        <input type="date" name="validFrom" value={currentRate.validFrom} onChange={handleInputChange} className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Valid Until</label>
+                        <input type="date" name="validTo" value={currentRate.validTo} onChange={handleInputChange} className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">Surcharges {/* Tooltip as before */}</label>
+                        <textarea name="surcharges" value={currentRate.surcharges} onChange={handleInputChange} placeholder="e.g. BAF: $150, CAF: $200" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows={2}></textarea>
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Notes</label>
+                        <textarea name="notes" value={currentRate.notes} onChange={handleInputChange} placeholder="e.g. Peak season surcharge may apply" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows={3}></textarea>
+                      </div>
+                    </div>
+                  </div>
+                </div>             
+                <div className="pt-4 border-t border-gray-200 flex justify-end gap-3">
+                  <button
+                    type="button"
                     onClick={() => setShowEditModal(false)}
                     className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-200"
-                      >
+                  >
                     Cancel
-                      </button>
-                            <button
+                  </button>
+                  <button 
                     type="submit"
                     className="px-4 py-2 text-sm text-white bg-[#007bff] rounded-lg hover:bg-blue-700"
                   >
@@ -1418,7 +1530,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                   const rate = rates.find(r => r.id === id);
                   if (!rate) return null;
                   return (
-                    <li key={id} className="flex items-center gap-2 text-sm text-gray-900">{rate.lane}</li>
+                    <li key={id} className="flex items-center gap-2 text-sm text-gray-900 uppercase">{rate.lane}</li>
                   );
                 })}
               </ul>
@@ -1445,38 +1557,6 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
         </div>
       )}
     </div>
-  );
-};
-
-// Tooltip component using portal
-const Tooltip: React.FC<{ anchorEl: HTMLElement | null, children: React.ReactNode, visible: boolean }> = ({ anchorEl, children, visible }) => {
-  const [coords, setCoords] = React.useState<{ top: number; left: number }>({ top: 0, left: 0 });
-
-  React.useEffect(() => {
-    if (anchorEl && visible) {
-      const rect = anchorEl.getBoundingClientRect();
-      setCoords({
-        top: rect.bottom + window.scrollY + 8, // 8px below
-        left: rect.left + window.scrollX + rect.width / 2,
-      });
-    }
-  }, [anchorEl, visible]);
-
-  if (!visible || !anchorEl) return null;
-  return ReactDOM.createPortal(
-    <div
-      style={{
-        position: 'absolute',
-        top: coords.top,
-        left: coords.left,
-        transform: 'translateX(-50%)',
-        zIndex: 9999,
-      }}
-      className="w-56 p-2 bg-white border border-gray-200 rounded shadow-lg text-xs text-gray-700"
-    >
-      {children}
-    </div>,
-    document.body
   );
 };
 

@@ -1,7 +1,14 @@
+'use client';
+
 import React, { useState, useRef } from 'react';
 import { Search, Calendar, MapPin, Package, Filter, ChevronDown, Check, CheckSquare, Square } from 'lucide-react';
+import { useQuoteSearchStore, QuoteSearchResult } from '../../../../store/quotesearchdata';
+import { useRouter } from 'next/navigation';
 
 const QuoteSearch = () => {
+  const { searchResults, createQuotesFromSelection } = useQuoteSearchStore();
+  const router = useRouter();
+  
   const [searchParams, setSearchParams] = useState({
     origin: '',
     destination: '',
@@ -10,59 +17,10 @@ const QuoteSearch = () => {
     cargoType: 'DRY'
   });
 
-  const [results, setResults] = useState([
-    {
-      id: 1,
-      carrier: 'MAERSK',
-      logo: '/maersk.png',
-      origin: 'KEELUNG, TAIPEI',
-      destination: 'LOS ANGELES, US',
-      departure: '10-10-2023',
-      arrival: '10-30-2023',
-      transitTime: '25 days',
-      validity: '12-05-2023',
-      rates: {
-        '20GP': { price: 1635.32, currency: 'USD' },
-        '40GP': { price: 1840.00, currency: 'USD' },
-        '40HC': { price: 2062.25, currency: 'USD' }
-      }
-    },
-    {
-      id: 2,
-      carrier: 'EVERGREEN',
-      logo: '/evergreen.svg',
-      origin: 'KEELUNG, TAIPEI',
-      destination: 'LOS ANGELES, US',
-      departure: '10-10-2023',
-      arrival: '10-30-2023',
-      transitTime: '25 days',
-      validity: '12-05-2023',
-      rates: {
-        '20GP': { price: 1781.53, currency: 'USD' },
-        '40GP': { price: 1985.00, currency: 'USD' },
-        '40HC': { price: 2108.25, currency: 'USD' }
-      }
-    },
-    {
-      id: 3,
-      carrier: 'HAPAG-LLOYD',
-      logo: '/hapaglloyd.svg',
-      origin: 'KEELUNG, TAIPEI',
-      destination: 'LOS ANGELES, US',
-      departure: '10-10-2023',
-      arrival: '10-30-2023',
-      transitTime: '24 days',
-      validity: '12-05-2023',
-      rates: {
-        '20GP': { price: 1701.53, currency: 'USD' },
-        '40GP': { price: 2005.00, currency: 'USD' },
-        '40HC': { price: 2108.25, currency: 'USD' }
-      }
-    }
-  ]);
-
   const [sortBy, setSortBy] = useState('Cheapest First');
   const [selectedQuotes, setSelectedQuotes] = useState<number[]>([]);
+  const [selectedContainerTypes, setSelectedContainerTypes] = useState<{[key: number]: string}>({});
+  const [customPriceRanges, setCustomPriceRanges] = useState<{[key: number]: {min: string, max: string}}>({});
 
   const cargoTypeOptions = ['DRY', 'REEFER', 'HAZMAT'];
   const containerTypeOptions = ['20DV, 40DV', '20DV', '40DV', '40HC'];
@@ -70,9 +28,12 @@ const QuoteSearch = () => {
   const [showCargoDropdown, setShowCargoDropdown] = useState(false);
   const [showContainerDropdown, setShowContainerDropdown] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [showContainerTypeDropdowns, setShowContainerTypeDropdowns] = useState<{[key: number]: boolean}>({});
+  
   const cargoDropdownRef = useRef<HTMLDivElement>(null);
   const containerDropdownRef = useRef<HTMLDivElement>(null);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
+  const containerTypeDropdownRef = useRef<HTMLDivElement>(null);
 
   const handleSearch = () => {
     // Simulate search functionality
@@ -80,28 +41,146 @@ const QuoteSearch = () => {
   };
 
   const handleAddToQuote = (carrierId: number) => {
-    setSelectedQuotes((prev) =>
-      prev.includes(carrierId)
-        ? prev.filter((id) => id !== carrierId)
-        : [...prev, carrierId]
-    );
+    setSelectedQuotes((prev) => {
+      const isSelected = prev.includes(carrierId);
+      
+      // If deselecting, remove from container types and price ranges
+      if (isSelected) {
+        setSelectedContainerTypes(prevTypes => {
+          const newTypes = {...prevTypes};
+          delete newTypes[carrierId];
+          return newTypes;
+        });
+        setCustomPriceRanges(prevRanges => {
+          const newRanges = {...prevRanges};
+          delete newRanges[carrierId];
+          return newRanges;
+        });
+        return prev.filter((id) => id !== carrierId);
+      } else {
+        // If selecting, set default container type to the first available one
+        const result = searchResults.find(r => r.id === carrierId);
+        if (result) {
+          const containerTypes = Object.keys(result.rates);
+          if (containerTypes.length > 0) {
+            const firstContainerType = containerTypes[0];
+            setSelectedContainerTypes(prevTypes => ({
+              ...prevTypes,
+              [carrierId]: firstContainerType
+            }));
+            // Initialize price range with the base price
+            const basePrice = result.rates[firstContainerType].price;
+            setCustomPriceRanges(prevRanges => ({
+              ...prevRanges,
+              [carrierId]: {
+                min: basePrice.toString(),
+                max: (basePrice * 1.2).toFixed(2) // Default 20% markup
+              }
+            }));
+          }
+        }
+        return [...prev, carrierId];
+      }
+    });
+  };
+
+  const handleContainerTypeChange = (carrierId: number, containerType: string) => {
+    setSelectedContainerTypes(prev => ({
+      ...prev,
+      [carrierId]: containerType
+    }));
+    
+    // Update price range when container type changes
+    const result = searchResults.find(r => r.id === carrierId);
+    if (result) {
+      const basePrice = result.rates[containerType].price;
+      setCustomPriceRanges(prevRanges => ({
+        ...prevRanges,
+        [carrierId]: {
+          min: basePrice.toString(),
+          max: (basePrice * 1.2).toFixed(2) // Default 20% markup
+        }
+      }));
+    }
+    
+    setShowContainerTypeDropdowns(prev => ({
+      ...prev,
+      [carrierId]: false
+    }));
+  };
+
+  const handlePriceRangeChange = (carrierId: number, field: 'min' | 'max', value: string) => {
+    setCustomPriceRanges(prev => ({
+      ...prev,
+      [carrierId]: {
+        ...prev[carrierId],
+        [field]: value
+      }
+    }));
+  };
+
+  const toggleContainerTypeDropdown = (carrierId: number) => {
+    // Close all other dropdowns first
+    const updatedDropdowns: {[key: number]: boolean} = {};
+    Object.keys(showContainerTypeDropdowns).forEach(id => {
+      updatedDropdowns[Number(id)] = false;
+    });
+    
+    // Toggle the current dropdown
+    updatedDropdowns[carrierId] = !showContainerTypeDropdowns[carrierId];
+    
+    setShowContainerTypeDropdowns(updatedDropdowns);
+  };
+
+  const handleCreateQuote = () => {
+    // Create selections array with id and containerType
+    const selections = selectedQuotes.map(id => {
+      const containerType = selectedContainerTypes[id] || 
+        Object.keys(searchResults.find(r => r.id === id)?.rates || {})[0];
+      
+      // Include custom price range if available
+      const priceRange = customPriceRanges[id];
+      
+      return {
+        id,
+        containerType,
+        priceRange
+      };
+    });
+    
+    // Call the store function to create quotes with price ranges
+    const createdQuoteIds = createQuotesFromSelection(selections);
+    
+    // Navigate to quotes page
+    if (createdQuoteIds.length > 0) {
+      router.push('/quotes');
+    }
   };
 
   React.useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
+      // Close cargo, container, and sort dropdowns
       if (
         cargoDropdownRef.current && !cargoDropdownRef.current.contains(event.target as Node) &&
         containerDropdownRef.current && !containerDropdownRef.current.contains(event.target as Node) &&
-        sortDropdownRef.current && !sortDropdownRef.current.contains(event.target as Node)
+        sortDropdownRef.current && !sortDropdownRef.current.contains(event.target as Node) &&
+        containerTypeDropdownRef.current && !containerTypeDropdownRef.current.contains(event.target as Node)
       ) {
         setShowCargoDropdown(false);
         setShowContainerDropdown(false);
         setShowSortDropdown(false);
+        
+        // Close all container type dropdowns
+        const updatedDropdowns: {[key: number]: boolean} = {};
+        Object.keys(showContainerTypeDropdowns).forEach(id => {
+          updatedDropdowns[Number(id)] = false;
+        });
+        setShowContainerTypeDropdowns(updatedDropdowns);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [showContainerTypeDropdowns]);
 
   return (
     <div>
@@ -240,7 +319,7 @@ const QuoteSearch = () => {
         {/* Results Header */}
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-md font-semibold text-gray-900">
-            Results Found: {results.length}
+            Results Found: {searchResults.length}
           </h2>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
@@ -248,15 +327,14 @@ const QuoteSearch = () => {
               <span className="text-sm text-gray-600">Sort by: </span>
               <div className="relative" ref={sortDropdownRef}>
                 <button
-                  type="button"
-                  onClick={() => setShowSortDropdown((v) => !v)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white flex items-center gap-2"
+                  onClick={() => setShowSortDropdown(!showSortDropdown)}
+                  className="flex items-center text-sm text-[#007bff] font-medium hover:text-blue-700"
                 >
                   {sortBy}
-                  <ChevronDown className={`w-4 h-4 transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
                 </button>
                 {showSortDropdown && (
-                  <div className="absolute left-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 w-full z-50">
+                  <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 w-48 z-50">
                     <div className="p-2">
                       {sortByOptions.map((option) => (
                         <button
@@ -277,7 +355,7 @@ const QuoteSearch = () => {
 
         {/* Results */}
         <div className="space-y-4">
-          {results.map((result) => (
+          {searchResults.map((result) => (
             <div key={result.id} className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="grid grid-cols-1 lg:grid-cols-5 gap-0 border divide-x divide-gray-200">
                 {/* 1. Logo Column */}
@@ -294,7 +372,7 @@ const QuoteSearch = () => {
                   <div className="flex items-center gap-4 w-full">
                     {/* Origin */}
                     <div className="flex flex-col items-center">
-                      <span className="text-xs text-gray-700 font-medium">{result.origin}</span>
+                      <span className="text-xs text-gray-700 font-medium uppercase">{result.origin}</span>
                       <span className="text-[11px] text-gray-500">{result.departure}</span>
                     </div>
                     {/* Arrow */}
@@ -303,7 +381,7 @@ const QuoteSearch = () => {
                     </div>
                     {/* Destination */}
                     <div className="flex flex-col items-center">
-                      <span className="text-xs text-gray-700 font-medium">{result.destination}</span>
+                      <span className="text-xs text-gray-700 font-medium uppercase">{result.destination}</span>
                       <span className="text-[11px] text-gray-500">{result.arrival}</span>
                     </div>
                     {/* TT and Validity */}
@@ -324,16 +402,92 @@ const QuoteSearch = () => {
                 </div>
                 {/* 3. Prices Column */}
                 <div className="flex flex-col justify-center py-2 px-4 min-w-[160px] gap-2 lg:col-span-1">
-                  {Object.entries(result.rates).map(([containerType, rate]) => (
-                    <div key={containerType} className="grid grid-cols-3 items-center gap-2">
-                      <span className="text-xs font-medium text-gray-700 uppercase text-left">{containerType}</span>
-                      <span className="text-sm font-bold text-[#007bff] text-center">{rate.price.toFixed(2)}</span>
-                      <span className="text-xs text-gray-500 text-right">{rate.currency}</span>
+                  {/* Container Types with Fixed Prices */}
+                  <div>
+                    <span className="text-xs font-medium text-gray-700">Container Types:</span>
+                    <div className="mt-1 space-y-2">
+                      {Object.entries(result.rates).map(([containerType, rate]) => (
+                        <div key={containerType} className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-gray-700">{containerType}</span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs font-bold text-[#007bff]">{rate.price.toFixed(2)}</span>
+                            <span className="text-xs text-gray-500">{rate.currency}</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
                 </div>
                 {/* 4. Actions Column */}
                 <div className="flex flex-col justify-center items-center py-2 px-4 lg:col-span-1">
+                  {selectedQuotes.includes(result.id) ? (
+                    <div className="w-full" ref={containerTypeDropdownRef}>
+                      {/* Container Type Selector */}
+                      <div className="mb-3">
+                        <label className="block text-xs font-medium text-gray-500 mb-1">
+                          Select Container Type
+                        </label>
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => toggleContainerTypeDropdown(result.id)}
+                            className="w-full flex items-center justify-between px-3 py-1 border border-gray-300 text-xs text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                          >
+                            {selectedContainerTypes[result.id] || 'Select Container'}
+                            <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${showContainerTypeDropdowns[result.id] ? 'rotate-180' : ''}`} />
+                          </button>
+                          {showContainerTypeDropdowns[result.id] && (
+                            <div className="absolute left-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 w-full z-50">
+                              <div className="p-2">
+                                {Object.keys(result.rates).map((containerType) => (
+                                  <button
+                                    key={containerType}
+                                    onClick={() => handleContainerTypeChange(result.id, containerType)}
+                                    className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${selectedContainerTypes[result.id] === containerType ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                                  >
+                                    {containerType} - {result.rates[containerType].price.toFixed(2)} {result.rates[containerType].currency}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Price Range Input */}
+                      {selectedContainerTypes[result.id] && (
+                        <div className="mb-3">
+                          <label className="block text-xs font-medium text-gray-500 mb-1">
+                            Set Price Range ({result.rates[selectedContainerTypes[result.id]].currency})
+                          </label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-xs text-gray-500">Min</label>
+                              <input
+                                type="number"
+                                value={customPriceRanges[result.id]?.min || ''}
+                                onChange={(e) => handlePriceRangeChange(result.id, 'min', e.target.value)}
+                                className="w-full px-3 py-1 border border-gray-300 text-xs text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="Min Price"
+                                step="0.01"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-gray-500">Max</label>
+                              <input
+                                type="number"
+                                value={customPriceRanges[result.id]?.max || ''}
+                                onChange={(e) => handlePriceRangeChange(result.id, 'max', e.target.value)}
+                                className="w-full px-3 py-1 border border-gray-300 text-xs text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="Max Price"
+                                step="0.01"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
                   <button
                     onClick={() => handleAddToQuote(result.id)}
                     className={`w-full px-4 py-2 rounded-md transition-colors text-sm font-medium flex items-center justify-center gap-2
@@ -346,7 +500,7 @@ const QuoteSearch = () => {
                     ) : (
                       <Square className="w-5 h-5" />
                     )}
-                    Add to Quote
+                    {selectedQuotes.includes(result.id) ? 'Selected' : 'Add to Quote'}
                   </button>
                 </div>
               </div>
@@ -357,8 +511,13 @@ const QuoteSearch = () => {
         {/* Create Quote Button */}
         {selectedQuotes.length > 0 && (
           <div className="fixed left-1/2 bottom-8 z-50 -translate-x-1/2">
-            <button className="bg-green-500 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium shadow-lg focus:outline-none focus:ring-4 focus:ring-green-300" style={{boxShadow: '0 8px 32px 0 rgba(0,0,0,0.18), 0 1.5px 8px 0 rgba(0,0,0,0.10)'}}>
-              Create Quote
+            <button 
+              onClick={handleCreateQuote}
+              disabled={selectedQuotes.some(id => !selectedContainerTypes[id])}
+              className={`bg-green-500 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium shadow-lg focus:outline-none focus:ring-4 focus:ring-green-300 ${selectedQuotes.some(id => !selectedContainerTypes[id]) ? 'opacity-50 cursor-not-allowed' : ''}`}
+              style={{boxShadow: '0 8px 32px 0 rgba(0,0,0,0.18), 0 1.5px 8px 0 rgba(0,0,0,0.10)'}}
+            >
+              Create Quote ({selectedQuotes.length})
             </button>
           </div>
         )}
