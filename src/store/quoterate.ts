@@ -29,6 +29,12 @@ export interface Rate {
   volumeMax?: string;
   readOnly?: boolean;
   ratePerCbmKg?: string;
+  weightUnit?: string; // kg, lb, etc.
+  volumeUnit?: string; // cbm, m3, ft3, etc.
+  weightMinUnit?: string; // kg, lb, etc.
+  weightMaxUnit?: string; // kg, lb, etc.
+  volumeMinUnit?: string; // cbm, m3, ft3, etc.
+  volumeMaxUnit?: string; // cbm, m3, ft3, etc.
 }
 
 // Quote interface (simplified version of Rate)
@@ -73,7 +79,13 @@ const mockRates: Rate[] = [
     weightMax: '',
     volumeMin: '',
     volumeMax: '',
-    readOnly: false
+    readOnly: false,
+    weightUnit: 'kg',
+    volumeUnit: 'cbm',
+    weightMinUnit: 'kg',
+    weightMaxUnit: 'kg',
+    volumeMinUnit: 'cbm',
+    volumeMaxUnit: 'cbm',
   },
   {
     id: 2,
@@ -100,7 +112,13 @@ const mockRates: Rate[] = [
     weightMax: '',
     volumeMin: '',
     volumeMax: '',
-    readOnly: false
+    readOnly: false,
+    weightUnit: 'kg',
+    volumeUnit: 'cbm',
+    weightMinUnit: 'kg',
+    weightMaxUnit: 'kg',
+    volumeMinUnit: 'cbm',
+    volumeMaxUnit: 'cbm',
   },
   {
     id: 3,
@@ -127,7 +145,13 @@ const mockRates: Rate[] = [
     weightMax: '',
     volumeMin: '',
     volumeMax: '',
-    readOnly: false
+    readOnly: false,
+    weightUnit: 'kg',
+    volumeUnit: 'cbm',
+    weightMinUnit: 'kg',
+    weightMaxUnit: 'kg',
+    volumeMinUnit: 'cbm',
+    volumeMaxUnit: 'cbm',
   },
 ];
 
