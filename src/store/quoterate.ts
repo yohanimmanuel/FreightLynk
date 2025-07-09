@@ -23,18 +23,14 @@ export interface Rate {
   validTo: string;
   notes: string;
   status: string;
+  ratePerCbmKg?: string;
+  // Add legacy/optional fields for compatibility
   weightMin?: string;
   weightMax?: string;
+  weightUnit?: string;
   volumeMin?: string;
   volumeMax?: string;
-  readOnly?: boolean;
-  ratePerCbmKg?: string;
-  weightUnit?: string; // kg, lb, etc.
-  volumeUnit?: string; // cbm, m3, ft3, etc.
-  weightMinUnit?: string; // kg, lb, etc.
-  weightMaxUnit?: string; // kg, lb, etc.
-  volumeMinUnit?: string; // cbm, m3, ft3, etc.
-  volumeMaxUnit?: string; // cbm, m3, ft3, etc.
+  volumeUnit?: string;
 }
 
 // Quote interface (simplified version of Rate)
@@ -60,8 +56,8 @@ const mockRates: Rate[] = [
     mode: 'ocean',
     shipmentType: 'FCL',
     containertype: '40ft',
-    weight: '200 kg',
-    volume: '20 CBM',
+    weight: '120 kg - 400 kg',
+    volume: '12 cbm - 20 cbm',
     currency: 'USD',
     price: '$2,100 - $2,800',
     baseRate: 2100,
@@ -75,17 +71,7 @@ const mockRates: Rate[] = [
     validTo: '2024-07-31',
     notes: 'Peak season surcharge may apply',
     status: 'draft',
-    weightMin: '',
-    weightMax: '',
-    volumeMin: '',
-    volumeMax: '',
-    readOnly: false,
-    weightUnit: 'kg',
-    volumeUnit: 'cbm',
-    weightMinUnit: 'kg',
-    weightMaxUnit: 'kg',
-    volumeMinUnit: 'cbm',
-    volumeMaxUnit: 'cbm',
+    ratePerCbmKg: '100',
   },
   {
     id: 2,
@@ -93,8 +79,8 @@ const mockRates: Rate[] = [
     mode: 'ocean',
     shipmentType: 'FCL',
     containertype: '40ft',
-    weight: '200 kg',
-    volume: '20 CBM',
+    weight: '120 kg - 400 kg',
+    volume: '12 cbm - 20 cbm',
     currency: 'USD',
     price: '$1,650 - $2,200',
     baseRate: 1650,
@@ -108,17 +94,7 @@ const mockRates: Rate[] = [
     validTo: '2024-06-30',
     notes: 'Express service available',
     status: 'draft',
-    weightMin: '',
-    weightMax: '',
-    volumeMin: '',
-    volumeMax: '',
-    readOnly: false,
-    weightUnit: 'kg',
-    volumeUnit: 'cbm',
-    weightMinUnit: 'kg',
-    weightMaxUnit: 'kg',
-    volumeMinUnit: 'cbm',
-    volumeMaxUnit: 'cbm',
+    ratePerCbmKg: '100',
   },
   {
     id: 3,
@@ -126,8 +102,8 @@ const mockRates: Rate[] = [
     mode: 'air',
     shipmentType: 'LCL',
     containertype: '40ft',
-    weight: '200 kg',
-    volume: '20 CBM',
+    weight: '120 kg - 400 kg',
+    volume: '12 cbm - 20 cbm',
     currency: 'USD',
     price: '$7,500 - $9,200',
     baseRate: 7500,
@@ -141,17 +117,7 @@ const mockRates: Rate[] = [
     validTo: '2024-07-15',
     notes: 'Temperature controlled available',
     status: 'draft',
-    weightMin: '',
-    weightMax: '',
-    volumeMin: '',
-    volumeMax: '',
-    readOnly: false,
-    weightUnit: 'kg',
-    volumeUnit: 'cbm',
-    weightMinUnit: 'kg',
-    weightMaxUnit: 'kg',
-    volumeMinUnit: 'cbm',
-    volumeMaxUnit: 'cbm',
+    ratePerCbmKg: '100',
   },
 ];
 

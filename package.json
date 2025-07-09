@@ -10,11 +10,14 @@
   },
   "dependencies": {
     "canvas-confetti": "^1.9.3",
+    "fuzzball": "^2.2.2",
     "lucide-react": "^0.516.0",
     "mapbox-gl": "^3.13.0",
     "next": "15.3.3",
+    "openai": "^5.8.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "xlsx": "^0.18.5",
     "zustand": "^5.0.6"
   },
   "devDependencies": {
