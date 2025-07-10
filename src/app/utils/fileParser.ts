@@ -63,7 +63,7 @@ export const parseFile = async (file: File): Promise<ParsedRow[]> => {
       reader.onerror = reject;
       reader.readAsText(file);
     });
-  } else if (['xlsx', 'xls'].includes(extension || '')) {
+  } else if (["xlsx", "xls"].includes(extension || '')) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -102,7 +102,7 @@ export const parseFile = async (file: File): Promise<ParsedRow[]> => {
       reader.readAsArrayBuffer(file);
     });
   } else {
-    throw new Error('Unsupported file format. Please upload a CSV or Excel file.');
+    throw new Error('Unsupported file format. Please upload a supported file: Excel (.xlsx, .xls) or CSV.');
   }
 };
 
@@ -145,14 +145,12 @@ export const detectMode = (text: string): 'ocean' | 'air' | 'road' => {
 
 export const detectShipmentType = (text: string, mode: string): 'FCL' | 'LCL' | 'FTL' | 'LTL' => {
   const normalized = text.toLowerCase();
-  
   // Check for explicit shipment type patterns
   for (const [type, patterns] of Object.entries(shipmentTypePatterns)) {
     if (patterns.some(pattern => normalized.includes(pattern))) {
       return type as 'FCL' | 'LCL' | 'FTL' | 'LTL';
     }
   }
-
   // Default based on mode
   if (mode === 'air') return 'LCL';
   if (mode === 'road') return 'FTL';
@@ -161,17 +159,14 @@ export const detectShipmentType = (text: string, mode: string): 'FCL' | 'LCL' | 
 
 export const extractRange = (text: string): { min?: string; max?: string } => {
   if (!text) return {};
-  
   const rangeMatch = text.match(/(\d+(?:\.\d+)?)\s*[-–—]\s*(\d+(?:\.\d+)?)/);
   if (rangeMatch) {
     return { min: rangeMatch[1], max: rangeMatch[2] };
   }
-  
   const singleMatch = text.match(/(\d+(?:\.\d+)?)/);
   if (singleMatch) {
     return { min: singleMatch[1] };
   }
-  
   return {};
 };
 

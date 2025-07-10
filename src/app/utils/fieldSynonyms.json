@@ -1,0 +1,20 @@
+{
+  "originCity": ["Origin", "From", "POL", "Port of Loading", "Origin City", "Origin Port", "Export From", "From Location", "Kota Asal", "Pelabuhan Asal"],
+  "destinationCity": ["Destination", "To", "POD", "Port of Discharge", "Destination City", "Destination Port", "Import To", "To Location", "Kota Tujuan", "Pelabuhan Tujuan"],
+  "mode": ["Mode", "Transport Mode", "Shipping Method", "Method", "Service", "Transportation", "Moda", "Jenis Angkutan"],
+  "shipmentType": ["Shipment Type", "Type", "Cargo Type", "Service Type", "FCL/LCL", "FTL/LTL", "Jenis Pengiriman"],
+  "weight": ["Weight", "Gross Weight", "Cargo Weight", "KG", "Weight (KG)", "Berat"],
+  "volume": ["Volume", "CBM", "Cubic Meter", "Measurement", "Volume (CBM)", "Volume Barang"],
+  "containertype": ["Container Type", "Equipment", "Container Size", "Size", "Type of Container", "Truck Type", "Jenis Kontainer", "Jenis Truk"],
+  "currency": ["Currency", "Cur", "CCY", "Mata Uang"],
+  "price": ["Price", "Rate", "Amount", "Charge", "Fee", "Cost", "Total", "Harga"],
+  "baseRate": ["Base Rate", "Base Price", "Base Amount", "Freight", "Freight Rate", "Tarif Dasar"],
+  "ratePerCbmKg": ["Rate Per CBM", "Rate Per KG", "Per CBM", "Per KG", "Unit Rate", "Tarif per CBM", "Tarif per KG"],
+  "transitTime": ["Transit Time", "TT", "Delivery Time", "ETA", "Estimated Time", "Days", "Waktu Transit", "Estimasi Waktu"],
+  "carrier": ["Carrier", "Shipping Line", "Airline", "Vessel", "Operator", "Vendor", "Provider", "Pengangkut", "Perusahaan Kapal"],
+  "incoterm": ["Incoterm", "Inco Term", "Terms", "Delivery Term", "Shipping Term", "Incoterms"],
+  "validFrom": ["Valid From", "Start Date", "Effective From", "From Date", "Start", "Berlaku Dari"],
+  "validTo": ["Valid To", "Valid Until", "End Date", "Expiry Date", "Expiry", "Expires On", "End", "Berlaku Sampai"],
+  "surcharges": ["Surcharges", "Additional Charges", "Extra Charges", "Other Charges", "Fees", "Biaya Tambahan"],
+  "notes": ["Notes", "Remarks", "Comments", "Description", "Additional Info", "Catatan"]
+} 

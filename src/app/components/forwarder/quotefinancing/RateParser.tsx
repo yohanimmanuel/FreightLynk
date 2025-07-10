@@ -2,7 +2,8 @@ import React, { useState, useRef } from 'react';
 import { Upload, FileText, X, AlertCircle, CheckCircle, Download, Eye } from 'lucide-react';
 import { Rate } from '../../../../store/quoterate';
 import { parseFile, ParsedRow } from '../../../utils/fileParser';
-import { mapHeadersFuzzy } from '../../../utils/aiHeaderMapper';
+import { mapHeadersFuzzy, saveUserMapping } from '../../../utils/aiHeaderMapper';
+import fieldSynonyms from '../../../utils/fieldSynonyms.json';
 import { standardFields as rawStandardFields } from '../../../utils/standardFields';
 
 // Add a type for standardFields
@@ -12,6 +13,13 @@ interface StandardField {
   visible?: boolean;
 }
 const standardFields = rawStandardFields as StandardField[];
+
+// Add a type for mapping info
+interface HeaderMappingInfo {
+  mappedKey: string | null;
+  confidence: number;
+  matchedSynonym?: string;
+}
 
 interface ParsedRate {
   id: number;
@@ -58,6 +66,7 @@ const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose }) => {
   const [previewMode, setPreviewMode] = useState(false);
   const [detectedHeaders, setDetectedHeaders] = useState<string[]>([]);
   const [headerMapping, setHeaderMapping] = useState<Record<string, string | null>>({});
+  const [headerMappingInfo, setHeaderMappingInfo] = useState<Record<string, HeaderMappingInfo>>({});
   const [mappingConfirmed, setMappingConfirmed] = useState(false);
   const [rawData, setRawData] = useState<ParsedRow[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -90,8 +99,9 @@ const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose }) => {
   };
 
   const handleFileUpload = async (file: File) => {
+    // Accept Excel, CSV only
     if (!file.name.match(/\.(csv|xlsx|xls)$/i)) {
-      alert('Please upload a CSV or Excel file');
+      alert('Please upload a supported file: Excel (.xlsx, .xls) or CSV');
       return;
     }
 
@@ -106,8 +116,36 @@ const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose }) => {
       if (!data.length) throw new Error('No data found');
       const headers = Object.keys(data[0]);
       setDetectedHeaders(headers);
-      const mapping = mapHeadersFuzzy(headers);
-      setHeaderMapping(mapping);
+      // Get mapping info with confidence
+      const mappingInfo: Record<string, HeaderMappingInfo> = {};
+      headers.forEach(header => {
+        let bestKey: string | null = null;
+        let bestScore = 0.7;
+        let matchedSynonym = '';
+        for (const [key, synonyms] of Object.entries(fieldSynonyms)) {
+          for (const synonym of synonyms) {
+            if (header.toLowerCase() === synonym.toLowerCase()) {
+              bestKey = key;
+              bestScore = 1;
+              matchedSynonym = synonym;
+              break;
+            }
+            // Fuzzy
+            const dist = levenshtein(header.toLowerCase(), synonym.toLowerCase());
+            const maxLen = Math.max(header.length, synonym.length);
+            const score = maxLen === 0 ? 1 : 1 - dist / maxLen;
+            if (score > bestScore) {
+              bestScore = score;
+              bestKey = key;
+              matchedSynonym = synonym;
+            }
+          }
+        }
+        mappingInfo[header] = { mappedKey: bestKey, confidence: bestScore, matchedSynonym };
+      });
+      setHeaderMappingInfo(mappingInfo);
+      // For backward compatibility
+      setHeaderMapping(Object.fromEntries(headers.map(h => [h, mappingInfo[h].mappedKey])));
       setRawData(data);
       setMappingConfirmed(false);
       setParsedRates([]); // Clear previous parse
@@ -236,6 +274,16 @@ const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose }) => {
   // Handler for changing mapping
   const handleMappingChange = (header: string, value: string) => {
     setHeaderMapping(prev => ({ ...prev, [header]: value === 'ignore' ? null : value }));
+    setHeaderMappingInfo(prev => ({
+      ...prev,
+      [header]: {
+        ...prev[header],
+        mappedKey: value === 'ignore' ? null : value,
+        confidence: value === 'ignore' ? 0 : 1,
+        matchedSynonym: value === 'ignore' ? '' : prev[header].matchedSynonym
+      }
+    }));
+    if (value !== 'ignore') saveUserMapping(header, value);
   };
 
   const convertToRateFormat = (parsedRate: ParsedRate): Rate => {
@@ -285,13 +333,20 @@ const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose }) => {
   // UI for mapping confirmation
   const renderMappingTable = () => (
     <div>
-      <h4 className="text-md text-gray-900 font-semibold mb-2">Confirm Header Mapping</h4>
+      <h4 className="text-md text-gray-900 font-semibold mb-2 flex items-center gap-2">
+        Confirm Header Mapping
+        <span className="ml-2 text-xs text-gray-500 cursor-pointer" title="How does mapping work?">
+          <a href="https://github.com/yourrepo/docs#field-mapping" target="_blank" rel="noopener noreferrer">[?]</a>
+        </span>
+      </h4>
       <div className="overflow-x-auto border border-gray-200 rounded-lg">
         <table className="min-w-full">
           <thead className="bg-gray-50">
             <tr>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">File Header</th>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Map To</th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Confidence</th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Matched Synonym</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -310,10 +365,20 @@ const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose }) => {
                     ))}
                   </select>
                 </td>
+                <td className="px-4 py-2 text-xs">
+                  {headerMappingInfo[header]?.confidence !== undefined ? (headerMappingInfo[header].confidence * 100).toFixed(0) + '%' : '-'}
+                </td>
+                <td className="px-4 py-2 text-xs">
+                  {headerMappingInfo[header]?.matchedSynonym || '-'}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
+      </div>
+      <div className="text-xs text-gray-500 mt-2">
+        <b>Tip:</b> If a mapping is incorrect, select the correct field. Your correction will be remembered for future uploads.<br/>
+        To add new synonyms, update <code>fieldSynonyms.json</code> in the codebase.
       </div>
       <button
         className="mt-6 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 font-semibold"
@@ -360,7 +425,7 @@ const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose }) => {
                 Upload Rate Sheet
               </h3>
               <p className="text-sm text-gray-600 mb-4">
-                Drag and drop your CSV or Excel file here, or click to browse
+                Drag and drop your <b>Excel or CSV</b> file here, or click to browse
               </p>
               <button
                 onClick={() => fileInputRef.current?.click()}
@@ -375,6 +440,9 @@ const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose }) => {
                 onChange={handleFileSelect}
                 className="hidden"
               />
+              <div className="text-xs text-gray-500 mt-3">
+                Supported formats: Excel (.xlsx, .xls), CSV
+              </div>
             </div>
           ) : (
             // Parsing Results Section
@@ -508,6 +576,7 @@ const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose }) => {
                         setParsedRates([]);
                         setDetectedHeaders([]);
                         setHeaderMapping({});
+                        setHeaderMappingInfo({});
                         setMappingConfirmed(false);
                         setRawData([]);
                       }}
@@ -542,3 +611,20 @@ const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose }) => {
 };
 
 export default RateParser; 
+
+// Add Levenshtein for local fuzzy in this file
+function levenshtein(a: string, b: string): number {
+  const matrix = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
+  for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
+  for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+      );
+    }
+  }
+  return matrix[a.length][b.length];
+} 

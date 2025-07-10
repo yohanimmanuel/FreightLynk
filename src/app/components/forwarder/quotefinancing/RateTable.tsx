@@ -745,55 +745,55 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                         {columnVisibility.id && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{rate.id}</td>}
                         {columnVisibility.lane && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900 uppercase">{rate.lane}</td>}
                         {columnVisibility.mode && (
-                          <td className="px-4 py-4 whitespace-nowrap">
+                          <td className={`px-4 py-4 whitespace-nowrap ${isMissing(rate.mode) ? 'text-red-600 font-semibold' : 'text-gray-900'}`}>
                             <div className="flex items-center gap-2">
                               {getModeIcon(rate.mode)}
-                              <span className="text-xs font-medium text-gray-900 capitalize">{rate.mode}</span>
+                              <span className={`text-xs font-medium capitalize ${isMissing(rate.mode) ? 'text-red-600 font-semibold' : 'text-gray-900'}`}>{isMissing(rate.mode) ? 'Missing Value' : rate.mode}</span>
                             </div>
                           </td>
                         )}
-                        {columnVisibility.shipmentType && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900 uppercase">{rate.shipmentType}</td>}
-                        {columnVisibility.weight && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{(() => {
+                        {columnVisibility.shipmentType && <td className={`px-4 py-4 whitespace-nowrap text-xs uppercase ${isMissing(rate.shipmentType) ? 'text-red-600 font-semibold' : 'text-gray-900'}`}>{isMissing(rate.shipmentType) ? 'Missing Value' : rate.shipmentType}</td>}
+                        {columnVisibility.weight && <td className={`px-4 py-4 whitespace-nowrap text-xs ${isMissing(rate.weight) && isMissing(rate.weightMin) && isMissing(rate.weightMax) ? 'text-red-600 font-semibold' : 'text-gray-900'}`}>{(() => {
                           const unit = rate.weightUnit || 'kg';
-                          if (rate.weightMin && rate.weightMax) return `${rate.weightMin} ${unit} - ${rate.weightMax} ${unit}`;
-                          if (rate.weightMin) return `${rate.weightMin} ${unit}`;
-                          if (rate.weightMax) return `${rate.weightMax} ${unit}`;
-                          return rate.weight ? `${rate.weight} ${unit}` : '';
+                          if (!isMissing(rate.weightMin) && !isMissing(rate.weightMax)) return `${rate.weightMin} ${unit} - ${rate.weightMax} ${unit}`;
+                          if (!isMissing(rate.weightMin)) return `${rate.weightMin} ${unit}`;
+                          if (!isMissing(rate.weightMax)) return `${rate.weightMax} ${unit}`;
+                          return !isMissing(rate.weight) ? `${rate.weight} ${unit}` : 'Missing Value';
                         })()}</td>}
-                        {columnVisibility.volume && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{(() => {
+                        {columnVisibility.volume && <td className={`px-4 py-4 whitespace-nowrap text-xs ${isMissing(rate.volume) && isMissing(rate.volumeMin) && isMissing(rate.volumeMax) ? 'text-red-600 font-semibold' : 'text-gray-900'}`}>{(() => {
                           const unit = rate.volumeUnit || 'cbm';
-                          if (rate.volumeMin && rate.volumeMax) return `${rate.volumeMin} ${unit} - ${rate.volumeMax} ${unit}`;
-                          if (rate.volumeMin) return `${rate.volumeMin} ${unit}`;
-                          if (rate.volumeMax) return `${rate.volumeMax} ${unit}`;
-                          return rate.volume ? `${rate.volume} ${unit}` : '';
+                          if (!isMissing(rate.volumeMin) && !isMissing(rate.volumeMax)) return `${rate.volumeMin} ${unit} - ${rate.volumeMax} ${unit}`;
+                          if (!isMissing(rate.volumeMin)) return `${rate.volumeMin} ${unit}`;
+                          if (!isMissing(rate.volumeMax)) return `${rate.volumeMax} ${unit}`;
+                          return !isMissing(rate.volume) ? `${rate.volume} ${unit}` : 'Missing Value';
                         })()}</td>}
-                        {columnVisibility.containertype && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900 uppercase">{(rate.shipmentType === 'LCL' || rate.shipmentType === 'LTL') ? 'none' : rate.containertype}</td>}
-                        {columnVisibility.currency && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{rate.currency}</td>}
-                        {columnVisibility.price && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{rate.price}</td>}
+                        {columnVisibility.containertype && <td className={`px-4 py-4 whitespace-nowrap text-xs uppercase ${(rate.shipmentType !== 'LCL' && rate.shipmentType !== 'LTL' && isMissing(rate.containertype)) ? 'text-red-600 font-semibold' : 'text-gray-900'}`}>{(rate.shipmentType === 'LCL' || rate.shipmentType === 'LTL') ? 'none' : (!isMissing(rate.containertype) ? rate.containertype : 'Missing Value')}</td>}
+                        {columnVisibility.currency && <td className={`px-4 py-4 whitespace-nowrap text-xs ${isMissing(rate.currency) ? 'text-red-600 font-semibold' : 'text-gray-900'}`}>{isMissing(rate.currency) ? 'Missing Value' : rate.currency}</td>}
+                        {columnVisibility.price && <td className={`px-4 py-4 whitespace-nowrap text-xs ${isMissing(rate.price) ? 'text-red-600 font-semibold' : 'text-gray-900'}`}>{isMissing(rate.price) ? 'Missing Value' : rate.price}</td>}
                         {columnVisibility.baseRate && (
-                          <td className="px-4 py-4 whitespace-nowrap text-xs font-semibold text-gray-900">
+                          <td className={`px-4 py-4 whitespace-nowrap text-xs font-semibold ${isMissing(rate.baseRate) ? 'text-red-600' : 'text-gray-900'}`}>
                             {((rate.shipmentType === 'LCL') || (rate.shipmentType === 'LTL') || (rate.mode === 'air'))
-                              ? (rate.ratePerCbmKg || '-')
-                              : (rate.baseRate ? `$${rate.baseRate.toLocaleString()}` : '-')}
+                              ? (!isMissing(rate.ratePerCbmKg) ? rate.ratePerCbmKg : '-')
+                              : (!isMissing(rate.baseRate) ? `$${rate.baseRate.toLocaleString()}` : 'Missing Value')}
                           </td>
                         )}
-                        {columnVisibility.originCity && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900 uppercase">{rate.originCity}</td>}
-                        {columnVisibility.destinationCity && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900 uppercase">{rate.destinationCity}</td>}
+                        {columnVisibility.originCity && <td className={`px-4 py-4 whitespace-nowrap text-xs uppercase ${isMissing(rate.originCity) ? 'text-red-600 font-semibold' : 'text-gray-900'}`}>{isMissing(rate.originCity) ? 'Missing Value' : rate.originCity}</td>}
+                        {columnVisibility.destinationCity && <td className={`px-4 py-4 whitespace-nowrap text-xs uppercase ${isMissing(rate.destinationCity) ? 'text-red-600 font-semibold' : 'text-gray-900'}`}>{isMissing(rate.destinationCity) ? 'Missing Value' : rate.destinationCity}</td>}
                         {columnVisibility.transitTime && (
-                          <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
-                            {rate.transitTime
+                          <td className={`px-4 py-4 whitespace-nowrap text-xs ${isMissing(rate.transitTime) ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
+                            {!isMissing(rate.transitTime)
                               ? (rate.transitTime.toLowerCase().includes('day')
                                   ? rate.transitTime
                                   : rate.transitTime + ' days')
-                              : '-'}
+                              : 'Missing Value'}
                           </td>
                         )}
-                        {columnVisibility.carrier && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900 uppercase">{rate.carrier}</td>}                   
+                        {columnVisibility.carrier && <td className={`px-4 py-4 whitespace-nowrap text-xs uppercase ${isMissing(rate.carrier) ? 'text-red-600 font-semibold' : 'text-gray-900'}`}>{isMissing(rate.carrier) ? 'Missing Value' : rate.carrier}</td>}
                         {columnVisibility.incoterm && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">{rate.incoterm}</td>}
-                        {columnVisibility.validFrom && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">{rate.validFrom}</td>}
-                        {columnVisibility.validTo && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">{rate.validTo}</td>}
-                        {columnVisibility.surcharges && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{rate.surcharges}</td>}    
-                        {columnVisibility.notes && <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate overflow-hidden text-ellipsis">{rate.notes}</td>}
+                        {columnVisibility.validFrom && <td className={`px-4 py-4 whitespace-nowrap text-xs ${isMissing(rate.validFrom) ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>{isMissing(rate.validFrom) ? 'Missing Value' : rate.validFrom}</td>}
+                        {columnVisibility.validTo && <td className={`px-4 py-4 whitespace-nowrap text-xs ${isMissing(rate.validTo) ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>{isMissing(rate.validTo) ? 'Missing Value' : rate.validTo}</td>}
+                        {columnVisibility.surcharges && <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{isMissing(rate.surcharges) ? '-' : rate.surcharges}</td>}
+                        {columnVisibility.notes && <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate overflow-hidden text-ellipsis">{isMissing(rate.notes) ? '-' : rate.notes}</td>}
                         {columnVisibility.status && (
                           <td className="px-4 py-4 whitespace-nowrap">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(rate.status)}`}>
@@ -2057,5 +2057,8 @@ export default RateTable;
 function setShowColumnDropdown(arg0: boolean) {
   throw new Error('Function not implemented.');
 }
+
+// Utility function to check if a value is missing
+const isMissing = (val: any) => val === undefined || val === null || (typeof val === 'string' && (val.trim() === '' || val.toLowerCase().includes('missing value')));
 
 
