@@ -17,7 +17,7 @@ interface ParsedRate {
   id: number;
   originCity: string;
   destinationCity: string;
-  mode: 'ocean' | 'air' | 'truck';
+  mode: 'ocean' | 'air' | 'road';
   shipmentType: 'FCL' | 'LCL' | 'FTL' | 'LTL';
   containertype: string;
   baseRate: number;
@@ -138,7 +138,7 @@ const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose }) => {
       const rawRate = norm.baseRate ? String(norm.baseRate) : '';
       const carrier = norm.carrier ? String(norm.carrier) : '';
       // Mode/type detection
-      const mode = rawMode.toLowerCase().includes('sea') ? 'ocean' : rawMode.toLowerCase().includes('air') ? 'air' : rawMode.toLowerCase().includes('truck') ? 'truck' : 'ocean';
+      const mode = rawMode.toLowerCase().includes('sea') ? 'ocean' : rawMode.toLowerCase().includes('air') ? 'air' : rawMode.toLowerCase().includes('truck') ? 'road' : 'ocean';
       const shipmentType = norm.shipmentType ? String(norm.shipmentType).toUpperCase() as ParsedRate['shipmentType'] : (mode === 'air' ? 'LCL' : 'FCL');
       // Rate parsing
       const rateInfo = /([\d,.]+)(?:\s*\/\s*(kg|cbm|container|ftl|ltl))?/i.exec(rawRate);
@@ -183,8 +183,8 @@ const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose }) => {
       const notes = norm.notes ? String(norm.notes) : '';
       // Transit time
       const transitTime = norm.transitTime ? String(norm.transitTime) : '';
-      // Container/truck type
-      const containertype = norm.containertype ? String(norm.containertype) : (shipmentType === 'FCL' ? '20ft' : shipmentType === 'FTL' ? 'Truck' : 'none');
+      // Container/road type
+      const containertype = norm.containertype ? String(norm.containertype) : (shipmentType === 'FCL' ? '20ft' : shipmentType === 'FTL' ? 'Road' : 'none');
       // Incoterm
       const incoterm = norm.incoterm ? String(norm.incoterm) : '';
       // Validate completeness

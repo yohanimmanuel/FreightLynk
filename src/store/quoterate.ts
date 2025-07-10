@@ -5,7 +5,7 @@ import { persist } from 'zustand/middleware';
 export interface Rate {
   id: number;
   lane: string;
-  mode: 'ocean' | 'air' | 'truck';
+  mode: 'ocean' | 'air' | 'road';
   shipmentType: string;
   weight: string;
   volume: string;
@@ -37,7 +37,7 @@ export interface Rate {
 export interface Quote {
   id: string; // QT-CurrentYear-4 generated numbers
   lane: string;
-  mode: 'ocean' | 'air' | 'truck';
+  mode: 'ocean' | 'air' | 'road';
   containertype: string;
   currency: string;
   baseRate: number;

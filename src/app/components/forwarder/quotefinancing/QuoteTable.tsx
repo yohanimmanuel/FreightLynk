@@ -58,7 +58,7 @@ const QuotesPage = () => {
     switch (mode) {
       case 'ocean': return <Ship className="w-4 h-4 text-[#007bff]" />;
       case 'air': return <Plane className="w-4 h-4 text-[#007bff]" />;
-      case 'truck': return <Truck className="w-4 h-4 text-[#007bff]" />;
+      case 'road': return <Truck className="w-4 h-4 text-[#007bff]" />;
       default: return <Truck className="w-4 h-4 text-[#007bff]" />;
     }
   };

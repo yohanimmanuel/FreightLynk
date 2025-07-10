@@ -123,7 +123,7 @@ export const findMatchingField = (headers: string[], targetFields: string[]): st
 export const modePatterns = {
   ocean: ['ocean', 'sea', 'maritime', 'vessel', 'ship', 'container', 'fcl', 'lcl'],
   air: ['air', 'airfreight', 'air cargo', 'airline', 'flight'],
-  truck: ['truck', 'road', 'land', 'ground', 'ftl', 'ltl', 'trucking']
+  road: ['road', 'truck', 'land', 'ground', 'ftl', 'ltl', 'trucking']
 };
 
 export const shipmentTypePatterns = {
@@ -133,11 +133,11 @@ export const shipmentTypePatterns = {
   LTL: ['ltl', 'less than truck', 'partial truck', 'part load']
 };
 
-export const detectMode = (text: string): 'ocean' | 'air' | 'truck' => {
+export const detectMode = (text: string): 'ocean' | 'air' | 'road' => {
   const normalized = text.toLowerCase();
   for (const [mode, patterns] of Object.entries(modePatterns)) {
     if (patterns.some(pattern => normalized.includes(pattern))) {
-      return mode as 'ocean' | 'air' | 'truck';
+      return mode as 'ocean' | 'air' | 'road';
     }
   }
   return 'ocean'; // default
@@ -155,7 +155,7 @@ export const detectShipmentType = (text: string, mode: string): 'FCL' | 'LCL' | 
 
   // Default based on mode
   if (mode === 'air') return 'LCL';
-  if (mode === 'truck') return 'FTL';
+  if (mode === 'road') return 'FTL';
   return 'FCL';
 };
 

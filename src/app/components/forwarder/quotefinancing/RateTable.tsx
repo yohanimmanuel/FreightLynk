@@ -39,7 +39,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
   const { rates, setRates, addRate, updateRate, deleteRate, addQuote } = useQuoteRateStore();
   const [isExpanded, setIsExpanded] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterMode, setFilterMode] = useState<'all' | 'ocean' | 'air' | 'truck'>('all');
+  const [filterMode, setFilterMode] = useState<'all' | 'ocean' | 'air' | 'road'>('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [currentRate, setCurrentRate] = useState<Rate | null>(null);
@@ -282,11 +282,11 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
 
 
 
-  const getModeIcon = (mode: 'ocean' | 'air' | 'truck' | 'rail') => {
+  const getModeIcon = (mode: 'ocean' | 'air' | 'road' | 'rail') => {
     switch (mode) {
       case 'ocean': return <Ship className="w-4 h-4 text-[#007bff]" />;
       case 'air': return <Plane className="w-4 h-4 text-[#007bff]" />;
-      case 'truck': return <Truck className="w-4 h-4 text-[#007bff]" />;
+      case 'road': return <Truck className="w-4 h-4 text-[#007bff]" />;
       case 'rail': return <Train className="w-4 h-4 text-[#007bff]" />;
       default: return <Truck className="w-4 h-4 text-[#007bff]" />;
     }
@@ -368,7 +368,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
     const newRate: Rate = {
       id: Date.now(),
       lane: `${addFormData.originCity} - ${addFormData.destinationCity}`,
-      mode: addTransportMode as 'ocean' | 'air' | 'truck',
+      mode: addTransportMode as 'ocean' | 'air' | 'road',
       shipmentType: addTransportMode === 'air' ? 'LCL' : addShipmentType,
       weight: addFormData.weight,
       volume: addFormData.volume,
@@ -586,7 +586,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
             {showModeDropdown && (
               <div className="absolute right-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 w-40 z-50">
                 <div className="p-2">
-                  {['all', 'ocean', 'air', 'truck', 'rail'].map((mode) => (
+                  {['all', 'ocean', 'air', 'road', 'rail'].map((mode) => (
                     <button
                       key={mode}
                       onClick={() => {
@@ -1118,11 +1118,11 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                         <input type="text" name="price" value={addFormData.price} onChange={handleAddFormChange} placeholder="e.g. $2,100 - $2,800" className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                       </div>
                     </div>
-                  ) : ((addShipmentType === 'FTL') || (addTransportMode === 'truck') || (addShipmentType === 'FCL')) && (
+                  ) : ((addShipmentType === 'FTL') || (addTransportMode === 'road') || (addShipmentType === 'FCL')) && (
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">
-                          {addShipmentType === 'FCL' ? 'Container Type' : 'Truck Type'}
+                          {addShipmentType === 'FCL' ? 'Container Type' : 'Road Type'}
                         </label>
                         {addShipmentType === 'FCL' ? (
                           <div className="relative">
@@ -1424,7 +1424,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                                 onClick={() => {
                                   setCurrentRate(prev => ({
                                     ...prev!,
-                                    mode: option.value as 'ocean' | 'air' | 'truck',
+                                    mode: option.value as 'ocean' | 'air' | 'road',
                                     shipmentType: getShipmentTypeOptions(option.value)[0].value,
                                     weight: '',
                                     volume: '',
@@ -1669,7 +1669,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-xs font-medium text-gray-500 mb-1">
-                            {currentRate.shipmentType === 'FCL' ? 'Container Type' : 'Truck Type'}
+                            {currentRate.shipmentType === 'FCL' ? 'Container Type' : 'Road Type'}
                           </label>
                           {currentRate.shipmentType === 'FCL' ? (
                             <div className="relative">
@@ -1713,7 +1713,7 @@ const RateTable: React.FC<RateTableProps> = ({ view = 'summary', onViewAll = () 
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-500 mb-1">Base Rate</label>
-                          <input type="number" name="baseRate" value={currentRate.baseRate} onChange={handleInputChange} placeholder={currentRate.mode === 'truck' ? 'e.g. 1500' : 'e.g. 2000'} className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                          <input type="number" name="baseRate" value={currentRate.baseRate} onChange={handleInputChange} placeholder={currentRate.mode === 'road' ? 'e.g. 1500' : 'e.g. 2000'} className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-500 mb-1">Price Range</label>
