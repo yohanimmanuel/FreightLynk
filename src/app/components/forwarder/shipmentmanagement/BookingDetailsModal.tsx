@@ -1,6 +1,7 @@
 import React from 'react';
 import { X as XIcon } from 'lucide-react';
 import POSummaryTable from '@/app/components/clients/purchasesorders/POSummaryTable';
+import { useRouter } from 'next/navigation';
 
 interface BookingDetailsModalProps {
   formData: Record<string, any>;
@@ -85,6 +86,7 @@ const LabelValue: React.FC<{ label: string; value: React.ReactNode; isStatus?: b
 );
 
 const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({ formData, onClose }) => {
+  const router = useRouter();
   // Helper to render a section only if it has at least one value
   const renderSection = (title: string, keys: string[]) => {
     const items = keys
@@ -199,7 +201,7 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({ formData, onC
           </button>
           <button
             className="bg-[#007bff] text-sm hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-semibold shadow"
-            onClick={() => alert('Quote action for this booking')}
+            onClick={() => router.push('/bookings/create')}
           >
             Quote
           </button>

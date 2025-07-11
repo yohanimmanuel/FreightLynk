@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { useBookingStore } from '@/store/bookingStore';
 import { useAuthStore, UserRole } from '@/store/authStore';
 import ProtectedRoute from '@/app/components/ProtectedRoute';
+import PricingInvoiceForm from '@/app/components/forwarder/quotefinancing/PricingInvoiceForm';
 
 const ClientUI = () => {
   const router = useRouter();
@@ -31,9 +32,9 @@ const ClientUI = () => {
 
 const ForwarderUI = () => {
   return (
-    <div>
-      <h2>Forwarder Booking Creation</h2>
-      <p>Coming Soon...</p>
+    <div className="p-4">
+      <h2 className="text-2xl font-bold mb-4 text-gray-900">Create Pricing/Invoice</h2>
+      <PricingInvoiceForm />
     </div>
   );
 };

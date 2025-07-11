@@ -3,6 +3,7 @@ import { useBookingStore } from '@/store/bookingStore';
 import BookingDetailsModal from '@/app/components/forwarder/shipmentmanagement/BookingDetailsModal';
 import { Search, ChevronDown, X as XIcon, X } from 'lucide-react';
 import { mockForwarderBookings } from '@/store/bookingStore';
+import { useRouter } from 'next/navigation';
 
 // Booking type (should match client)
 type Booking = {
@@ -76,6 +77,7 @@ const BookingManage: React.FC = () => {
   const statusButtonRef = useRef<HTMLButtonElement>(null);
   const columnDropdownRef = useRef<HTMLDivElement>(null);
   const columnButtonRef = useRef<HTMLButtonElement>(null);
+  const router = useRouter();
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -160,9 +162,9 @@ const BookingManage: React.FC = () => {
         ref={columnDropdownRef}
         className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 w-64 max-h-80 overflow-hidden z-50"
       >
-        <div className="p-4">
-          <h3 className="text-sm font-medium text-gray-900 mb-3">Add/Remove Columns</h3>
-          <div className="space-y-2 max-h-64 overflow-y-auto">
+        <div className="p-4 hide-scrollbar max-h-70 overflow-y-auto">
+          <h3 className="text-sm font-medium text-gray-900 mb-3">Customize Columns</h3>
+          <div className="space-y-2 max-h-64 overflow-y-auto hide-scrollbar">
             {allColumns.map((column) => (
               <label key={column.key} className="flex items-center">
                 <input
@@ -240,7 +242,7 @@ const BookingManage: React.FC = () => {
             onClick={() => setShowColumnDropdown(!showColumnDropdown)}
             className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-900 text-sm rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
           >
-            Customize Columns
+            Add/Remove Columns
             <ChevronDown className={`w-4 h-4 transition-transform ${showColumnDropdown ? 'rotate-180' : ''}`} />
           </button>
           {renderColumnDropdown()}
@@ -276,8 +278,8 @@ const BookingManage: React.FC = () => {
           </button>
           <button
             className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-700"
-            // onClick={handleQuote} // To be implemented
-            disabled
+            onClick={() => router.push('/bookings/create')}
+            disabled={!selectedId}
           >
             Quote
           </button>

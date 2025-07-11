@@ -78,10 +78,6 @@ const ClientUI = () => {
         <h1 className="text-2xl font-bold text-gray-900">Purchase Orders</h1>
          <div className="flex flex-col md:flex-row gap-2 md:gap-3 w-full md:w-auto mt-2 md:mt-0">
           <button className="w-full md:w-auto flex items-center text-sm text-gray-900 gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-200">
-           <Upload className="w-4 h-4" />
-           Import CSV
-          </button>
-          <button className="w-full md:w-auto flex items-center text-sm text-gray-900 gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-200">
             <Download className="w-4 h-4" />
             Export CSV
           </button>

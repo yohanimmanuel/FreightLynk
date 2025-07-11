@@ -78,11 +78,6 @@ const ClientUI = () => {
     // In a real app, this would generate and download a CSV file
     console.log('Exporting CSV...');
   };
-  
-  const handleImportCSV = () => {
-    // In a real app, this would open a file dialog and process the CSV
-    console.log('Importing CSV...');
-  };
 
   const handleCreateBooking = () => {
     const bookingStore = useBookingStore.getState();
@@ -141,13 +136,6 @@ const ClientUI = () => {
               </div>
               <div className="flex flex-col md:flex-row items-stretch md:items-center space-y-2 md:space-y-0 md:space-x-2">
               <button
-                  onClick={handleImportCSV}
-                  className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-200"
-              >
-                  <Upload className="w-4 h-4" />
-                  Import CSV
-              </button>
-              <button
                   onClick={handleExportCSV}
                   className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-200"
               >
@@ -174,11 +162,6 @@ const ClientUI = () => {
 };
 
 const ForwarderUI = () => {
-  // Handlers for import/export (stubbed for now)
-  const handleImportCSV = () => {
-    // Implement import logic here
-    console.log('Importing CSV...');
-  };
   const handleExportCSV = () => {
     // Implement export logic here
     console.log('Exporting CSV...');
@@ -194,13 +177,6 @@ const ForwarderUI = () => {
               <p className="text-sm text-gray-600 mt-1">View and manage your received shipment bookings from clients.</p>
             </div>
             <div className="flex flex-col md:flex-row items-stretch md:items-center space-y-2 md:space-y-0 md:space-x-2">
-              <button
-                onClick={handleImportCSV}
-                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-200"
-              >
-                <Upload className="w-4 h-4" />
-                Import CSV
-              </button>
               <button
                 onClick={handleExportCSV}
                 className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-200"
