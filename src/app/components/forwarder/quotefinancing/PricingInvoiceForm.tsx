@@ -1,97 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import ReactDOM from 'react-dom';
 import { ChevronDown, X as XIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-
-// DropdownMenu component for consistent dropdown styling
-type DropdownOption = { value: string; label: string };
-
-interface DropdownMenuProps {
-  options: DropdownOption[];
-  value: string;
-  onChange: (value: string) => void;
-  className?: string;
-}
-
-const DropdownMenu: React.FC<DropdownMenuProps> = ({ options, value, onChange, className = "" }) => {
-  const [open, setOpen] = useState(false);
-  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
-  const buttonRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        open &&
-        buttonRef.current &&
-        !buttonRef.current.contains(event.target as Node)
-      ) {
-        setOpen(false);
-      }
-    };
-    if (open) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [open]);
-
-  useEffect(() => {
-    if (open && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      setDropdownPos({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-      });
-    }
-  }, [open]);
-
-  const selected = options.find((opt) => opt.value === value);
-
-  // The dropdown menu rendered as a portal
-  const dropdownContent = open
-    ? ReactDOM.createPortal(
-        <div
-          className="absolute z-50 bg-white rounded-lg shadow-lg border border-gray-200 min-w-[6rem]"
-          style={{
-            top: dropdownPos.top,
-            left: dropdownPos.left,
-            width: dropdownPos.width,
-            position: 'absolute',
-          }}
-        >
-          {options.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => {
-                onChange(opt.value);
-                setOpen(false);
-              }}
-              className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${
-                value === opt.value ? "bg-blue-50 text-blue-600" : "text-gray-700"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>,
-        document.body
-      )
-    : null;
-
-  return (
-    <div className={`relative w-full ${className}`}>
-      <button
-        ref={buttonRef}
-        type="button"
-        className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 text-gray-900 text-xs rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-        onClick={() => setOpen((v) => !v)}
-      >
-        {selected ? selected.label : "Select"}
-        <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
-      {dropdownContent}
-    </div>
-  );
-};
+import { useQuoteRateStore } from '../../../../store/quoterate';
 
 // Types
 interface ChargeLine {
@@ -125,6 +35,18 @@ const currencyOptions = [
 
 const PricingInvoiceForm: React.FC = () => {
   const router = useRouter();
+  const { quotes } = useQuoteRateStore();
+
+  // Prepare quote options for dropdown
+  const quoteOptions = [
+    { value: '', label: 'Create New Quote' },
+    ...quotes.map((q) => ({
+      value: q.id,
+      label: `${q.id} (${q.lane || ''})`,
+      quote: q,
+    })),
+  ];
+
   // Meta fields
   const [meta, setMeta] = useState({
     invoiceId: '',
@@ -298,13 +220,117 @@ const PricingInvoiceForm: React.FC = () => {
     ));
   };
 
+  // Prefill form when selecting a quote
+  const handleQuoteIdChange = (quoteId: string) => {
+    if (!quoteId) {
+      // Clear form for new quote
+      setMeta((prev) => ({ ...prev, invoiceId: '' }));
+      setChargeGroups([{ id: Date.now().toString(), title: '', charges: [{ id: (Date.now() + Math.random()).toString(), feeCode: '', feeName: '', comment: '', units: 1, unitPrice: 0, amount: 0, currency: defaultCurrency, manualAmount: false }] }]);
+      return;
+    }
+    const selected = quotes.find((q) => q.id === quoteId);
+    if (selected) {
+      setMeta((prev) => ({
+        ...prev,
+        invoiceId: selected.id,
+        carrier: selected.carrier || '',
+        dateIssued: (selected as any).dateIssued || today,
+        validUntil: (selected as any).validUntil || '',
+        currency: selected.currency || defaultCurrency,
+        taxes: (selected as any).taxes || 0,
+      }));
+      setChargeGroups([{
+        id: Date.now().toString(),
+        title: (selected as any).groupTitle || '',
+        charges: (selected as any).charges || [{ id: (Date.now() + Math.random()).toString(), feeCode: '', feeName: '', comment: '', units: 1, unitPrice: 0, amount: 0, currency: defaultCurrency, manualAmount: false }],
+      }]);
+    }
+  };
+
+  // Dropdown state for Invoice/Quote ID
+  const [showQuoteDropdown, setShowQuoteDropdown] = useState(false);
+  const quoteDropdownRef = useRef<HTMLDivElement>(null);
+  const quoteButtonRef = useRef<HTMLButtonElement>(null);
+  // Dropdown state for Currency
+  const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
+  const currencyDropdownRef = useRef<HTMLDivElement>(null);
+  const currencyButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        showQuoteDropdown &&
+        quoteDropdownRef.current &&
+        !quoteDropdownRef.current.contains(event.target as Node) &&
+        quoteButtonRef.current &&
+        !quoteButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowQuoteDropdown(false);
+      }
+      if (
+        showCurrencyDropdown &&
+        currencyDropdownRef.current &&
+        !currencyDropdownRef.current.contains(event.target as Node) &&
+        currencyButtonRef.current &&
+        !currencyButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowCurrencyDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showQuoteDropdown, showCurrencyDropdown]);
+
   return (
     <form className="w-full bg-white" onSubmit={handleSubmit}>
       {/* Meta/Reference Info */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 border-b border-gray-200 pb-6">
         <div>
-          <label className="block text-xs font-medium mb-1 text-gray-500">Invoice/Quote ID</label>
-          <input name="invoiceId" value={meta.invoiceId} onChange={handleMetaChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-900" placeholder="Auto or manual" />
+          <label className="block text-xs font-semibold mb-1 text-gray-500">Invoice/Quote ID</label>
+          <div className="relative">
+            <button
+              ref={quoteButtonRef}
+              type="button"
+              className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 text-gray-900 text-xs rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              onClick={() => setShowQuoteDropdown((v) => !v)}
+            >
+              {meta.invoiceId
+                ? `${meta.invoiceId} (${quotes.find(q => q.id === meta.invoiceId)?.lane || ''})`
+                : 'Create New Quote'}
+              <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${showQuoteDropdown ? 'rotate-180' : ''}`} />
+            </button>
+            {showQuoteDropdown && (
+              <div
+                ref={quoteDropdownRef}
+                className="absolute left-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 w-full z-50"
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleQuoteIdChange('');
+                    setShowQuoteDropdown(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${meta.invoiceId === '' ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                >
+                  Create New Quote
+                </button>
+                {quotes.map((q) => (
+                  <button
+                    key={q.id}
+                    type="button"
+                    onClick={() => {
+                      handleQuoteIdChange(q.id);
+                      setShowQuoteDropdown(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${meta.invoiceId === q.id ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                  >
+                    {q.id} ({q.lane || ''})
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
         <div>
           <label className="block text-xs font-medium mb-1 text-gray-500">Carrier/Service Provider</label>
@@ -324,11 +350,37 @@ const PricingInvoiceForm: React.FC = () => {
         </div>
         <div>
           <label className="block text-xs font-medium mb-1 text-gray-500">Currency</label>
-          <DropdownMenu
-            options={currencyOptions}
-            value={meta.currency}
-            onChange={handleCurrencyChange}
-          />
+          <div className="relative">
+            <button
+              ref={currencyButtonRef}
+              type="button"
+              className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 text-gray-900 text-xs rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              onClick={() => setShowCurrencyDropdown((v) => !v)}
+            >
+              {meta.currency}
+              <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${showCurrencyDropdown ? 'rotate-180' : ''}`} />
+            </button>
+            {showCurrencyDropdown && (
+              <div
+                ref={currencyDropdownRef}
+                className="absolute left-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 w-full z-50"
+              >
+                {currencyOptions.map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => {
+                      handleCurrencyChange(opt.value);
+                      setShowCurrencyDropdown(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${meta.currency === opt.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
       {/* Charges Table */}
@@ -403,11 +455,7 @@ const PricingInvoiceForm: React.FC = () => {
                         <input type="checkbox" checked={line.manualAmount} onChange={e => handleChargeChange(group.id, line.id, 'manualAmount', e.target.checked)} />
                       </td>
                       <td className="p-2 border border-gray-300">
-                        <DropdownMenu
-                          options={currencyOptions}
-                          value={line.currency}
-                          onChange={(val: string) => handleChargeCurrencyChange(group.id, line.id, val)}
-                        />
+                        <span className="text-xs text-gray-700">{meta.currency}</span>
                       </td>
                       <td className="p-2 border border-gray-300 text-center">
                         <button type="button" onClick={() => removeCharge(group.id, line.id)} className="text-red-500 hover:text-red-700 font-bold text-lg" disabled={group.charges.length === 1}>×</button>
