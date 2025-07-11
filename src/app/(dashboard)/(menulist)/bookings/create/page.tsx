@@ -33,7 +33,7 @@ const ClientUI = () => {
 const ForwarderUI = () => {
   return (
     <div className="p-4">
-      <h2 className="text-2xl font-bold mb-4 text-gray-900">Create Pricing/Invoice</h2>
+      <h2 className="text-2xl font-bold mb-2 text-gray-900">Create Pricing/Invoice</h2>
       <PricingInvoiceForm />
     </div>
   );

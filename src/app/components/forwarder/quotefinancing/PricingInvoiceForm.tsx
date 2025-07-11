@@ -2,6 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, X as XIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useQuoteRateStore } from '../../../../store/quoterate';
+import { useSearchParams } from 'next/navigation';
+import { mockForwarderBookings } from '../../../../store/bookingStore';
+import BookingDetailsModal from '../shipmentmanagement/BookingDetailsModal';
 
 // Types
 interface ChargeLine {
@@ -36,10 +39,13 @@ const currencyOptions = [
 const PricingInvoiceForm: React.FC = () => {
   const router = useRouter();
   const { quotes } = useQuoteRateStore();
+  const searchParams = useSearchParams();
+  const bookingId = searchParams.get('bookingId');
+  const bookingData = bookingId ? mockForwarderBookings.find(b => b.bookingId === bookingId) : null;
 
   // Prepare quote options for dropdown
   const quoteOptions = [
-    { value: '', label: 'Create New Quote' },
+    { value: '', label: 'Select Your Quote ID' },
     ...quotes.map((q) => ({
       value: q.id,
       label: `${q.id} (${q.lane || ''})`,
@@ -208,18 +214,6 @@ const PricingInvoiceForm: React.FC = () => {
     setChargeGroups(prev => prev.map(group => ({ ...group, charges: group.charges.map(line => ({ ...line, currency: value })) })));
   };
 
-  // Currency change for a single charge line
-  const handleChargeCurrencyChange = (groupId: string, lineId: string, value: string) => {
-    setChargeGroups(prev => prev.map(group =>
-      group.id === groupId
-        ? {
-            ...group,
-            charges: group.charges.map(line => line.id === lineId ? { ...line, currency: value } : line),
-          }
-        : group
-    ));
-  };
-
   // Prefill form when selecting a quote
   const handleQuoteIdChange = (quoteId: string) => {
     if (!quoteId) {
@@ -255,6 +249,7 @@ const PricingInvoiceForm: React.FC = () => {
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
   const currencyDropdownRef = useRef<HTMLDivElement>(null);
   const currencyButtonRef = useRef<HTMLButtonElement>(null);
+  const [showBookingModal, setShowBookingModal] = useState(false);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -284,8 +279,21 @@ const PricingInvoiceForm: React.FC = () => {
 
   return (
     <form className="w-full bg-white" onSubmit={handleSubmit}>
+      {/* Booking ID Section */}
+      <div className="mb-2 flex items-center gap-2 border-b border-gray-200 pb-4 mb-4">
+        <label className="block text-xs font-semibold text-gray-500">Booking ID:</label>
+        <span className="text-xs text-gray-900 font-medium bg-gray-100 rounded px-2 py-1 border border-gray-300">{bookingId || 'N/A'}</span>
+        <button
+          type="button"
+          className="ml-2 px-3 py-1 rounded bg-blue-100 text-blue-700 border border-blue-300 text-xs font-medium hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={() => setShowBookingModal(true)}
+          disabled={!bookingData}
+        >
+          View
+        </button>
+      </div>
       {/* Meta/Reference Info */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 border-b border-gray-200 pb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 border-b border-gray-200 pb-6">
         <div>
           <label className="block text-xs font-semibold mb-1 text-gray-500">Invoice/Quote ID</label>
           <div className="relative">
@@ -297,7 +305,7 @@ const PricingInvoiceForm: React.FC = () => {
             >
               {meta.invoiceId
                 ? `${meta.invoiceId} (${quotes.find(q => q.id === meta.invoiceId)?.lane || ''})`
-                : 'Create New Quote'}
+                : 'Select your Quote ID'}
               <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${showQuoteDropdown ? 'rotate-180' : ''}`} />
             </button>
             {showQuoteDropdown && (
@@ -305,16 +313,6 @@ const PricingInvoiceForm: React.FC = () => {
                 ref={quoteDropdownRef}
                 className="absolute left-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 w-full z-50"
               >
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleQuoteIdChange('');
-                    setShowQuoteDropdown(false);
-                  }}
-                  className={`w-full text-left px-3 py-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${meta.invoiceId === '' ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
-                >
-                  Create New Quote
-                </button>
                 {quotes.map((q) => (
                   <button
                     key={q.id}
@@ -506,6 +504,12 @@ const PricingInvoiceForm: React.FC = () => {
         <button type="button" className="px-5 py-2 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 font-medium hover:bg-gray-100">Save</button>
         <button type="submit" className="px-5 py-2 rounded-lg bg-[#007bff] text-sm text-white font-semibold hover:bg-blue-700">Submit</button>
       </div>
+      {showBookingModal && bookingData && (
+        <BookingDetailsModal
+          formData={bookingData}
+          onClose={() => setShowBookingModal(false)}
+        />
+      )}
     </form>
   );
 };

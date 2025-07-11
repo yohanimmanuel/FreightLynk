@@ -365,10 +365,10 @@ const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose }) => {
                     ))}
                   </select>
                 </td>
-                <td className="px-4 py-2 text-xs">
+                <td className="px-4 py-2 text-xs text-gray-900">
                   {headerMappingInfo[header]?.confidence !== undefined ? (headerMappingInfo[header].confidence * 100).toFixed(0) + '%' : '-'}
                 </td>
-                <td className="px-4 py-2 text-xs">
+                <td className="px-4 py-2 text-xs text-gray-900">
                   {headerMappingInfo[header]?.matchedSynonym || '-'}
                 </td>
               </tr>

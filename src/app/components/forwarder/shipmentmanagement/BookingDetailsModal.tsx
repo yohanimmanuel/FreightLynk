@@ -189,7 +189,7 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({ formData, onC
         {Object.entries(SECTION_GROUPS).map(([section, keys]) =>
           section === 'Booking Info' || section === 'Shipment Tags'
             ? null
-            : renderSection(section, keys)
+            : <React.Fragment key={section}>{renderSection(section, keys)}</React.Fragment>
         )}
         {renderShipmentTagsSection()}
         <div className="mt-4 border-t border-gray-200 pt-4 flex justify-end gap-3">
@@ -198,12 +198,6 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({ formData, onC
             onClick={onClose}
           >
             Cancel
-          </button>
-          <button
-            className="bg-[#007bff] text-sm hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-semibold shadow"
-            onClick={() => router.push('/bookings/create')}
-          >
-            Quote
           </button>
         </div>
       </div>

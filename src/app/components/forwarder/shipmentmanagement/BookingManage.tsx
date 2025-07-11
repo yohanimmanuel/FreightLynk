@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useBookingStore } from '@/store/bookingStore';
 import BookingDetailsModal from '@/app/components/forwarder/shipmentmanagement/BookingDetailsModal';
-import { Search, ChevronDown, X as XIcon, X } from 'lucide-react';
+import { Search, ChevronDown, X as XIcon, X, AlertTriangle } from 'lucide-react';
 import { mockForwarderBookings } from '@/store/bookingStore';
 import { useRouter } from 'next/navigation';
 
@@ -79,9 +79,31 @@ const BookingManage: React.FC = () => {
   const columnButtonRef = useRef<HTMLButtonElement>(null);
   const router = useRouter();
 
+  const commonReasons = [
+    'Incomplete documents',
+    'Capacity full',
+    'Commodity not accepted',
+    'Rate not agreed',
+    'Other',
+  ];
+  const [selectedReason, setSelectedReason] = useState('');
+  const [showToast, setShowToast] = useState(false);
+  const [showReasonDropdown, setShowReasonDropdown] = useState(false);
+  const reasonDropdownRef = useRef<HTMLDivElement>(null);
+  const reasonButtonRef = useRef<HTMLButtonElement>(null);
+
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      if (
+        showReasonDropdown &&
+        reasonDropdownRef.current &&
+        !reasonDropdownRef.current.contains(event.target as Node) &&
+        reasonButtonRef.current &&
+        !reasonButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowReasonDropdown(false);
+      }
       if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node) &&
           statusButtonRef.current && !statusButtonRef.current.contains(event.target as Node)) {
         setShowStatusDropdown(false);
@@ -95,7 +117,7 @@ const BookingManage: React.FC = () => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [showReasonDropdown, showStatusDropdown, showColumnDropdown]);
 
   // Filter bookings based on search and status
   const filteredBookings = useMemo(() => {
@@ -205,8 +227,13 @@ const BookingManage: React.FC = () => {
   const handleRejectSubmit = () => {
     setShowRejectModal(false);
     setRejectComment('');
+    setSelectedReason('');
     setSelectedId(null);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 2500);
   };
+
+  const selectedBookingObj = filteredBookings.find(b => b.id === selectedId);
 
   return (
     <div>
@@ -278,7 +305,7 @@ const BookingManage: React.FC = () => {
           </button>
           <button
             className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-700"
-            onClick={() => router.push('/bookings/create')}
+            onClick={() => router.push(`/bookings/create?bookingId=${selectedId}`)}
             disabled={!selectedId}
           >
             Quote
@@ -351,40 +378,93 @@ const BookingManage: React.FC = () => {
           />
         )}
         {/* Reject Modal */}
-        {showRejectModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-4 relative">
+        {showRejectModal && selectedBookingObj && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" role="dialog" aria-modal="true" aria-labelledby="reject-modal-title">
+            <div className="bg-white rounded-lg shadow-lg w-full max-w-xl p-4 relative">
               <button
                 className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-xl"
                 onClick={() => setShowRejectModal(false)}
                 aria-label="Close"
               >
-               <X size={20} className="text-gray-400 hover:text-gray-600" />
+                <X size={20} className="text-gray-400 hover:text-gray-600" />
               </button>
-              <h3 className="text-xl text-gray-900 font-semibold mb-4">Reject Booking</h3>
-              <textarea
-                className="w-full border border-gray-300 rounded-lg p-2 mb-4 text-xs text-gray-900"
-                rows={4}
-                placeholder="Please provide a reason for rejection..."
-                value={rejectComment}
-                onChange={e => setRejectComment(e.target.value)}
-              />
-              <div className="flex justify-end">
+              <h3 id="reject-modal-title" className="text-lg text-red-600 font-semibold mb-4 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-red-500" /> Reject Booking {selectedBookingObj.id}
+              </h3>
+              <div className="mb-4 text-sm text-gray-700">
+                <b>{selectedBookingObj.shipper}</b> → <b>{selectedBookingObj.consignee}</b><br />
+                {selectedBookingObj.origin} → {selectedBookingObj.destination}
+              </div>
+              <label htmlFor="reject-reason" className="block text-xs font-medium text-gray-700 mb-1">Reason for rejection</label>
+              <div className="relative mb-2">
                 <button
-                  className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg mr-2"
+                  ref={reasonButtonRef}
+                  type="button"
+                  className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 text-gray-900 text-xs rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  onClick={() => setShowReasonDropdown((v) => !v)}
+                  aria-haspopup="listbox"
+                  aria-expanded={showReasonDropdown}
+                  id="reject-reason"
+                >
+                  {selectedReason ? commonReasons.find(r => r === selectedReason) : 'Select reason...'}
+                  <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${showReasonDropdown ? 'rotate-180' : ''}`} />
+                </button>
+                {showReasonDropdown && (
+                  <div
+                    ref={reasonDropdownRef}
+                    className="absolute left-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 w-full z-50"
+                    role="listbox"
+                    tabIndex={-1}
+                  >
+                    {commonReasons.map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => {
+                          setSelectedReason(r);
+                          setShowReasonDropdown(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${selectedReason === r ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                        role="option"
+                        aria-selected={selectedReason === r}
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {selectedReason && (
+                <textarea
+                  className="w-full border border-gray-300 rounded-lg p-2 mb-4 text-xs text-gray-900"
+                  rows={4}
+                  placeholder="Please provide a brief explanation for rejection..."
+                  value={rejectComment}
+                  onChange={e => setRejectComment(e.target.value)}
+                  aria-label="Rejection explanation"
+                />
+              )}
+              <div className="flex justify-end gap-2 mt-4">
+                <button
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm px-4 py-2 rounded-lg"
                   onClick={() => setShowRejectModal(false)}
                 >
                   Cancel
                 </button>
                 <button
-                  className="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
+                  className="bg-red-500 hover:bg-red-700 text-white text-sm px-4 py-2 rounded-lg"
                   onClick={handleRejectSubmit}
-                  disabled={!rejectComment.trim()}
+                  disabled={selectedReason === '' || !rejectComment.trim()}
                 >
                   Submit
                 </button>
               </div>
             </div>
+          </div>
+        )}
+        {showToast && (
+          <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 text-sm font-semibold" role="status">
+            Booking rejected.
           </div>
         )}
       </section>

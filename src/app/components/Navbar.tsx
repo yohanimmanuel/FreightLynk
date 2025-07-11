@@ -38,7 +38,7 @@ const Navbar = () => {
   };
 
   return (
-    <div className="flex items-center justify-between p-4">
+    <div className="flex items-center justify-between p-4 z-30 relative">
       {/* SEARCH BAR */}
       <div className="hidden md:flex items-center gap-1 text-black text-xs rounded-full ring-[1.5px] ring-gray-300 px-3">
         <Search size={15} className="text-gray-500" />
