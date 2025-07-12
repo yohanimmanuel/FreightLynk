@@ -1,7 +1,6 @@
 'use client';
 
 import RateTable from "@/app/components/forwarder/quotefinancing/RateTable";
-import { Upload, Download, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAuthStore, UserRole } from '@/store/authStore';
 import ProtectedRoute from '@/app/components/ProtectedRoute';
@@ -18,7 +17,8 @@ const ClientUI = () => {
 const ForwarderUI = () => {
   return (
     <div className="p-4">
-      <RateTable view="full" />
+      <h2 className="text-2xl font-semibold text-gray-900 mb-4">Rate Management</h2>
+      <RateTable />
     </div>
   );
 };

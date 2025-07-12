@@ -4,15 +4,16 @@ import { Rate } from '../../../../store/quoterate';
 import { parseFile, ParsedRow } from '../../../utils/fileParser';
 import { mapHeadersFuzzy, saveUserMapping } from '../../../utils/aiHeaderMapper';
 import fieldSynonyms from '../../../utils/fieldSynonyms.json';
-import { standardFields as rawStandardFields } from '../../../utils/standardFields';
+import { STANDARD_FIELDS } from '../../../utils/standardFields';
 
 // Add a type for standardFields
 interface StandardField {
   key: string;
   label: string;
   visible?: boolean;
+  required?: boolean; // Added required property
 }
-const standardFields = rawStandardFields as StandardField[];
+const standardFields = STANDARD_FIELDS['FCL'] as StandardField[];
 
 // Add a type for mapping info
 interface HeaderMappingInfo {
@@ -21,7 +22,9 @@ interface HeaderMappingInfo {
   matchedSynonym?: string;
 }
 
+// Update ParsedRate type to allow string indexing
 interface ParsedRate {
+  [key: string]: any;
   id: number;
   originCity: string;
   destinationCity: string;
@@ -46,9 +49,11 @@ interface ParsedRate {
   parsingNotes: string[];
 }
 
+// Add a mode prop to RateParser
 interface RateParserProps {
   onRatesParsed: (rates: Rate[]) => void;
   onClose: () => void;
+  mode?: keyof typeof STANDARD_FIELDS;
 }
 
 function excelDateToJSDate(serial: number): string {
@@ -58,7 +63,7 @@ function excelDateToJSDate(serial: number): string {
   return date_info.toISOString().split('T')[0];
 }
 
-const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose }) => {
+const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose, mode = 'FCL' }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [parsedRates, setParsedRates] = useState<ParsedRate[]>([]);
@@ -70,6 +75,9 @@ const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose }) => {
   const [mappingConfirmed, setMappingConfirmed] = useState(false);
   const [rawData, setRawData] = useState<ParsedRow[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Use the standard fields for the selected mode
+  const standardFields = STANDARD_FIELDS[mode];
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -389,16 +397,17 @@ const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose }) => {
     </div>
   );
 
+  const missingRequiredMapping = standardFields.some(field => field.required && !headerMapping[field.key]);
+  const missingRequiredInPreview = parsedRates.some(row => standardFields.some(field => field.required && !row[field.key]));
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Rate Parser</h2>
-              <p className="text-sm text-gray-600 mt-1">
-                Upload CSV or Excel files to automatically parse freight rates
-              </p>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Import {mode} Rates</h2>
+              <p className="mb-4 text-sm text-gray-700">Map your columns to the required fields for {mode}. Required fields are marked with *.</p>
             </div>
             <button
               onClick={onClose}
@@ -521,40 +530,22 @@ const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose }) => {
                   {previewMode && (
                     <div className="border border-gray-200 rounded-lg overflow-hidden">
                       <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
+                        <table className="min-w-full divide-y divide-gray-200 text-xs mt-4">
                           <thead className="bg-gray-50">
                             <tr>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Origin</th>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Destination</th>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mode</th>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rate</th>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Carrier</th>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
+                              {standardFields.map(field => (
+                                <th key={field.key} className="px-4 py-2 text-left font-medium text-gray-500 uppercase whitespace-nowrap">{field.label}{field.required && <span className="text-red-500">*</span>}</th>
+                              ))}
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
-                            {parsedRates.slice(0, 10).map((rate) => (
-                              <tr key={rate.id} className="hover:bg-gray-50">
-                                <td className="px-4 py-3">
-                                  {rate.status === 'complete' ? (
-                                    <CheckCircle className="w-4 h-4 text-green-500" />
-                                  ) : rate.status === 'incomplete' ? (
-                                    <AlertCircle className="w-4 h-4 text-yellow-500" />
-                                  ) : (
-                                    <X className="w-4 h-4 text-red-500" />
-                                  )}
-                                </td>
-                                <td className="px-4 py-3 text-xs text-gray-900">{rate.originCity}</td>
-                                <td className="px-4 py-3 text-xs text-gray-900">{rate.destinationCity}</td>
-                                <td className="px-4 py-3 text-xs text-gray-900 capitalize">{rate.mode}</td>
-                                <td className="px-4 py-3 text-xs text-gray-900">{rate.shipmentType}</td>
-                                <td className="px-4 py-3 text-xs text-gray-900">{rate.currency} {rate.baseRate}</td>
-                                <td className="px-4 py-3 text-xs text-gray-900">{rate.carrier}</td>
-                                <td className="px-4 py-3 text-xs text-gray-500 max-w-xs truncate">
-                                  {rate.parsingNotes.join(', ')}
-                                </td>
+                            {parsedRates.length === 0 ? (
+                              <tr><td colSpan={standardFields.length} className="text-center py-8 text-gray-400">No preview data.</td></tr>
+                            ) : parsedRates.map((row, idx) => (
+                              <tr key={idx}>
+                                {standardFields.map(field => (
+                                  <td key={field.key} className={`px-4 py-2 whitespace-nowrap ${field.required && !row[field.key] ? 'bg-red-50 text-red-500' : ''}`}>{row[field.key] || (field.required ? <span className="text-xs">Missing</span> : '')}</td>
+                                ))}
                               </tr>
                             ))}
                           </tbody>
@@ -593,13 +584,15 @@ const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose }) => {
                       </button>
                       <button
                         onClick={handleImportRates}
-                        disabled={parsedRates.filter(r => r.status === 'complete').length === 0}
-                        className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={missingRequiredMapping || missingRequiredInPreview}
+                        className={`px-4 py-2 text-sm font-semibold text-white rounded-md ${missingRequiredMapping || missingRequiredInPreview ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#007bff] hover:bg-blue-700'}`}
                       >
-                        Import {parsedRates.length} Rates
+                        Import Rates
                       </button>
                     </div>
                   </div>
+                  {missingRequiredMapping && <div className="text-red-500 text-xs mt-2">Please map all required fields before importing.</div>}
+                  {!missingRequiredMapping && missingRequiredInPreview && <div className="text-red-500 text-xs mt-2">Some required fields are missing in your data. Please review the preview table.</div>}
                 </div>
               )}
             </div>

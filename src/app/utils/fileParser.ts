@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx';
+import fieldSynonyms from './fieldSynonyms.json';
 
 // Utility functions for parsing different file formats
 
@@ -77,8 +78,28 @@ export const parseFile = async (file: File): Promise<ParsedRow[]> => {
 
           // Find all contiguous non-empty blocks
           const blocks = findTableBlocks(rows);
-          // Pick the largest block (most rows * columns)
-          const mainBlock = blocks.sort((a, b) => (b.rows.length * (b.rows[0]?.length || 0)) - (a.rows.length * (a.rows[0]?.length || 0)))[0];
+
+          // Helper: count how many headers in a row match known field synonyms
+          function countHeaderMatches(row: any[]): number {
+            let count = 0;
+            for (const cell of row) {
+              const cellStr = String(cell).trim().toLowerCase();
+              for (const synonyms of Object.values(fieldSynonyms)) {
+                if (synonyms.some((syn: string) => syn.toLowerCase() === cellStr)) {
+                  count++;
+                  break;
+                }
+              }
+            }
+            return count;
+          }
+
+          // Try to find a block whose first row matches at least 2-3 known field synonyms
+          let mainBlock = blocks.find(block => countHeaderMatches(block.rows[0]) >= 2);
+          // If not found, fall back to largest block
+          if (!mainBlock) {
+            mainBlock = blocks.sort((a, b) => (b.rows.length * (b.rows[0]?.length || 0)) - (a.rows.length * (a.rows[0]?.length || 0)))[0];
+          }
           if (!mainBlock) throw new Error('No table found in sheet');
 
           const headers = mainBlock.rows[0].map((h: any) => String(h).trim());

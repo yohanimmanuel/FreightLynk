@@ -1,4 +1,4 @@
-import { standardFields } from './standardFields';
+import { STANDARD_FIELDS } from './standardFields';
 import fieldSynonyms from './fieldSynonyms.json';
 
 // Simple Levenshtein distance for fuzzy matching

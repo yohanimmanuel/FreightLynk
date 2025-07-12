@@ -1,7 +1,7 @@
 'use client';
 
 import QuoteTable from "@/app/components/forwarder/quotefinancing/QuoteTable";
-import RateTable from "@/app/components/forwarder/quotefinancing/RateTable";
+import RateTable from "@/app/components/forwarder/quotefinancing/RateTableV";
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuthStore, UserRole } from '@/store/authStore';
@@ -18,10 +18,6 @@ const ClientUI = () => {
 
 const ForwarderUI = () => {
   const router = useRouter();
-  
-  const handleViewAll = () => {
-    router.push('/quotes/rates');
-  };
 
   const handleSearchQuote = () => {
     router.push('/quotes/search');
@@ -30,8 +26,8 @@ const ForwarderUI = () => {
   return (
    <div>
       {/* Header and Rate Table Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 px-2 md:px-4">
-        <div className="md:col-span-2 col-span-1">
+      <div className="grid grid-cols-1 md:grid-cols-1 gap-3 px-2 md:px-4">
+        <div className="md:col-span-1 col-span-1">
           {/* Header */}
           <div className="bg-white border-b border-gray-200 px-2 py-2 mb-2">
             <div className="flex items-center justify-between mb-2">
@@ -48,12 +44,6 @@ const ForwarderUI = () => {
             </div>
           </div>
           <QuoteTable />
-        </div>
-        <div className="md:col-span-1 col-span-1 p-0 md:p-2 mt-4 md:mt-0">
-          <RateTable 
-            view="summary" 
-            onViewAll={handleViewAll} 
-          />
         </div>
       </div>
     </div>

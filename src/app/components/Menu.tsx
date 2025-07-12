@@ -40,7 +40,8 @@ import {
   CreditCard,
   BriefcaseBusiness,
   Earth,
-  Globe
+  Globe,
+  CircleDollarSign
 } from 'lucide-react';
 
 import { useMenuContext } from '@/app/(dashboard)/layout';
@@ -72,6 +73,12 @@ const menuItems: MenuSection[] = [
             label: "Dashboard",
             href: "/", // We'll handle this dynamically
             visible: ["admin", "client", "forwarder", "logisticsprovider"],
+          },
+          {
+            icon: CircleDollarSign,
+            label: "Rates",
+            href: "/rates",
+            visible: ["admin", "forwarder", "logisticsprovider"],
           },
           {
             icon: BriefcaseBusiness,

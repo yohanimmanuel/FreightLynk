@@ -386,7 +386,7 @@ const BookingManage: React.FC = () => {
                 onClick={() => setShowRejectModal(false)}
                 aria-label="Close"
               >
-                <X size={20} className="text-gray-400 hover:text-gray-600" />
+               <X size={20} className="text-gray-400 hover:text-gray-600" />
               </button>
               <h3 id="reject-modal-title" className="text-lg text-red-600 font-semibold mb-4 flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 text-red-500" /> Reject Booking {selectedBookingObj.id}
@@ -435,14 +435,14 @@ const BookingManage: React.FC = () => {
                 )}
               </div>
               {selectedReason && (
-                <textarea
-                  className="w-full border border-gray-300 rounded-lg p-2 mb-4 text-xs text-gray-900"
-                  rows={4}
+              <textarea
+                className="w-full border border-gray-300 rounded-lg p-2 mb-4 text-xs text-gray-900"
+                rows={4}
                   placeholder="Please provide a brief explanation for rejection..."
-                  value={rejectComment}
-                  onChange={e => setRejectComment(e.target.value)}
+                value={rejectComment}
+                onChange={e => setRejectComment(e.target.value)}
                   aria-label="Rejection explanation"
-                />
+              />
               )}
               <div className="flex justify-end gap-2 mt-4">
                 <button
