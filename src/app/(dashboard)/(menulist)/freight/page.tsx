@@ -7,7 +7,7 @@ import ProtectedRoute from '@/app/components/ProtectedRoute';
 const ClientUI = () => {
   return (
     <div>
-      <h2>Client Transportation</h2>
+      <h2>Client Freight</h2>
       <p>Coming Soon...</p>
     </div>
   );
@@ -16,7 +16,7 @@ const ClientUI = () => {
 const ForwarderUI = () => {
   return (
     <div>
-      <h2>Forwarder Transportation</h2>
+      <h2>Forwarder Freight</h2>
       <p>Coming Soon...</p>
     </div>
   );
@@ -25,7 +25,7 @@ const ForwarderUI = () => {
 const LogisticsProviderUI = () => {
   return (
     <div>
-      <h2>Logistics Provider Transportation</h2>
+      <h2>Logistics Provider Freight</h2>
       <p>Coming Soon...</p>
     </div>
   );
@@ -34,13 +34,13 @@ const LogisticsProviderUI = () => {
 const AdminUI = () => {
   return (
     <div>
-      <h2>Admin Transportation</h2>
+      <h2>Admin Freight</h2>
       <p>Coming Soon...</p>
     </div>
   );
 };
 
-const TransportationPage = () => {
+const FreightPage = () => {
   const { user } = useAuthStore();
   const [roleBasedUI, setRoleBasedUI] = useState<React.ReactNode | null>(null);
 
@@ -74,4 +74,4 @@ const TransportationPage = () => {
   );
 };
 
-export default TransportationPage;
+export default FreightPage;

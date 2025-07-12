@@ -38,7 +38,9 @@ import {
   DollarSign,
   Wallet,
   CreditCard,
-  BriefcaseBusiness
+  BriefcaseBusiness,
+  Earth,
+  Globe
 } from 'lucide-react';
 
 import { useMenuContext } from '@/app/(dashboard)/layout';
@@ -90,9 +92,9 @@ const menuItems: MenuSection[] = [
             visible: ["admin", "client", "forwarder", "logisticsprovider"],
           },
           {
-            icon: Truck,
-            label: "Transportation",
-            href: "/transportation",
+            icon: Globe,
+            label: "Freight",
+            href: "/freight",
             visible: ["forwarder", "logisticsprovider"],
           },
           {
@@ -142,12 +144,6 @@ const menuItems: MenuSection[] = [
             icon: Building2,
             label: "Business",
             href: "/business", // Changed to # since it's dropdown only
-            visible: ["admin", "client", "forwarder", "logisticsprovider"],
-          },
-          {
-            icon: HelpCircle,
-            label: "Help",
-            href: "/support",
             visible: ["admin", "client", "forwarder", "logisticsprovider"],
           },
           {
