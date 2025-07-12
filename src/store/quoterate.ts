@@ -51,6 +51,7 @@ export interface Rate {
   truckType?: string;
   rate?: string;
   status?: string;
+  mode?: string; // Added for mode filtering in RateTable
 }
 
 // Quote interface (simplified version of Rate)
@@ -124,6 +125,26 @@ const generateQuotesFromRates = (rates: Rate[]): Quote[] => {
   }));
 };
 
+// Helper to infer mode for legacy rates (only FCL, LCL, AIR, FTL, LTL)
+function inferMode(rate: Rate): string {
+  // AIR: if airport fields exist
+  if (rate.originAirport || rate.destinationAirport || rate.airline) return 'AIR';
+  // FTL/LTL: if truckType exists
+  if (rate.truckType) {
+    // Heuristic: if minCharge or baseRate is present, assume LTL, else FTL
+    if (rate.minCharge || rate.baseRate) return 'LTL';
+    return 'FTL';
+  }
+  // LCL: if no container fields but has price or baseRate (heuristic)
+  const hasFclContainer = rate.ocean20dc || rate.ocean40dc || rate.ocean40hc || rate.ocean45hc;
+  const hasLcl = rate.price || rate.baseRate;
+  if (!hasFclContainer && hasLcl) return 'LCL';
+  // FCL: if container fields exist
+  if (hasFclContainer) return 'FCL';
+  // Default fallback
+  return 'FCL';
+}
+
 // Zustand store interface
 export interface QuoteRateStore {
   rates: Rate[];
@@ -153,54 +174,58 @@ export interface QuoteRateStore {
 // Create the store
 export const useQuoteRateStore = create<QuoteRateStore>()(
   persist(
-    (set, get) => ({
-      rates: mockRates,
-      quotes: generateQuotesFromRates(mockRates),
-      selectedRate: null,
-      selectedQuote: null,
-      
-      // Rate actions
-      setRates: (rates: Rate[]) => set({ rates }),
-      addRate: (rate: Rate) => set((state) => ({ rates: [...state.rates, rate ]})),
-      updateRate: (updatedRate: Rate) => 
-        set((state) => ({
-          rates: state.rates.map(rate => 
-            rate.id === updatedRate.id ? updatedRate : rate
-          )
-        })),
-      deleteRate: (id: number) => 
-        set((state) => ({
-          rates: state.rates.filter(rate => rate.id !== id)
-        })),
-      setSelectedRate: (rate: Rate | null) => set({ selectedRate: rate }),
-      
-      // Quote actions
-      setQuotes: (quotes: Quote[]) => set({ quotes }),
-      addQuote: (quote: Quote) => set((state) => ({ quotes: [...state.quotes, quote ]})),
-      updateQuote: (updatedQuote: Quote) => 
-        set((state) => ({
-          quotes: state.quotes.map(quote => 
-            quote.id === updatedQuote.id ? updatedQuote : quote
-          )
-        })),
-      deleteQuote: (id: string) => 
-        set((state) => ({
-          quotes: state.quotes.filter(quote => quote.id !== id)
-        })),
-      setSelectedQuote: (quote: Quote | null) => set({ selectedQuote: quote }),
-      
-      // Utility actions
-      generateQuotesFromRates: () => {
-        const { rates } = get();
-        const quotes = generateQuotesFromRates(rates);
-        set({ quotes });
-      },
-      updateQuotesFromRates: () => {
-        const { rates } = get();
-        const quotes = generateQuotesFromRates(rates);
-        set({ quotes });
-      }
-    }),
+    (set, get) => {
+      // Migrate legacy rates to ensure mode is set
+      let migratedRates = mockRates.map(rate => ({ ...rate, mode: rate.mode || inferMode(rate) }));
+      return {
+        rates: migratedRates,
+        quotes: generateQuotesFromRates(migratedRates),
+        selectedRate: null,
+        selectedQuote: null,
+        
+        // Rate actions
+        setRates: (rates: Rate[]) => set({ rates }),
+        addRate: (rate: Rate) => set((state) => ({ rates: [...state.rates, rate ]})),
+        updateRate: (updatedRate: Rate) => 
+          set((state) => ({
+            rates: state.rates.map(rate => 
+              rate.id === updatedRate.id ? updatedRate : rate
+            )
+          })),
+        deleteRate: (id: number) => 
+          set((state) => ({
+            rates: state.rates.filter(rate => rate.id !== id)
+          })),
+        setSelectedRate: (rate: Rate | null) => set({ selectedRate: rate }),
+        
+        // Quote actions
+        setQuotes: (quotes: Quote[]) => set({ quotes }),
+        addQuote: (quote: Quote) => set((state) => ({ quotes: [...state.quotes, quote ]})),
+        updateQuote: (updatedQuote: Quote) => 
+          set((state) => ({
+            quotes: state.quotes.map(quote => 
+              quote.id === updatedQuote.id ? updatedQuote : quote
+            )
+          })),
+        deleteQuote: (id: string) => 
+          set((state) => ({
+            quotes: state.quotes.filter(quote => quote.id !== id)
+          })),
+        setSelectedQuote: (quote: Quote | null) => set({ selectedQuote: quote }),
+        
+        // Utility actions
+        generateQuotesFromRates: () => {
+          const { rates } = get();
+          const quotes = generateQuotesFromRates(rates);
+          set({ quotes });
+        },
+        updateQuotesFromRates: () => {
+          const { rates } = get();
+          const quotes = generateQuotesFromRates(rates);
+          set({ quotes });
+        }
+      };
+    },
     {
       name: 'quote-rate-storage'
     }

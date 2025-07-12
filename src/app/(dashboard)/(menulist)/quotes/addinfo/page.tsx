@@ -1,14 +1,14 @@
 'use client';
 
-import RateTable from "@/app/components/forwarder/quotefinancing/RateTable";
 import { useEffect, useState } from 'react';
 import { useAuthStore, UserRole } from '@/store/authStore';
 import ProtectedRoute from '@/app/components/ProtectedRoute';
+import QuoteAdditionalInfo from '@/app/components/forwarder/quotefinancing/QuoteAdditionalInfo';
 
 const ClientUI = () => {
   return (
     <div>
-      <h2>Client Rates</h2>
+      <h2>Client Additional Info Quote</h2>
       <p>Coming Soon...</p>
     </div>
   );
@@ -17,13 +17,7 @@ const ClientUI = () => {
 const ForwarderUI = () => {
   return (
     <div className="p-4">
-      <h2 className="text-2xl font-semibold text-gray-900 mb-2">Rate Management</h2>
-      <div className="text-sm text-gray-500 mb-4">
-        <p>
-          Manage rates for your shipments. You can create, edit, and delete rates for your shipments.
-        </p>
-      </div>
-      <RateTable />
+      <QuoteAdditionalInfo />
     </div>
   );
 };
@@ -31,7 +25,7 @@ const ForwarderUI = () => {
 const LogisticsProviderUI = () => {
   return (
     <div>
-      <h2>Logistics Provider Rates</h2>
+      <h2>Logistics Provider Additional Info Quote</h2>
       <p>Coming Soon...</p>
     </div>
   );
@@ -40,13 +34,13 @@ const LogisticsProviderUI = () => {
 const AdminUI = () => {
   return (
     <div>
-      <h2>Admin Rates</h2>
+      <h2>Admin Additional Info Quote</h2>
       <p>Coming Soon...</p>
     </div>
   );
 };
 
-const RatesPage = () => {
+const AdditionalInfoPage = () => {
   const { user } = useAuthStore();
   const [roleBasedUI, setRoleBasedUI] = useState<React.ReactNode | null>(null);
 
@@ -80,4 +74,4 @@ const RatesPage = () => {
   );
 };
 
-export default RatesPage;
+export default AdditionalInfoPage;

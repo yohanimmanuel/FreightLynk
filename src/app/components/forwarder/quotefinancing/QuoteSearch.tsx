@@ -511,13 +511,16 @@ const QuoteSearch = () => {
         {/* Create Quote Button */}
         {selectedQuotes.length > 0 && (
           <div className="fixed left-1/2 bottom-8 z-50 -translate-x-1/2">
-            <button 
-              onClick={handleCreateQuote}
+            <button
+              onClick={() => {
+                handleCreateQuote();
+                router.push('/quotes/addinfo');
+              }}
               disabled={selectedQuotes.some(id => !selectedContainerTypes[id])}
               className={`bg-green-500 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium shadow-lg focus:outline-none focus:ring-4 focus:ring-green-300 ${selectedQuotes.some(id => !selectedContainerTypes[id]) ? 'opacity-50 cursor-not-allowed' : ''}`}
               style={{boxShadow: '0 8px 32px 0 rgba(0,0,0,0.18), 0 1.5px 8px 0 rgba(0,0,0,0.10)'}}
             >
-              Create Quote ({selectedQuotes.length})
+              Next
             </button>
           </div>
         )}

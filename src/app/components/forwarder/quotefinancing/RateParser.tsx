@@ -289,6 +289,7 @@ const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose, mode = 
       truckType: parsedRate.truckType || '',
       rate: parsedRate.rate || '',
       status: parsedRate.status || '',
+      mode,
     };
   };
 

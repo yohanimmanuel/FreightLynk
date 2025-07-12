@@ -1,7 +1,6 @@
 'use client';
 
 import QuoteTable from "@/app/components/forwarder/quotefinancing/QuoteTable";
-import RateTable from "@/app/components/forwarder/quotefinancing/RateTableV";
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuthStore, UserRole } from '@/store/authStore';
@@ -19,33 +18,18 @@ const ClientUI = () => {
 const ForwarderUI = () => {
   const router = useRouter();
 
-  const handleSearchQuote = () => {
-    router.push('/quotes/search');
-  };
-
   return (
-   <div>
-      {/* Header and Rate Table Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-1 gap-3 px-2 md:px-4">
-        <div className="md:col-span-1 col-span-1">
-          {/* Header */}
-          <div className="bg-white border-b border-gray-200 px-2 py-2 mb-2">
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <h1 className="text-2xl font-semibold text-gray-900">Your Quotes</h1>
-                <p className="text-sm text-gray-600 mt-1">Review your freight quotes</p>
-              </div>
-              <button
-                onClick={handleSearchQuote}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#007bff] rounded-lg hover:bg-blue-700"
-              >
-                Search quote
-              </button>
-            </div>
+   <div className="p-4">
+     {/* Header */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">Your Quotes</h1>
+              <p className="text-sm text-gray-600 mt-2">Review your freight quotes</p>
           </div>
-          <QuoteTable />
-        </div>
+         </div>
       </div>
+     <QuoteTable />
     </div>
   );
 };
