@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ChevronDown, Upload, Download, Plus, Search as SearchIcon, Ship, Plane, Truck, Trash2, X as XIcon } from 'lucide-react';
 import RateParser from './RateParser';
 import { Rate } from '../../../../store/quoterate';
+import { useQuoteRateStore } from '../../../../store/quoterate';
 
 // Mode-to-columns configuration for dynamic table rendering
 const MODE_COLUMN_CONFIGS = {
@@ -10,7 +11,9 @@ const MODE_COLUMN_CONFIGS = {
     { key: 'agent', label: 'Agent' },
     { key: 'origin', label: 'Origin' },
     { key: 'destination', label: 'Destination' },
-    // Container types
+    // FCL Load
+    { key: 'currency', label: 'Currency' },
+    { key: 'transitTime', label: 'Transit Time' },
     { key: 'ocean20dc', label: 'Ocean 20"DC' },
     { key: 'ocean40dc', label: 'Ocean 40"DC' },
     { key: 'ocean40hc', label: 'Ocean 40"HC' },
@@ -39,8 +42,6 @@ const MODE_COLUMN_CONFIGS = {
     { key: 'note', label: 'Note' },
     { key: 'contract', label: 'Contract' },
     { key: 'frequency', label: 'Frequency' },
-    { key: 'transitTime', label: 'Transit Time' },
-    { key: 'currency', label: 'Currency' },
     { key: 'action', label: 'Action' },
   ],
   LCL: [
@@ -183,27 +184,55 @@ const getModeIcon = (mode: string) => {
   }
 };
 
-// Placeholder data structure for a rate row
+// Placeholder data structure for a rate row - ONLY new standardized fields from STANDARD_FIELDS
 const BLANK_RATE: Rate = {
   id: 0,
-  lane: '',
-  mode: 'ocean',
-  shipmentType: '',
-  weight: '',
-  volume: '',
-  containertype: '',
-  currency: '',
-  price: '',
-  baseRate: 0,
-  originCity: '',
-  destinationCity: '',
-  transitTime: '',
-  carrier: '',
-  surcharges: '',
-  incoterm: '',
+  provider: '',
+  agent: '',
+  origin: '',
+  destination: '',
+  ocean20dc: '',
+  ocean40dc: '',
+  ocean40hc: '',
+  ocean45hc: '',
+  ocean20rf: '',
+  ocean40rf: '',
+  ocean20tank: '',
+  ocean40tank: '',
+  ocean20fr: '',
+  ocean40fr: '',
+  ocean20ot: '',
+  ocean40ot: '',
+  portOfDischarge: '',
+  transitPort: '',
+  remark: '',
+  commodity: '',
+  createdBy: '',
   validFrom: '',
   validTo: '',
-  notes: '',
+  createdOn: '',
+  type: '',
+  createType: '',
+  service: '',
+  serviceCode: '',
+  note: '',
+  contract: '',
+  frequency: '',
+  transitTime: '',
+  currency: '',
+  price: '',
+  baseRate: '',
+  minCharge: '',
+  originAirport: '',
+  destinationAirport: '',
+  airline: '',
+  rate45: '',
+  rate100: '',
+  rate300: '',
+  rate500: '',
+  rate1000: '',
+  truckType: '',
+  rate: '',
   status: '',
 };
 type Mode = 'FCL' | 'LCL' | 'AIR' | 'FTL' | 'LTL';
@@ -218,6 +247,10 @@ interface RateModalFormProps {
 
 function RateModalForm({ open, onClose, initialData, mode, onSave }: RateModalFormProps) {
   const [form, setForm] = useState<Rate>(initialData || BLANK_RATE);
+  // Ensure form is updated when initialData or open changes
+  React.useEffect(() => {
+    setForm(initialData || BLANK_RATE);
+  }, [initialData, open]);
   const columns = MODE_COLUMN_CONFIGS[mode] || [];
   if (!open) return null;
   return (
@@ -257,7 +290,8 @@ function RateModalForm({ open, onClose, initialData, mode, onSave }: RateModalFo
 
 export default function RateTable() {
   const [mode, setMode] = useState<Mode>('FCL');
-  const [rates, setRates] = useState<Rate[]>([]); // Replace with real data source
+  const rates = useQuoteRateStore(state => state.rates);
+  const setRates = useQuoteRateStore(state => state.setRates);
   const [showAdd, setShowAdd] = useState(false);
   const [editIdx, setEditIdx] = useState<number | null>(null);
   const [page, setPage] = useState(1);
@@ -267,10 +301,6 @@ export default function RateTable() {
   // Search, status, and column visibility state
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'all' | 'available' | 'expiring' | 'expired'>('all');
-  // Remove the All Modes dropdown and its state/logic
-  // 1. Remove filterMode, setFilterMode, showModeDropdown, setShowModeDropdown
-  // 2. Remove the All Modes dropdown button and dropdown from the controls row
-  // 3. Only use the mode tabs for mode selection
 
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
 
@@ -288,13 +318,24 @@ export default function RateTable() {
     if (status === 'available') statusMatch = true; // TODO: implement real logic
     if (status === 'expiring') statusMatch = true;
     if (status === 'expired') statusMatch = true;
-    // Search logic
-    const searchMatch = Object.values(rate).some(val => val && val.toLowerCase().includes(search.toLowerCase()));
+    // Search logic: only check string fields
+    const searchMatch = Object.values(rate).some(val => typeof val === 'string' && val.toLowerCase().includes(search.toLowerCase()));
     // Mode filter
     const modeMatch = true; // No mode filter applied here as mode is fixed by tabs
     return statusMatch && searchMatch && modeMatch;
   });
   const paginatedRates = filteredRates.slice((page-1)*itemsPerPage, page*itemsPerPage);
+  // Bulk selection state (must be after paginatedRates)
+  const [selectedRates, setSelectedRates] = useState<number[]>([]);
+  const allIds = paginatedRates.map((_, idx) => (page-1)*itemsPerPage+idx);
+  const allSelected = selectedRates.length === paginatedRates.length && paginatedRates.length > 0;
+
+  // Bulk remove handler
+  const handleBulkRemove = () => {
+    setRates(rates.filter((_, idx) => !selectedRates.includes(idx)));
+    setSelectedRates([]);
+    setShowRemoveModal(false);
+  };
 
   return (
     <div className="bg-white">
@@ -381,35 +422,101 @@ export default function RateTable() {
           </button>
         </div>
       </div>
+      {/* Bulk Action Bar */}
+      {selectedRates.length > 0 && (
+        <div className="p-3 mb-2 bg-white border border-blue-200 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-2 flex-wrap">
+            {selectedRates.map(idx => {
+              const rate = rates[idx];
+              if (!rate) return null;
+              return (
+                <span key={idx} className="flex items-center bg-blue-100 text-blue-800 text-xs font-medium px-3 py-2 rounded-full mr-2 mb-1">
+                  {rate.origin} → {rate.destination}
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      setSelectedRates(selectedRates.filter(i => i !== idx));
+                    }}
+                    className="ml-2 text-blue-400 hover:text-blue-700 focus:outline-none"
+                    title="Remove"
+                    style={{ lineHeight: 1 }}
+                  >
+                    <XIcon className="w-4 h-4 text-gray-500 hover:text-gray-700" />
+                  </button>
+                </span>
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => selectedRates.length === 1 && setEditIdx(selectedRates[0])}
+              className={`px-4 py-2 text-sm font-medium text-[#007bff] bg-white rounded hover:text-blue-700 focus:outline-none transition-colors ${selectedRates.length !== 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={selectedRates.length !== 1}
+            >
+              Edit
+            </button>
+            <button
+              onClick={() => setShowRemoveModal(true)}
+              className="px-4 py-2 text-sm font-medium text-red-600 bg-white hover:text-red-700 focus:outline-none"
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      )}
       {/* Table */}
       <div className="overflow-x-auto border border-gray-200 rounded-lg">
         <table className="min-w-full divide-y divide-gray-200 text-xs">
           <thead className="bg-gray-50">
             <tr>
-              {columns.filter(col => true).map((col) => (
+              <th className="sticky left-0 bg-white z-10 shadow-md px-2 py-2 text-left font-medium text-gray-500 uppercase whitespace-nowrap">
+                <input
+                   type="checkbox"
+                   checked={allSelected}
+                   onChange={e => setSelectedRates(e.target.checked ? allIds : [])}
+                   className="w-4 h-4 accent-[#007bff] rounded-lg border-gray-300 transition-colors cursor-pointer align-middle"
+                   aria-label="Select all rates"
+                />
+              </th>
+              {columns.filter(col => col.key !== 'action').map((col) => (
                 <th key={col.key} className="px-4 py-2 text-left font-medium text-gray-500 uppercase whitespace-nowrap">{col.label}</th>
               ))}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {paginatedRates.length === 0 ? (
-              <tr><td colSpan={columns.filter(col => true).length} className="text-center py-8 text-gray-400">No rates found.</td></tr>
-            ) : paginatedRates.map((rate, idx) => (
-              <tr key={idx} className="hover:bg-gray-50">
-                {columns.filter(col => true).map((col) => col.key === 'action' ? (
-                  <td key={col.key} className="px-4 py-3">
-                    <div className="flex gap-2">
-                      <button onClick={() => setEditIdx((page-1)*itemsPerPage+idx)} className="text-[#007bff] underline text-xs">Edit</button>
-                      <button onClick={() => { setRemoveIdx((page-1)*itemsPerPage+idx); setShowRemoveModal(true); }} className="text-red-500 hover:text-red-700" title="Remove">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+              <tr><td colSpan={columns.length+1} className="text-center py-8 text-gray-400">No rates found.</td></tr>
+            ) : paginatedRates.map((rate, idx) => {
+              const globalIdx = (page-1)*itemsPerPage+idx;
+              return (
+                <tr key={idx} className={`hover:bg-blue-50 ${selectedRates.includes(globalIdx) ? 'bg-blue-50' : ''}`}
+                  onClick={e => {
+                    if ((e.target as HTMLElement).tagName === 'INPUT') return;
+                    setSelectedRates(selectedRates.includes(globalIdx)
+                      ? selectedRates.filter(i => i !== globalIdx)
+                      : [...selectedRates, globalIdx]);
+                  }}
+                >
+                  <td className="sticky left-0 bg-white z-10 shadow-md px-2 py-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedRates.includes(globalIdx)}
+                      onChange={e => {
+                        e.stopPropagation();
+                        setSelectedRates(e.target.checked
+                          ? [...selectedRates, globalIdx]
+                          : selectedRates.filter(i => i !== globalIdx));
+                      }}
+                      className="w-4 h-4 accent-[#007bff] rounded-lg border-gray-300 transition-colors cursor-pointer align-middle"
+                      aria-label={`Select rate ${globalIdx+1}`}
+                    />
                   </td>
-                ) : (
-                  <td key={col.key} className="px-4 py-4 whitespace-nowrap">{rate[col.key as keyof Rate]}</td>
-                ))}
-              </tr>
-            ))}
+                  {columns.filter(col => col.key !== 'action').map((col) => (
+                    <td key={col.key} className="px-4 py-4 text-gray-900 whitespace-nowrap">{rate[col.key as keyof Rate]}</td>
+                  ))}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -426,13 +533,19 @@ export default function RateTable() {
           <button onClick={()=>setPage(p=>Math.min(Math.ceil(filteredRates.length/itemsPerPage),p+1))} disabled={page===Math.ceil(filteredRates.length/itemsPerPage)||filteredRates.length===0} className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">{'>'}</button>
         </div>
       </div>
-      <RateModalForm open={showAdd} onClose={()=>setShowAdd(false)} initialData={null} mode={mode} onSave={data=>{setRates(r=>[...r,data]);setShowAdd(false);}} />
-      <RateModalForm open={editIdx!==null} onClose={()=>setEditIdx(null)} initialData={editIdx!==null?rates[editIdx]:null} mode={mode} onSave={data=>{setRates(r=>r.map((item,i)=>i===editIdx?data:item));setEditIdx(null);}} />
+      <RateModalForm open={showAdd} onClose={()=>setShowAdd(false)} initialData={null} mode={mode} onSave={data=>{
+        setRates([...rates, data]);
+        setShowAdd(false);
+      }} />
+      <RateModalForm open={editIdx!==null} onClose={()=>setEditIdx(null)} initialData={editIdx!==null?rates[editIdx]:null} mode={mode} onSave={data=>{
+        setRates(rates.map((item,i)=>i===editIdx?data:item));
+        setEditIdx(null);
+      }} />
       {showRemoveModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
-            <h2 className="text-lg font-semibold mb-4">Remove Rate</h2>
-            <div className="mb-4 text-sm text-gray-700">Are you sure you want to remove this rate?</div>
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-4">
+            <h2 className="text-lg text-gray-900 font-semibold mb-4">Remove Rates</h2>
+            <div className="mb-4 text-sm text-gray-700">Are you sure you want to remove the selected rates?</div>
             <div className="flex justify-end gap-2 mt-4">
               <button
                 onClick={() => setShowRemoveModal(false)}
@@ -441,13 +554,7 @@ export default function RateTable() {
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  if (removeIdx !== null) {
-                    setRates(r => r.filter((_, i) => i !== removeIdx));
-                    setShowRemoveModal(false);
-                    setRemoveIdx(null);
-                  }
-                }}
+                onClick={handleBulkRemove}
                 className="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700"
               >
                 Remove
@@ -461,7 +568,7 @@ export default function RateTable() {
           mode={mode}
           onClose={() => setShowImport(false)}
           onRatesParsed={importedRates => {
-            setRates(r => [...r, ...importedRates]);
+            setRates(importedRates);
             setShowImport(false);
           }}
         />

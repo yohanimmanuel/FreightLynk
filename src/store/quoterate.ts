@@ -1,36 +1,56 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-// Rate interface (single source of truth)
+// Rate interface (single source of truth) - ONLY new standardized fields from STANDARD_FIELDS
 export interface Rate {
   id: number;
-  lane: string;
-  mode: 'ocean' | 'air' | 'road';
-  shipmentType: string;
-  weight: string;
-  volume: string;
-  containertype: string;
-  currency: string;
-  price: string;
-  baseRate: number;
-  originCity: string;
-  destinationCity: string;
-  transitTime: string;
-  carrier: string;
-  surcharges: string;
-  incoterm: string;
-  validFrom: string;
-  validTo: string;
-  notes: string;
-  status: string;
-  ratePerCbmKg?: string;
-  // Add legacy/optional fields for compatibility
-  weightMin?: string;
-  weightMax?: string;
-  weightUnit?: string;
-  volumeMin?: string;
-  volumeMax?: string;
-  volumeUnit?: string;
+  provider?: string;
+  agent?: string;
+  origin?: string;
+  destination?: string;
+  ocean20dc?: string;
+  ocean40dc?: string;
+  ocean40hc?: string;
+  ocean45hc?: string;
+  ocean20rf?: string;
+  ocean40rf?: string;
+  ocean20tank?: string;
+  ocean40tank?: string;
+  ocean20fr?: string;
+  ocean40fr?: string;
+  ocean20ot?: string;
+  ocean40ot?: string;
+  portOfDischarge?: string;
+  transitPort?: string;
+  remark?: string;
+  commodity?: string;
+  createdBy?: string;
+  validFrom?: string;
+  validTo?: string;
+  createdOn?: string;
+  type?: string;
+  createType?: string;
+  service?: string;
+  serviceCode?: string;
+  note?: string;
+  contract?: string;
+  frequency?: string;
+  transitTime?: string;
+  currency?: string;
+  price?: string;
+  baseRate?: string;
+  minCharge?: string;
+  originAirport?: string;
+  destinationAirport?: string;
+  airline?: string;
+  rate45?: string;
+  rate100?: string;
+  rate300?: string;
+  rate500?: string;
+  rate1000?: string;
+  truckType?: string;
+  rate?: string;
+  status?: string;
 }
 
 // Quote interface (simplified version of Rate)
@@ -52,72 +72,36 @@ export interface Quote {
 const mockRates: Rate[] = [
   {
     id: 1,
-    lane: 'Asia → North America',
-    mode: 'ocean',
-    shipmentType: 'FCL',
-    containertype: '40ft',
-    weight: '120 kg - 400 kg',
-    volume: '12 cbm - 20 cbm',
+    provider: 'COSCO Shipping',
+    origin: 'Shanghai',
+    destination: 'Los Angeles',
+    ocean40dc: '2100',
     currency: 'USD',
-    price: '$2,100 - $2,800',
-    baseRate: 2100,
-    originCity: 'Shanghai',
-    destinationCity: 'Los Angeles',
-    transitTime: '18-22 days',
-    carrier: 'COSCO Shipping',
-    surcharges: 'BAF: $150, CAF: $200',
-    incoterm: 'FOB',
     validFrom: '2024-06-01',
     validTo: '2024-07-31',
-    notes: 'Peak season surcharge may apply',
     status: 'draft',
-    ratePerCbmKg: '100',
   },
   {
     id: 2,
-    lane: 'Europe → Asia',
-    mode: 'ocean',
-    shipmentType: 'FCL',
-    containertype: '40ft',
-    weight: '120 kg - 400 kg',
-    volume: '12 cbm - 20 cbm',
+    provider: 'Maersk Line',
+    origin: 'Hamburg',
+    destination: 'Singapore',
+    ocean40dc: '1650',
     currency: 'USD',
-    price: '$1,650 - $2,200',
-    baseRate: 1650,
-    originCity: 'Hamburg',
-    destinationCity: 'Singapore',
-    transitTime: '25-30 days',
-    carrier: 'Maersk Line',
-    surcharges: 'THC: $100, DOC: $50',
-    incoterm: 'CIF',
     validFrom: '2024-05-15',
     validTo: '2024-06-30',
-    notes: 'Express service available',
     status: 'draft',
-    ratePerCbmKg: '100',
   },
   {
     id: 3,
-    lane: 'Asia → Europe',
-    mode: 'air',
-    shipmentType: 'LCL',
-    containertype: '40ft',
-    weight: '120 kg - 400 kg',
-    volume: '12 cbm - 20 cbm',
+    provider: 'Cathay Pacific Cargo',
+    originAirport: 'Hong Kong',
+    destinationAirport: 'Frankfurt',
+    rate100: '7500',
     currency: 'USD',
-    price: '$7,500 - $9,200',
-    baseRate: 7500,
-    originCity: 'Hong Kong',
-    destinationCity: 'Frankfurt',
-    transitTime: '2-3 days',
-    carrier: 'Cathay Pacific Cargo',
-    surcharges: 'FSC: $300, SSC: $150',
-    incoterm: 'EXW',
     validFrom: '2024-06-01',
     validTo: '2024-07-15',
-    notes: 'Temperature controlled available',
     status: 'draft',
-    ratePerCbmKg: '100',
   },
 ];
 
@@ -126,15 +110,16 @@ const generateQuotesFromRates = (rates: Rate[]): Quote[] => {
   const currentYear = new Date().getFullYear();
   return rates.map((rate, index) => ({
     id: `QT-${currentYear}-${String(index + 1).padStart(4, '0')}`,
-    lane: rate.lane,
-    mode: rate.mode,
-    containertype: rate.containertype,
-    currency: rate.currency,
-    baseRate: rate.baseRate,
-    price: rate.price,
-    transitTime: rate.transitTime,
-    carrier: rate.carrier,
-    validity: `Valid until ${rate.validTo}`,
+    // Use provider and origin-destination for lane
+    lane: `${rate.provider || ''} ${rate.origin || rate.originAirport || ''} - ${rate.destination || rate.destinationAirport || ''}`.trim(),
+    mode: rate.originAirport || rate.destinationAirport ? 'air' : (rate.truckType ? 'road' : 'ocean'),
+    containertype: '', // No containertype field in new Rate
+    currency: rate.currency || '',
+    baseRate: rate.baseRate ? Number(rate.baseRate) : 0,
+    price: rate.price || '',
+    transitTime: rate.transitTime || '',
+    carrier: rate.provider || '',
+    validity: `Valid until ${rate.validTo || ''}`,
     status: 'draft' as const
   }));
 };

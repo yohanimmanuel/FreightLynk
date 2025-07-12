@@ -6,15 +6,6 @@ import { mapHeadersFuzzy, saveUserMapping } from '../../../utils/aiHeaderMapper'
 import fieldSynonyms from '../../../utils/fieldSynonyms.json';
 import { STANDARD_FIELDS } from '../../../utils/standardFields';
 
-// Add a type for standardFields
-interface StandardField {
-  key: string;
-  label: string;
-  visible?: boolean;
-  required?: boolean; // Added required property
-}
-const standardFields = STANDARD_FIELDS['FCL'] as StandardField[];
-
 // Add a type for mapping info
 interface HeaderMappingInfo {
   mappedKey: string | null;
@@ -26,21 +17,56 @@ interface HeaderMappingInfo {
 interface ParsedRate {
   [key: string]: any;
   id: number;
-  originCity: string;
-  destinationCity: string;
-  mode: 'ocean' | 'air' | 'road';
-  shipmentType: 'FCL' | 'LCL' | 'FTL' | 'LTL';
-  containertype: string;
-  baseRate: number;
-  price: string;
-  currency: string;
-  weight: string;
-  volume: string;
-  carrier: string;
-  transitTime: string;
+  provider?: string;
+  agent?: string;
+  origin?: string;
+  destination?: string;
+  ocean20dc?: string;
+  ocean40dc?: string;
+  ocean40hc?: string;
+  ocean45hc?: string;
+  ocean20rf?: string;
+  ocean40rf?: string;
+  ocean20tank?: string;
+  ocean40tank?: string;
+  ocean20fr?: string;
+  ocean40fr?: string;
+  ocean20ot?: string;
+  ocean40ot?: string;
+  portOfDischarge?: string;
+  transitPort?: string;
+  remark?: string;
+  commodity?: string;
+  createdBy?: string;
+  validFrom?: string;
+  validTo?: string;
+  createdOn?: string;
+  type?: string;
+  createType?: string;
+  service?: string;
+  serviceCode?: string;
+  note?: string;
+  contract?: string;
+  frequency?: string;
+  transitTime?: string;
+  currency?: string;
+  price?: string;
+  baseRate?: string;
+  minCharge?: string;
+  originAirport?: string;
+  destinationAirport?: string;
+  airline?: string;
+  rate45?: string;
+  rate100?: string;
+  rate300?: string;
+  rate500?: string;
+  rate1000?: string;
+  truckType?: string;
+  rate?: string;
+  weight?: string;
+  volume?: string;
+  carrier?: string;
   incoterm?: string;
-  validFrom: string;
-  validTo: string;
   ratePerCbmKg?: string;
   surcharges?: string;
   notes?: string;
@@ -54,13 +80,6 @@ interface RateParserProps {
   onRatesParsed: (rates: Rate[]) => void;
   onClose: () => void;
   mode?: keyof typeof STANDARD_FIELDS;
-}
-
-function excelDateToJSDate(serial: number): string {
-  const utc_days = Math.floor(serial - 25569);
-  const utc_value = utc_days * 86400;
-  const date_info = new Date(utc_value * 1000);
-  return date_info.toISOString().split('T')[0];
 }
 
 const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose, mode = 'FCL' }) => {
@@ -123,6 +142,9 @@ const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose, mode = 
       const data = await parseFile(file);
       if (!data.length) throw new Error('No data found');
       const headers = Object.keys(data[0]);
+      // Debug log: print headers and first row
+      console.log('DEBUG: Parsed headers:', headers);
+      console.log('DEBUG: First parsed row:', data[0]);
       setDetectedHeaders(headers);
       // Get mapping info with confidence
       const mappingInfo: Record<string, HeaderMappingInfo> = {};
@@ -170,103 +192,26 @@ const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose, mode = 
     if (data.length === 0) return [];
     const rates: ParsedRate[] = [];
     data.forEach((row, index) => {
-      const parsingNotes: string[] = [];
-      let status: 'complete' | 'incomplete' | 'error' = 'complete';
-      // Build a normalized row using the mapping
+      // No required field checks, all fields are optional
       const norm: Record<string, any> = {};
       for (const [header, stdKey] of Object.entries(mapping)) {
-        if (stdKey) norm[stdKey] = row[header];
+        if (stdKey) {
+          const normalizedHeader = header.trim().toLowerCase();
+          const normalizedStdKey = stdKey.trim(); // preserve camelCase
+          const actualKey = Object.keys(row).find(k => k.trim().toLowerCase() === normalizedHeader);
+          if (actualKey) norm[normalizedStdKey] = row[actualKey];
+        }
       }
-      // Required fields
-      const originCity = norm.originCity ? String(norm.originCity) : '';
-      const destinationCity = norm.destinationCity ? String(norm.destinationCity) : '';
-      const rawMode = norm.mode ? String(norm.mode) : '';
-      const rawRate = norm.baseRate ? String(norm.baseRate) : '';
-      const carrier = norm.carrier ? String(norm.carrier) : '';
-      // Mode/type detection
-      const mode = rawMode.toLowerCase().includes('sea') ? 'ocean' : rawMode.toLowerCase().includes('air') ? 'air' : rawMode.toLowerCase().includes('truck') ? 'road' : 'ocean';
-      const shipmentType = norm.shipmentType ? String(norm.shipmentType).toUpperCase() as ParsedRate['shipmentType'] : (mode === 'air' ? 'LCL' : 'FCL');
-      // Rate parsing
-      const rateInfo = /([\d,.]+)(?:\s*\/\s*(kg|cbm|container|ftl|ltl))?/i.exec(rawRate);
-      let baseRate = 0;
-      let ratePerCbmKg = '';
-      if (rateInfo) {
-        baseRate = parseFloat(rateInfo[1].replace(',', '.'));
-        if (rateInfo[2]) ratePerCbmKg = rateInfo[1] + '/' + rateInfo[2];
-      }
-      // Currency
-      const currency = norm.currency ? String(norm.currency).toUpperCase() : (rawRate.includes('USD') ? 'USD' : 'USD');
-      // Weight/volume (combine min/max/unit if available)
-      let weight = '';
-      if (norm.weightMin && norm.weightMax && norm.weightUnit) {
-        weight = `${norm.weightMin} ${norm.weightUnit} - ${norm.weightMax} ${norm.weightUnit}`;
-      } else if (norm.weightMin && norm.weightUnit) {
-        weight = `${norm.weightMin} ${norm.weightUnit}`;
-      } else if (norm.weightMax && norm.weightUnit) {
-        weight = `${norm.weightMax} ${norm.weightUnit}`;
-      } else if (norm.weight) {
-        weight = String(norm.weight);
-      }
-      let volume = '';
-      if (norm.volumeMin && norm.volumeMax && norm.volumeUnit) {
-        volume = `${norm.volumeMin} ${norm.volumeUnit} - ${norm.volumeMax} ${norm.volumeUnit}`;
-      } else if (norm.volumeMin && norm.volumeUnit) {
-        volume = `${norm.volumeMin} ${norm.volumeUnit}`;
-      } else if (norm.volumeMax && norm.volumeUnit) {
-        volume = `${norm.volumeMax} ${norm.volumeUnit}`;
-      } else if (norm.volume) {
-        volume = String(norm.volume);
-      }
-      // Dates
-      const validFrom = typeof norm.validFrom === 'number' && norm.validFrom > 30000 && norm.validFrom < 60000
-        ? excelDateToJSDate(norm.validFrom)
-        : String(norm.validFrom);
-      const validTo = typeof norm.validTo === 'number' && norm.validTo > 30000 && norm.validTo < 60000
-        ? excelDateToJSDate(norm.validTo)
-        : String(norm.validTo);
-      // Surcharges/notes
-      const surcharges = norm.surcharges ? String(norm.surcharges) : '';
-      const notes = norm.notes ? String(norm.notes) : '';
-      // Transit time
-      const transitTime = norm.transitTime ? String(norm.transitTime) : '';
-      // Container/road type
-      const containertype = norm.containertype ? String(norm.containertype) : (shipmentType === 'FCL' ? '20ft' : shipmentType === 'FTL' ? 'Road' : 'none');
-      // Incoterm
-      const incoterm = norm.incoterm ? String(norm.incoterm) : '';
-      // Validate completeness
-      if (!originCity || !destinationCity || !carrier) {
-        status = 'incomplete';
-        parsingNotes.push('Missing required fields (origin, destination, or carrier)');
-      }
-      if (!rawRate) {
-        status = 'incomplete';
-        parsingNotes.push('Missing rate information');
-      }
-      const parsedRate: ParsedRate = {
-        id: index + 1,
-        originCity: originCity || 'Missing Value',
-        destinationCity: destinationCity || 'Missing Value',
-        mode,
-        shipmentType,
-        containertype,
-        baseRate,
-        price: rawRate || 'Missing Value',
-        currency,
-        weight: weight || 'Missing Value',
-        volume: volume || 'Missing Value',
-        carrier: carrier || 'Missing Value',
-        transitTime: transitTime || 'Missing Value',
-        incoterm,
-        validFrom: validFrom || '',
-        validTo: validTo || '',
-        ratePerCbmKg,
-        surcharges,
-        notes,
-        status,
+      // Debug log: print normalized object for each row
+      if (index === 0) console.log('DEBUG: Normalized row:', norm);
+      rates.push({
+        ...norm,
+        id: index,
+        status: 'complete', // Always mark as complete
+        parsingNotes: [],
         originalRow: row,
-        parsingNotes
-      };
-      rates.push(parsedRate);
+        ...Object.fromEntries(standardFields.map(field => [field.key, norm[field.key] || '']))
+      } as ParsedRate);
     });
     return rates;
   };
@@ -296,27 +241,54 @@ const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose, mode = 
 
   const convertToRateFormat = (parsedRate: ParsedRate): Rate => {
     return {
-      id: Date.now() + parsedRate.id,
-      lane: `${parsedRate.originCity} - ${parsedRate.destinationCity}`,
-      mode: parsedRate.mode,
-      shipmentType: parsedRate.shipmentType,
-      weight: parsedRate.weight,
-      volume: parsedRate.volume,
-      containertype: parsedRate.containertype,
-      currency: parsedRate.currency,
-      price: parsedRate.price,
-      baseRate: parsedRate.baseRate,
-      originCity: parsedRate.originCity,
-      destinationCity: parsedRate.destinationCity,
-      transitTime: parsedRate.transitTime,
-      carrier: parsedRate.carrier,
-      surcharges: parsedRate.surcharges || '',
-      incoterm: parsedRate.incoterm || 'FOB',
-      validFrom: parsedRate.validFrom,
-      validTo: parsedRate.validTo,
-      notes: parsedRate.parsingNotes.join('; ') || '',
-      status: parsedRate.status === 'complete' ? 'draft' : 'incomplete',
-      ratePerCbmKg: parsedRate.ratePerCbmKg || '',
+      id: typeof parsedRate.id === 'number' ? parsedRate.id : Date.now(),
+      provider: parsedRate.provider || '',
+      agent: parsedRate.agent || '',
+      origin: parsedRate.origin || '',
+      destination: parsedRate.destination || '',
+      ocean20dc: parsedRate.ocean20dc || '',
+      ocean40dc: parsedRate.ocean40dc || '',
+      ocean40hc: parsedRate.ocean40hc || '',
+      ocean45hc: parsedRate.ocean45hc || '',
+      ocean20rf: parsedRate.ocean20rf || '',
+      ocean40rf: parsedRate.ocean40rf || '',
+      ocean20tank: parsedRate.ocean20tank || '',
+      ocean40tank: parsedRate.ocean40tank || '',
+      ocean20fr: parsedRate.ocean20fr || '',
+      ocean40fr: parsedRate.ocean40fr || '',
+      ocean20ot: parsedRate.ocean20ot || '',
+      ocean40ot: parsedRate.ocean40ot || '',
+      portOfDischarge: parsedRate.portOfDischarge || '',
+      transitPort: parsedRate.transitPort || '',
+      remark: parsedRate.remark || '',
+      commodity: parsedRate.commodity || '',
+      createdBy: parsedRate.createdBy || '',
+      validFrom: parsedRate.validFrom || '',
+      validTo: parsedRate.validTo || '',
+      createdOn: parsedRate.createdOn || '',
+      type: parsedRate.type || '',
+      createType: parsedRate.createType || '',
+      service: parsedRate.service || '',
+      serviceCode: parsedRate.serviceCode || '',
+      note: parsedRate.note || '',
+      contract: parsedRate.contract || '',
+      frequency: parsedRate.frequency || '',
+      transitTime: parsedRate.transitTime || '',
+      currency: parsedRate.currency || '',
+      price: parsedRate.price || '',
+      baseRate: parsedRate.baseRate || '',
+      minCharge: parsedRate.minCharge || '',
+      originAirport: parsedRate.originAirport || '',
+      destinationAirport: parsedRate.destinationAirport || '',
+      airline: parsedRate.airline || '',
+      rate45: parsedRate.rate45 || '',
+      rate100: parsedRate.rate100 || '',
+      rate300: parsedRate.rate300 || '',
+      rate500: parsedRate.rate500 || '',
+      rate1000: parsedRate.rate1000 || '',
+      truckType: parsedRate.truckType || '',
+      rate: parsedRate.rate || '',
+      status: parsedRate.status || '',
     };
   };
 
@@ -397,8 +369,9 @@ const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose, mode = 
     </div>
   );
 
-  const missingRequiredMapping = standardFields.some(field => field.required && !headerMapping[field.key]);
-  const missingRequiredInPreview = parsedRates.some(row => standardFields.some(field => field.required && !row[field.key]));
+  // Remove required field checks in UI
+  const missingRequiredMapping = false;
+  const missingRequiredInPreview = false;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -544,7 +517,7 @@ const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose, mode = 
                             ) : parsedRates.map((row, idx) => (
                               <tr key={idx}>
                                 {standardFields.map(field => (
-                                  <td key={field.key} className={`px-4 py-2 whitespace-nowrap ${field.required && !row[field.key] ? 'bg-red-50 text-red-500' : ''}`}>{row[field.key] || (field.required ? <span className="text-xs">Missing</span> : '')}</td>
+                                  <td key={field.key} className={`px-4 py-4 text-gray-900 whitespace-nowrap ${field.required && !row[field.key] ? 'bg-red-50 text-red-500' : ''}`}>{row[field.key] || (field.required ? <span className="text-xs">Missing</span> : '')}</td>
                                 ))}
                               </tr>
                             ))}
@@ -584,8 +557,8 @@ const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose, mode = 
                       </button>
                       <button
                         onClick={handleImportRates}
-                        disabled={missingRequiredMapping || missingRequiredInPreview}
-                        className={`px-4 py-2 text-sm font-semibold text-white rounded-md ${missingRequiredMapping || missingRequiredInPreview ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#007bff] hover:bg-blue-700'}`}
+                        disabled={false}
+                        className={`px-4 py-2 text-sm font-semibold text-white rounded-md bg-[#007bff] hover:bg-blue-700`}
                       >
                         Import Rates
                       </button>
