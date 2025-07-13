@@ -5,7 +5,7 @@ import { useBookingStore } from '@/store/bookingStore';
 
 type Booking = {
   id: string;
-  shipmentId?: string; // Generated after payment (SFLYNK-number) for shipment
+  bookingId?: string; // Universal booking identifier (was shipmentId)
   poNumber: string;
   productName: string;
   hsCode: string;
@@ -40,7 +40,7 @@ const BookingTable: React.FC<BookingTableProps> = ({ bookings, onSubmitBooking =
   // All available columns
   const allColumns = [
     { key: 'id', label: 'Booking ID', mandatory: true, width: '140px' },
-    { key: 'shipmentId', label: 'Shipment ID', mandatory: false, width: '120px' },
+
     { key: 'poNumber', label: 'PO Number', mandatory: false, width: '130px' },
     { key: 'productName', label: 'Product Name', mandatory: false, width: '180px' },
     { key: 'hsCode', label: 'HS Code', mandatory: false, width: '140px' },
@@ -62,7 +62,7 @@ const BookingTable: React.FC<BookingTableProps> = ({ bookings, onSubmitBooking =
   ];
 
   // Default visible columns
-  const defaultVisibleColumns = ['id', 'shipmentId', 'poNumber', 'productName', 'shipper', 'consignee', 'origin', 'destination', 'shipmentType', 'status', 'eta', 'transportMode', 'incoterms'];
+  const defaultVisibleColumns = ['id', 'poNumber', 'productName', 'shipper', 'consignee', 'origin', 'destination', 'shipmentType', 'status', 'eta', 'transportMode', 'incoterms'];
   
   const [visibleColumns, setVisibleColumns] = useState(defaultVisibleColumns);
   const [searchTerm, setSearchTerm] = useState('');
@@ -213,9 +213,9 @@ const BookingTable: React.FC<BookingTableProps> = ({ bookings, onSubmitBooking =
   // Render cell content based on column type
   const renderCellContent = (booking: Booking, columnKey: string) => {
     switch (columnKey) {
-      case 'shipmentId':
-        // Show placeholder indicating shipment ID will be generated after payment
-        return booking.shipmentId || 'Generated after payment';
+      case 'bookingId':
+        // Show placeholder indicating booking ID will be generated after payment
+        return booking.bookingId;
       case 'status':
         return <StatusBadge status={booking[columnKey] as string} />;
       case 'dangerousGoods':
