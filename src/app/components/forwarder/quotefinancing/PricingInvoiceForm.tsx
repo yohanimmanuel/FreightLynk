@@ -3,7 +3,7 @@ import { ChevronDown, X as XIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useQuoteRateStore } from '../../../../store/quoterate';
 import { useSearchParams } from 'next/navigation';
-import { mockForwarderBookings } from '../../../../store/bookingStore';
+
 import BookingDetailsModal from '../shipmentmanagement/BookingDetailsModal';
 
 // Types
@@ -41,7 +41,7 @@ const PricingInvoiceForm: React.FC = () => {
   const { quotes } = useQuoteRateStore();
   const searchParams = useSearchParams();
   const bookingId = searchParams.get('bookingId');
-  const bookingData = bookingId ? mockForwarderBookings.find(b => b.bookingId === bookingId) : null;
+  const bookingData = null;
 
   // Prepare quote options for dropdown
   const quoteOptions = [

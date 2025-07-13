@@ -13,7 +13,7 @@ import {
   Package,
   Globe
 } from 'lucide-react';
-import { useShipmentStore } from '@/store/shipmentData';
+import { useBookingStore } from '@/store/bookingStore';
 
 interface ShipmentMilestoneProps {
   onSeeAll?: () => void;
@@ -22,7 +22,31 @@ interface ShipmentMilestoneProps {
 const ShipmentMilestone = ({ onSeeAll }: ShipmentMilestoneProps) => {
   const [filter, setFilter] = useState('all');
   const [pinnedItems, setPinnedItems] = useState(new Set(['FL-001927', 'FL-001928']));
-  const shipments = useShipmentStore((state) => state.shipments);
+  // Get bookings from Zustand store (root confirmedBookings)
+const bookings = useBookingStore((state) => state.confirmedBookings);
+const setConfirmedBookings = useBookingStore((state) => state.setConfirmedBookings);
+
+// Sync Zustand confirmedBookings with localStorage (auto-load)
+React.useEffect(() => {
+  const loadBookings = () => {
+    if (typeof window !== 'undefined') {
+      try {
+        const data = localStorage.getItem('confirmedBookings');
+        const bookings = data ? JSON.parse(data) : [];
+        setConfirmedBookings(bookings);
+      } catch {
+        setConfirmedBookings([]);
+      }
+    }
+  };
+  loadBookings();
+  window.addEventListener('storage', loadBookings);
+  const interval = setInterval(loadBookings, 1000);
+  return () => {
+    window.removeEventListener('storage', loadBookings);
+    clearInterval(interval);
+  };
+}, [setConfirmedBookings]);
 
   const togglePin = (shipmentId: string) => {
     const newPinned = new Set(pinnedItems);
@@ -32,26 +56,6 @@ const ShipmentMilestone = ({ onSeeAll }: ShipmentMilestoneProps) => {
       newPinned.add(shipmentId);
     }
     setPinnedItems(newPinned);
-  };
-
-  const getMilestoneColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'bg-green-500';
-      case 'in-progress': return 'bg-[#007bff]';
-      case 'issue': return 'bg-red-500';
-      case 'pending': return 'bg-gray-300';
-      default: return 'bg-gray-300';
-    }
-  };
-
-  const getAlertColor = (alert: string) => {
-    switch (alert) {
-      case 'Customs Hold': return 'bg-red-50 text-red-700 border-red-200';
-      case 'Delay': return 'bg-orange-50 text-orange-700 border-orange-200';
-      case 'Action Needed': return 'bg-purple-50 text-purple-700 border-purple-200';
-      case 'Price Change': return 'bg-blue-50 text-blue-700 border-blue-200';
-      default: return 'bg-gray-50 text-gray-700 border-gray-200';
-    }
   };
 
   // Add a function to get the icon based on transportMode
@@ -68,22 +72,27 @@ const ShipmentMilestone = ({ onSeeAll }: ShipmentMilestoneProps) => {
     }
   };
 
-  // Map to simplified milestone data
-  const milestoneData = shipments.map((s) => {
-    const latestMilestone = s.milestones.length > 0 ? s.milestones[s.milestones.length - 1] : null;
-    return {
-      shipmentID: s.id,
-      goodsDescription: s.goods.description,
-      poNumbers: s.poNumbers,
-      incoterms: s.incoterms,
-      progress: s.progress,
-      latestMilestone: latestMilestone ? latestMilestone.step : '',
-      latestMilestoneDescription: latestMilestone ? latestMilestone.description : '',
-      destination: `${s.destination.city}, ${s.destination.country}`,
-      eta: new Date(s.dates.arrival).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-      transportMode: s.transportMode,
-    };
-  });
+  const milestoneData = Array.isArray(bookings)
+  ? bookings.map((b: any) => {
+      const milestones = b.milestones || b.timeline || [];
+      const hasMilestones = Array.isArray(milestones) && milestones.length > 0;
+      const latestMilestone = hasMilestones ? milestones[milestones.length - 1] : null;
+      return {
+        shipmentID: b.bookingId || b.id || '',
+        goodsDescription: b.productName || b.goodsDescription || '',
+        poNumbers: b.poNumbers || (b.poNumber ? [b.poNumber] : []),
+        incoterms: b.incoterms || '',
+        progress: b.progress || 0,
+        latestMilestone: hasMilestones ? latestMilestone.step : 'No status',
+        latestMilestoneDescription: hasMilestones ? latestMilestone.description : 'No Update',
+        destination: b.destination && typeof b.destination === 'object'
+          ? `${b.destination.city || ''}${b.destination.country ? ', ' + b.destination.country : ''}`
+          : (b.destination || ''),
+        eta: b.eta || b.arrivalDate || (b.dates && b.dates.arrival ? b.dates.arrival : ''),
+        transportMode: b.transportMode || b.mode || '',
+      };
+    })
+  : [];
 
   const filteredShipments = milestoneData.filter(shipment => {
     if (filter === 'all') return true;
@@ -125,7 +134,12 @@ const ShipmentMilestone = ({ onSeeAll }: ShipmentMilestoneProps) => {
 
       {/* Shipment Cards */}
       <div className="space-y-2">
-        {filteredShipments.map((shipment) => (
+        {filteredShipments.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-gray-400 text-base font-medium">
+            No bookings data shown
+          </div>
+        ) : (
+          filteredShipments.map((shipment) => (
           <div key={shipment.shipmentID} className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 hover:shadow-md transition-shadow">
             <div className="grid grid-cols-14 items-center gap-4">
               
@@ -143,7 +157,7 @@ const ShipmentMilestone = ({ onSeeAll }: ShipmentMilestoneProps) => {
                     <span className="font-medium text-gray-900 text-sm truncate">{shipment.goodsDescription}</span>
                   </div>
                   <div className="flex items-center gap-1 flex-wrap">
-                    {shipment.poNumbers.slice(0, 2).map(po => (
+                    {(Array.isArray(shipment.poNumbers) ? shipment.poNumbers : []).slice(0, 2).map(po => (
                       <span key={po} className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs">
                         {po}
                       </span>
@@ -181,7 +195,8 @@ const ShipmentMilestone = ({ onSeeAll }: ShipmentMilestoneProps) => {
               </div>
             </div>
           </div>
-        ))}
+        ))
+      )}
       </div>
     </div>
   );

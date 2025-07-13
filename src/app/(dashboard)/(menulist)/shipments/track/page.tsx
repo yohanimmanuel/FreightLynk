@@ -1,6 +1,6 @@
 'use client';
 
-import ShipmentTrackingList from "@/app/components/clients/shipmentsbooking/ShipmentTrackingList";
+import ShipmentTracking from "@/app/components/clients/shipmentsbooking/ShipmentTracking";
 import { useEffect, useState } from 'react';
 import { useAuthStore, UserRole } from '@/store/authStore';
 import ProtectedRoute from '@/app/components/ProtectedRoute';
@@ -8,7 +8,7 @@ import ProtectedRoute from '@/app/components/ProtectedRoute';
 const ClientUI = () => {
   return (
     <div className="p-4">
-      <ShipmentTrackingList />
+      <ShipmentTracking />
     </div>
   );
 };
@@ -16,7 +16,6 @@ const ClientUI = () => {
 const ForwarderUI = () => {
   return (
     <div className="p-4">
-      <ShipmentTrackingList />
     </div>
   );
 };

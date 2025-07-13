@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useBookingStore } from '@/store/bookingStore';
 import BookingDetailsModal from '@/app/components/forwarder/shipmentmanagement/BookingDetailsModal';
 import { Search, ChevronDown, X as XIcon, X, AlertTriangle } from 'lucide-react';
-import { mockForwarderBookings } from '@/store/bookingStore';
+
 import { useRouter } from 'next/navigation';
 
 // Booking type (should match client)
@@ -61,7 +61,7 @@ const defaultVisibleColumns = allColumns.filter(col => col.mandatory).map(col =>
 
 const BookingManage: React.FC = () => {
   // Use mock data for now
-  const bookings: Booking[] = mockForwarderBookings;
+  const bookings: Booking[] = [];
   // Example: const bookings = useBookingStore(state => state.bookings);
 
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);

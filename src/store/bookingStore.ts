@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 export type BookingStore = {
+  // ...other fields
+  confirmedBookings: any[];
+  setConfirmedBookings: (bookings: any[]) => void;
   formData: any;
   selectedPOs: any[];
   tradeRole: 'shipper' | 'consignee';
@@ -58,6 +61,8 @@ export const useBookingStore = create<BookingStore>()(
       tradeRole: 'shipper',
       flNumber: '',
       bookingSubmitted: false,
+      confirmedBookings: [],
+      setConfirmedBookings: (bookings) => set({ confirmedBookings: bookings }),
       setFormData: (data: any) => set((state) => ({ formData: { ...state.formData, ...data } })),
       setSelectedPOs: (data: any[]) => set({ selectedPOs: data }),
       setTradeRole: (role: 'shipper' | 'consignee') => set({ tradeRole: role }),
@@ -70,6 +75,8 @@ export const useBookingStore = create<BookingStore>()(
 );
 
 // Mock bookings for forwarder UI and calendar
+/*
+/*
 export const mockForwarderBookings = [
   {
     id: 'FLYNK-10001',
@@ -219,3 +226,4 @@ export const mockForwarderBookings = [
     containerQuantity: '',
   },
 ]; 
+*/

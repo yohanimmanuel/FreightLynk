@@ -11,7 +11,6 @@ import { useAuthStore, UserRole } from '@/store/authStore';
 import ProtectedRoute from '@/app/components/ProtectedRoute';
 import BookingManage from "@/app/components/forwarder/shipmentmanagement/BookingManage";
 import ForwarderBookingCalendar from '@/app/components/forwarder/shipmentmanagement/ForwarderBookingCalendar';
-import { mockForwarderBookings } from '@/store/bookingStore';
 
 // Booking type (should match BookingTable)
 type Booking = {
@@ -151,7 +150,7 @@ const ClientUI = () => {
               </button>
               </div>
           </div>
-          <BookingTable bookings={bookingsWithTransportMode} onRemoveBookings={handleRemoveBookings} />
+          <BookingTable view="full" bookings={bookingsWithTransportMode} onRemoveBookings={handleRemoveBookings} />
         </div>
         <div className="md:col-span-1 col-span-1 p-0 md:p-2 mt-4 md:mt-0">
           <BookingCalendar bookings={calendarBookings} />
@@ -191,7 +190,7 @@ const ForwarderUI = () => {
         </div>
       </div>
       <div className="md:col-span-1 col-span-1 p-0 md:p-2 mt-4 md:mt-0">
-        <ForwarderBookingCalendar bookings={mockForwarderBookings} />
+        <ForwarderBookingCalendar/>
       </div>
     </div>
   );

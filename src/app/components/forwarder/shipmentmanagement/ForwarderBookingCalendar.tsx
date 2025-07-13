@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { mockForwarderBookings } from '@/store/bookingStore';
+
 
 // You may want to adapt this type to your actual booking data
 export type CalendarBooking = {
@@ -19,8 +19,8 @@ interface ForwarderBookingCalendarProps {
 }
 
 const ForwarderBookingCalendar: React.FC<ForwarderBookingCalendarProps> = ({ bookings }) => {
-  // Use mockForwarderBookings if no bookings prop is provided
-  const calendarBookings: CalendarBooking[] = bookings || mockForwarderBookings;
+
+  const calendarBookings: CalendarBooking[] = bookings || [];
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 

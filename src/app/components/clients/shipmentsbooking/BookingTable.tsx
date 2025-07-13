@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, Filter, Settings, Eye, EyeOff, Calendar, Package, MapPin, Ship, Clock, AlertTriangle, CheckCircle, XCircle, Minus, Download, Upload, Plus, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useBookingStore } from '@/store/bookingStore';
 
 type Booking = {
   id: string;
@@ -28,14 +27,154 @@ type Booking = {
 
 interface BookingTableProps {
   bookings: Booking[];
+  view?: 'summary' | 'full';
+  onSeeAll?: () => void;
+  title?: string;
+  maxRows?: number;
   onSubmitBooking?: () => void;
   onRemoveBookings?: (ids: string[]) => void;
 }
 
-const BookingTable: React.FC<BookingTableProps> = ({ bookings, onSubmitBooking = () => {}, onRemoveBookings = () => {} }) => {
+const BookingTable: React.FC<BookingTableProps> = ({
+  bookings,
+  view = 'full',
+  onSeeAll,
+  title = 'Your bookings',
+  maxRows,
+  onSubmitBooking = () => {},
+  onRemoveBookings = () => {},
+}) => {
+  // Render cell content based on column type
+  const renderCellContent = (booking: Booking, columnKey: string) => {
+    switch (columnKey) {
+      case 'bookingId':
+        // Show placeholder indicating booking ID will be generated after payment
+        return booking.bookingId;
+      case 'status':
+        return <StatusBadge status={booking[columnKey] as string} />;
+      case 'dangerousGoods':
+        return booking[columnKey] ? (
+          <span className="flex items-center text-red-600">
+            <AlertTriangle className="w-4 h-4 mr-1" />
+            Yes
+          </span>
+        ) : (
+          <span className="text-gray-500">No</span>
+        );
+      case 'origin':
+      case 'destination':
+        return (
+          <span className="flex items-center">
+            <MapPin className="w-3 h-3 mr-1 text-gray-400" />
+            {booking[columnKey] as string}
+          </span>
+        );
+      case 'shipmentType':
+        return (
+          <span className="flex items-center">
+            <Package className="w-3 h-3 mr-1 text-gray-400" />
+            {(booking[columnKey] as string)?.toUpperCase()}
+          </span>
+        );
+      case 'cargoReadyDate':
+      case 'eta':
+        return (
+          <span className="flex items-center">
+            <Calendar className="w-3 h-3 mr-1 text-gray-400" />
+            {booking[columnKey] as string}
+          </span>
+        );
+      case 'transportMode':
+        let ModeIcon = Ship;
+        const mode = (booking[columnKey] as string)?.toLowerCase();
+        if (mode === 'air') ModeIcon = require('lucide-react').Plane;
+        else if (mode === 'road') ModeIcon = require('lucide-react').Truck;
+        else if (mode === 'sea') ModeIcon = require('lucide-react').Ship;
+        else ModeIcon = require('lucide-react').Package;
+        return (
+          <span className="flex items-center">
+            <ModeIcon className="w-4 h-4 mr-1 text-gray-400" />
+            {(booking[columnKey] as string)?.toUpperCase()}
+          </span>
+        );
+      default:
+        return booking[columnKey as keyof Booking] as string;
+    }
+  };
+
+  // Determine columns for summary view
+  const summaryColumns = [
+    { key: 'id', label: 'Booking ID', width: '140px' },
+    { key: 'poNumber', label: 'PO Number', width: '130px' },
+    { key: 'transportMode', label: 'Transport Mode', width: '120px' },
+    { key: 'productName', label: 'Goods', width: '180px' },
+    { key: 'origin', label: 'Origin', width: '140px' },
+    { key: 'destination', label: 'Destination', width: '140px' },
+    { key: 'eta', label: 'Estimated Arrival', width: '120px' },
+  ];
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
+
+  // Render summary view
+  if (view === 'summary') {
+    const displayRows = maxRows ? bookings.slice(0, maxRows) : bookings;
+    return (
+      <div className="w-full mx-auto bg-white border border-gray-200 rounded-lg shadow-sm">
+        <div className="flex items-center justify-between p-3">
+          <h1 className="text-md font-bold text-gray-900">{title}</h1>
+          {onSeeAll && (
+            <button
+              onClick={onSeeAll}
+              className="px-5 py-1.5 text-sm font-medium text-white bg-[#007bff] hover:bg-blue-700 rounded-lg transition-colors"
+            >
+              See all
+            </button>
+          )}
+        </div>
+        <div className="overflow-x-auto border-t border-gray-200">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead>
+              <tr>
+                {summaryColumns.map((col) => (
+                  <th
+                    key={col.key}
+                    className="px-4 py-2 text-xs font-medium text-gray-500 uppercase bg-gray-50"
+                    style={{ width: col.width }}
+                  >
+                    {col.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {displayRows.length === 0 ? (
+                <tr>
+                  <td colSpan={summaryColumns.length} className="text-center py-8">
+                    <div className="flex flex-col items-center justify-center">
+                      <span className="text-sm text-gray-500">No bookings found</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                displayRows.map((booking) => (
+                  <tr key={booking.id} className="h-[40px] hover:bg-gray-50">
+                    {summaryColumns.map((col) => (
+                      <td key={col.key} className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">
+                        {renderCellContent(booking, col.key)}
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
 
   // All available columns
   const allColumns = [
@@ -208,64 +347,6 @@ const BookingTable: React.FC<BookingTableProps> = ({ bookings, onSubmitBooking =
         {status}
       </span>
     );
-  };
-
-  // Render cell content based on column type
-  const renderCellContent = (booking: Booking, columnKey: string) => {
-    switch (columnKey) {
-      case 'bookingId':
-        // Show placeholder indicating booking ID will be generated after payment
-        return booking.bookingId;
-      case 'status':
-        return <StatusBadge status={booking[columnKey] as string} />;
-      case 'dangerousGoods':
-        return booking[columnKey] ? (
-          <span className="flex items-center text-red-600">
-            <AlertTriangle className="w-4 h-4 mr-1" />
-            Yes
-          </span>
-        ) : (
-          <span className="text-gray-500">No</span>
-        );
-      case 'origin':
-      case 'destination':
-        return (
-          <span className="flex items-center">
-            <MapPin className="w-3 h-3 mr-1 text-gray-400" />
-            {booking[columnKey] as string}
-          </span>
-        );
-      case 'shipmentType':
-        return (
-          <span className="flex items-center">
-            <Package className="w-3 h-3 mr-1 text-gray-400" />
-            {(booking[columnKey] as string)?.toUpperCase()}
-          </span>
-        );
-      case 'cargoReadyDate':
-      case 'eta':
-        return (
-          <span className="flex items-center">
-            <Calendar className="w-3 h-3 mr-1 text-gray-400" />
-            {booking[columnKey] as string}
-          </span>
-        );
-      case 'transportMode':
-        let ModeIcon = Ship;
-        const mode = (booking[columnKey] as string)?.toLowerCase();
-        if (mode === 'air') ModeIcon = require('lucide-react').Plane;
-        else if (mode === 'road') ModeIcon = require('lucide-react').Truck;
-        else if (mode === 'sea') ModeIcon = require('lucide-react').Ship;
-        else ModeIcon = require('lucide-react').Package;
-        return (
-          <span className="flex items-center">
-            <ModeIcon className="w-4 h-4 mr-1 text-gray-400" />
-            {(booking[columnKey] as string)?.toUpperCase()}
-          </span>
-        );
-      default:
-        return booking[columnKey as keyof Booking] as string;
-    }
   };
 
   // Render status dropdown
