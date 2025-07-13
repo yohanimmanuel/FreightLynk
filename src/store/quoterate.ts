@@ -180,50 +180,50 @@ export const useQuoteRateStore = create<QuoteRateStore>()(
       return {
         rates: migratedRates,
         quotes: generateQuotesFromRates(migratedRates),
-        selectedRate: null,
-        selectedQuote: null,
-        
-        // Rate actions
-        setRates: (rates: Rate[]) => set({ rates }),
-        addRate: (rate: Rate) => set((state) => ({ rates: [...state.rates, rate ]})),
-        updateRate: (updatedRate: Rate) => 
-          set((state) => ({
-            rates: state.rates.map(rate => 
-              rate.id === updatedRate.id ? updatedRate : rate
-            )
-          })),
-        deleteRate: (id: number) => 
-          set((state) => ({
-            rates: state.rates.filter(rate => rate.id !== id)
-          })),
-        setSelectedRate: (rate: Rate | null) => set({ selectedRate: rate }),
-        
-        // Quote actions
-        setQuotes: (quotes: Quote[]) => set({ quotes }),
-        addQuote: (quote: Quote) => set((state) => ({ quotes: [...state.quotes, quote ]})),
-        updateQuote: (updatedQuote: Quote) => 
-          set((state) => ({
-            quotes: state.quotes.map(quote => 
-              quote.id === updatedQuote.id ? updatedQuote : quote
-            )
-          })),
-        deleteQuote: (id: string) => 
-          set((state) => ({
-            quotes: state.quotes.filter(quote => quote.id !== id)
-          })),
-        setSelectedQuote: (quote: Quote | null) => set({ selectedQuote: quote }),
-        
-        // Utility actions
-        generateQuotesFromRates: () => {
-          const { rates } = get();
-          const quotes = generateQuotesFromRates(rates);
-          set({ quotes });
-        },
-        updateQuotesFromRates: () => {
-          const { rates } = get();
-          const quotes = generateQuotesFromRates(rates);
-          set({ quotes });
-        }
+      selectedRate: null,
+      selectedQuote: null,
+      
+      // Rate actions
+      setRates: (rates: Rate[]) => set({ rates }),
+      addRate: (rate: Rate) => set((state) => ({ rates: [...state.rates, rate ]})),
+      updateRate: (updatedRate: Rate) => 
+        set((state) => ({
+          rates: state.rates.map(rate => 
+            rate.id === updatedRate.id ? updatedRate : rate
+          )
+        })),
+      deleteRate: (id: number) => 
+        set((state) => ({
+          rates: state.rates.filter(rate => rate.id !== id)
+        })),
+      setSelectedRate: (rate: Rate | null) => set({ selectedRate: rate }),
+      
+      // Quote actions
+      setQuotes: (quotes: Quote[]) => set({ quotes }),
+      addQuote: (quote: Quote) => set((state) => ({ quotes: [...state.quotes, quote ]})),
+      updateQuote: (updatedQuote: Quote) => 
+        set((state) => ({
+          quotes: state.quotes.map(quote => 
+            quote.id === updatedQuote.id ? updatedQuote : quote
+          )
+        })),
+      deleteQuote: (id: string) => 
+        set((state) => ({
+          quotes: state.quotes.filter(quote => quote.id !== id)
+        })),
+      setSelectedQuote: (quote: Quote | null) => set({ selectedQuote: quote }),
+      
+      // Utility actions
+      generateQuotesFromRates: () => {
+        const { rates } = get();
+        const quotes = generateQuotesFromRates(rates);
+        set({ quotes });
+      },
+      updateQuotesFromRates: () => {
+        const { rates } = get();
+        const quotes = generateQuotesFromRates(rates);
+        set({ quotes });
+      }
       };
     },
     {

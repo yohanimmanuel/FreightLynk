@@ -84,7 +84,7 @@ const menuItems: MenuSection[] = [
             icon: BriefcaseBusiness,
             label: "Quotes",
             href: "/quotes",
-            visible: ["admin", "forwarder", "logisticsprovider"],
+            visible: ["admin", "client" , "forwarder", "logisticsprovider"],
           },
           {
             icon: NotebookText,

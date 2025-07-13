@@ -174,13 +174,13 @@ function ManualQuoteModal({ open, onClose, mode, onSave, initialData }: { open: 
                   <div className="absolute left-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 w-full z-50">
                     <div className="p-2">
                       {['FCL', 'LCL', 'AIR', 'FTL', 'LTL'].map(opt => (
-                        <button
+              <button
                           key={opt}
                           onClick={() => { setSelectedMode(opt); setShowModeDropdown(false); }}
                           className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${selectedMode === opt ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
                         >
                           {opt}
-                        </button>
+              </button>
                       ))}
                     </div>
                   </div>

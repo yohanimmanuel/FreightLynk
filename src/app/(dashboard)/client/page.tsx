@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapPin, Ship, Clock, DollarSign, AlertTriangle, Bell, TrendingUp, Package, Calendar, FileText, Navigation, Truck } from 'lucide-react';
 import ShipmentMapTracker from '@/app/components/clients/shipmentsbooking/ShipmentMapTracker';
 import BookingCalendar from '@/app/components/clients/shipmentsbooking/BookingCalendar';
@@ -12,9 +12,84 @@ import ShipmentAlert from '@/app/components/clients/shipmentsbooking/ShipmentAle
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/app/components/ProtectedRoute';
 import { UserRole } from '@/store/authStore';
+import { CalendarBooking } from '@/store/types';
+import { useBookingStore } from '@/store/bookingStore';
+
+type Booking = {
+  id: string;
+  shipmentId?: string;
+  poNumber: string;
+  productName: string;
+  hsCode: string;
+  consignee: string;
+  shipper: string;
+  origin: string;
+  destination: string;
+  shipmentType: string;
+  containerType: string;
+  incoterms: string;
+  cargoReadyDate: string;
+  dangerousGoods: boolean;
+  weight: string;
+  volume: string;
+  pieces: number;
+  status: string;
+  eta: string;
+  transportModeValue?: string;
+};
+
 
 const FreightLynkDashboard = () => {
   const router = useRouter();
+  
+  const [confirmedBookings, setConfirmedBookings] = useState<Booking[]>([]);
+  
+  // Load confirmed bookings from localStorage
+  const loadBookings = () => {
+    if (typeof window !== 'undefined') {
+      try {
+        const data = localStorage.getItem('confirmedBookings');
+        const bookings = data ? JSON.parse(data) : [];
+        console.log('Loading bookings from localStorage:', bookings);
+        setConfirmedBookings(bookings);
+      } catch (error) {
+        console.error('Error loading bookings:', error);
+        setConfirmedBookings([]);
+      }
+    }
+  };
+
+  // Load bookings on mount and when storage changes
+  useEffect(() => {
+    // Initial load
+    loadBookings();
+
+    // Add event listeners
+    window.addEventListener('storage', loadBookings);
+
+    // Set up interval to check localStorage every second
+    const interval = setInterval(loadBookings, 1000);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('storage', loadBookings);
+      clearInterval(interval);
+    };
+  }, []);
+
+  // Map confirmedBookings to CalendarBooking[]
+  const calendarBookings: CalendarBooking[] = confirmedBookings.map(b => ({
+    bookingId: b.id,
+    status: b.status,
+    originPort: b.origin,
+    destinationPort: b.destination,
+    cargoReadyDate: b.cargoReadyDate,
+    weight: b.weight,
+    volume: b.volume,
+    cargoValue: b.status === 'Booked' ? 'awaiting pricing' : '',
+    transportMode: b.transportModeValue || '',
+  }));
+
   
   const handleSeeAllTracking = () => {
     router.push('/shipments/track');
@@ -63,7 +138,7 @@ const FreightLynkDashboard = () => {
             
             {/* Right side - Calendar (25% width on large screens) */}
             <div className="lg:col-span-1 space-y-4">
-              <BookingCalendar bookings={[]} />
+              <BookingCalendar bookings={calendarBookings} />
               <IndustryNews />
               <ShipmentAlert />
             </div>
