@@ -145,6 +145,50 @@ function inferMode(rate: Rate): string {
   return 'FCL';
 }
 
+// Mock quote requests for forwarder role only
+export const mockQuoteRequests = [
+  {
+    id: 'R2305012',
+    customer: 'American Trade',
+    provider: 'COSCO Shipping',
+    details: '40"DC x 1',
+    origin: 'LOUISVILLE, US',
+    destination: 'SHANGHAI, CN',
+    transitTime: '15 days',
+    attachment: 'No attached file',
+    status: 'Booked',
+    incoterms: 'FOB',
+    remark: 'Urgent delivery',
+    createdBy: 'Dara Evans',
+    createdOn: 'May 19, 2023 14:55',
+    mode: 'fcl',
+    notes: '',
+    commodity: 'GENERAL CARGO',
+    expectedDelivery: '2023-06-02',
+    cargoReadyDate: '2023-05-31',
+  },
+  {
+    id: 'R2305013',
+    customer: 'Fast Up',
+    provider: 'Maersk Line',
+    details: '20"DC x 2',
+    origin: 'LOS ANGELES, US',
+    destination: 'DUBAI, AE',
+    transitTime: '22 days',
+    attachment: 'No attached file',
+    status: 'Booked',
+    incoterms: 'FOB',
+    remark: 'Handle with care',
+    createdBy: 'Dara Evans',
+    createdOn: 'May 19, 2023 14:53',
+    mode: 'fcl',
+    notes: '',
+    commodity: 'ELECTRONICS',
+    expectedDelivery: '2023-07-10',
+    cargoReadyDate: '2023-06-25',
+  },
+];
+
 // Zustand store interface
 export interface QuoteRateStore {
   rates: Rate[];

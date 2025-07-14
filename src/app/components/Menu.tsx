@@ -88,26 +88,7 @@ const menuItems: MenuSection[] = [
             icon: BriefcaseBusiness,
             label: "Quotes",
             href: "/quotes",
-            visible: ["admin", "client", "logisticsprovider"],
-          },
-          {
-            icon: BriefcaseBusiness,
-            label: "Quotes",
-            href: "#",
-            visible: ["forwarder"],
-            hasSubmenu: true,
-            submenu: [
-              {
-                icon: List,
-                label: "List",
-                href: "/quotes/list",
-              },
-              {
-                icon: List,
-                label: "Customer Requests",
-                href: "/quotes/request",
-              },
-            ]
+            visible: ["admin"],
           },
           {
             icon: NotebookText,
@@ -120,6 +101,25 @@ const menuItems: MenuSection[] = [
             label: "Bookings",
             href: "/bookings",
             visible: ["admin", "client"],
+          },
+          {
+            icon: BriefcaseBusiness,
+            label: "Quotes",
+            href: "#",
+            visible: ["forwarder", "client", "logisticsprovider"],
+            hasSubmenu: true,
+            submenu: [
+              {
+                icon: List,
+                label: "List",
+                href: "/quotes/list",
+              },
+              {
+                icon: List,
+                label: "Requests",
+                href: "/quotes/request",
+              },
+            ]
           },
           {
             icon: Package,

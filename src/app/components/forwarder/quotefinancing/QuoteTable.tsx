@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Plus, Search, ChevronDown, Ship, Box, Plane, Truck, ChevronLeft, ChevronRight, Menu, Download, Upload, Eye, Edit as EditIcon, Trash2, X as XIcon, X } from 'lucide-react';
-import { useQuoteRateStore } from '../../../../store/quoterate';
+import { useQuoteRateStore } from '../../../../store/forwarderquote';
+import { useClientQuoteStore } from '@/store/clientquotes';
 import { useRouter } from 'next/navigation';
 
 const QUOTE_TABS = [
@@ -37,6 +38,7 @@ const MODE_COLUMN_CONFIGS: Record<string, { key: string; label: string }[]> = {
     { key: 'id', label: 'Quote ID' },
     { key: 'client', label: 'Client' },
     { key: 'isTariff', label: 'Is tariff' },
+    { key: 'provider', label: 'Provider' },
     { key: 'containertype', label: 'Container Type' },
     { key: 'origin', label: 'Origin' },
     { key: 'destination', label: 'Destination' },
@@ -44,11 +46,15 @@ const MODE_COLUMN_CONFIGS: Record<string, { key: string; label: string }[]> = {
     { key: 'profit', label: 'Total profit' },
     { key: 'createdBy', label: 'Created by' },
     { key: 'createdDate', label: 'Created date' },
+    { key: 'incoterms', label: 'Incoterms' },
+    { key: 'remark', label: 'Remark' },
+    { key: 'notes', label: 'Notes' },
   ],
   lcl: [
     { key: 'id', label: 'Quote ID' },
     { key: 'client', label: 'Client' },
     { key: 'isTariff', label: 'Is tariff' },
+    { key: 'provider', label: 'Provider' },
     { key: 'weightVolume', label: 'Weight/volume' },
     { key: 'origin', label: 'Origin' },
     { key: 'destination', label: 'Destination' },
@@ -56,11 +62,15 @@ const MODE_COLUMN_CONFIGS: Record<string, { key: string; label: string }[]> = {
     { key: 'profit', label: 'Total profit' },
     { key: 'createdBy', label: 'Created by' },
     { key: 'createdDate', label: 'Created date' },
+    { key: 'incoterms', label: 'Incoterms' },
+    { key: 'remark', label: 'Remark' },
+    { key: 'notes', label: 'Notes' },
   ],
   air: [
     { key: 'id', label: 'Quote ID' },
     { key: 'client', label: 'Client' },
     { key: 'isTariff', label: 'Is tariff' },
+    { key: 'provider', label: 'Provider' },
     { key: 'weightVolume', label: 'Weight/volume' },
     { key: 'origin', label: 'Origin' },
     { key: 'destination', label: 'Destination' },
@@ -68,11 +78,15 @@ const MODE_COLUMN_CONFIGS: Record<string, { key: string; label: string }[]> = {
     { key: 'profit', label: 'Total profit' },
     { key: 'createdBy', label: 'Created by' },
     { key: 'createdDate', label: 'Created date' },
+    { key: 'incoterms', label: 'Incoterms' },
+    { key: 'remark', label: 'Remark' },
+    { key: 'notes', label: 'Notes' },
   ],
   ftl: [
     { key: 'id', label: 'Quote ID' },
     { key: 'client', label: 'Client' },
     { key: 'isTariff', label: 'Is tariff' },
+    { key: 'provider', label: 'Provider' },
     { key: 'truckType', label: 'Truck Type' },
     { key: 'origin', label: 'Origin' },
     { key: 'destination', label: 'Destination' },
@@ -80,11 +94,15 @@ const MODE_COLUMN_CONFIGS: Record<string, { key: string; label: string }[]> = {
     { key: 'profit', label: 'Total profit' },
     { key: 'createdBy', label: 'Created by' },
     { key: 'createdDate', label: 'Created date' },
+    { key: 'incoterms', label: 'Incoterms' },
+    { key: 'remark', label: 'Remark' },
+    { key: 'notes', label: 'Notes' },
   ],
   ltl: [
     { key: 'id', label: 'Quote ID' },
     { key: 'client', label: 'Client' },
     { key: 'isTariff', label: 'Is tariff' },
+    { key: 'provider', label: 'Provider' },
     { key: 'weightVolume', label: 'Weight/volume' },
     { key: 'origin', label: 'Origin' },
     { key: 'destination', label: 'Destination' },
@@ -92,17 +110,25 @@ const MODE_COLUMN_CONFIGS: Record<string, { key: string; label: string }[]> = {
     { key: 'profit', label: 'Total profit' },
     { key: 'createdBy', label: 'Created by' },
     { key: 'createdDate', label: 'Created date' },
+    { key: 'incoterms', label: 'Incoterms' },
+    { key: 'remark', label: 'Remark' },
+    { key: 'notes', label: 'Notes' },
   ],
   all: [
     { key: 'id', label: 'Quote ID' },
     { key: 'client', label: 'Client' },
     { key: 'isTariff', label: 'Is tariff' },
+    { key: 'provider', label: 'Provider' },
+    { key: 'details', label: 'Details' },
     { key: 'origin', label: 'Origin' },
     { key: 'destination', label: 'Destination' },
     { key: 'status', label: 'Status' },
     { key: 'profit', label: 'Total profit' },
     { key: 'createdBy', label: 'Created by' },
     { key: 'createdDate', label: 'Created date' },
+    { key: 'incoterms', label: 'Incoterms' },
+    { key: 'remark', label: 'Remark' },
+    { key: 'notes', label: 'Notes' },
   ],
 };
 
@@ -174,13 +200,13 @@ function ManualQuoteModal({ open, onClose, mode, onSave, initialData }: { open: 
                   <div className="absolute left-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 w-full z-50">
                     <div className="p-2">
                       {['FCL', 'LCL', 'AIR', 'FTL', 'LTL'].map(opt => (
-              <button
+                        <button
                           key={opt}
                           onClick={() => { setSelectedMode(opt); setShowModeDropdown(false); }}
                           className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${selectedMode === opt ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
                         >
                           {opt}
-              </button>
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -193,7 +219,7 @@ function ManualQuoteModal({ open, onClose, mode, onSave, initialData }: { open: 
             <span className="font-mono text-xs text-gray-900 flex items-center">{getModeIcon(selectedMode)}{quoteId}</span>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            {columns.filter(col => col.key !== 'id').map((col) => (
+            {columns.filter(col => col.key !== 'id' && col.key !== 'notes').map((col) => (
               <div key={col.key}>
                 <label className="block text-xs font-medium text-gray-500 mb-1">{col.label}</label>
                 <input
@@ -207,6 +233,18 @@ function ManualQuoteModal({ open, onClose, mode, onSave, initialData }: { open: 
               </div>
             ))}
           </div>
+          {/* Notes Section as description textarea */}
+          <div className="mt-4">
+            <label className="block text-xs font-medium text-gray-500 mb-1">Notes</label>
+            <textarea
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              rows={3}
+              placeholder="Add notes..."
+              value={form.notes || ''}
+              onChange={e => setForm((f: any) => ({ ...f, notes: e.target.value }))}
+              name="notes"
+            />
+          </div>
           <div className="flex justify-end gap-2 mt-6 border-t border-gray-200 pt-4">
             <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-200">Cancel</button>
             <button type="submit" className="px-4 py-2 text-sm text-white bg-[#007bff] rounded-lg hover:bg-blue-700">Save</button>
@@ -219,7 +257,39 @@ function ManualQuoteModal({ open, onClose, mode, onSave, initialData }: { open: 
 
 function ViewQuoteModal({ open, onClose, quote, columns }: { open: boolean; onClose: () => void; quote: any; columns: any[] }) {
   if (!open || !quote) return null;
+
+  // Helper to render status badge
+  function renderStatusBadge(status: string) {
+    let color = 'bg-gray-100 border-gray-300 text-gray-700';
+    if (!status) return <span className="inline-block px-2 py-1 rounded border text-xs bg-gray-100 border-gray-300 text-gray-700">-</span>;
+    switch (status.toLowerCase()) {
+      case 'approved':
+      case 'booked':
+        color = 'bg-green-100 border-green-300 text-green-800';
+        break;
+      case 'sent':
+      case 'updated':
+        color = 'bg-blue-100 border-blue-300 text-blue-800';
+        break;
+      case 'pending':
+        color = 'bg-yellow-100 border-yellow-300 text-yellow-800';
+        break;
+      case 'rejected':
+      case 'cancelled':
+        color = 'bg-red-100 border-red-300 text-red-800';
+        break;
+      case 'draft':
+        color = 'bg-gray-100 border-gray-300 text-gray-700';
+        break;
+      default:
+        color = 'bg-gray-100 border-gray-300 text-gray-700';
+    }
     return (
+      <span className={`inline-block px-3 py-1 rounded border text-xs font-semibold ${color}`}>{status}</span>
+    );
+  }
+
+  return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full p-4 max-h-[80vh] overflow-y-auto scrollbar-hide">
         <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-2 ">
@@ -228,24 +298,53 @@ function ViewQuoteModal({ open, onClose, quote, columns }: { open: boolean; onCl
             <XIcon className="w-5 h-5" />
           </button>
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          {columns.map(col => (
-            <div key={col.key}>
-              <label className="block text-xs font-medium text-gray-500 mb-1">{col.label}</label>
-              <div className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-200 rounded-lg bg-gray-50">{quote[col.key] || '-'}</div>
-            </div>
-          ))}
+        {/* Details Section */}
+        <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+          <div className="text-sm font-semibold text-gray-900 mb-3">Quote details</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-xs">
+            {columns.filter(col => col.key !== 'notes').map(col => (
+              <div key={col.key}>
+                <div className="text-gray-500 mb-1">{col.label}</div>
+                {col.key === 'status' ? (
+                  <div>{renderStatusBadge(quote.status)}</div>
+                ) : (
+                  <div className="text-gray-900">{quote[col.key] || '-'}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Notes Section */}
+        <div className="mb-4">
+          <div className="text-xs text-gray-500 mb-1">Notes</div>
+          <textarea
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            rows={3}
+            placeholder="Add notes..."
+            value={quote.notes || ''}
+            readOnly
+          />
         </div>
         <div className="flex justify-end gap-2 mt-6 border-t border-gray-200 pt-4">
           <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-200">Close</button>
         </div>
-        </div>
       </div>
-    );
+    </div>
+  );
 }
 
-export default function QuoteTable() {
-  const { quotes, setQuotes } = useQuoteRateStore();
+export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' | 'client' }) {
+  // Forwarder store
+  const forwarderStore = useQuoteRateStore();
+  // Client store
+  const clientStore = useClientQuoteStore();
+
+  // Choose the correct store based on role
+  const quotes: any[] = role === 'forwarder' ? forwarderStore.quotes : clientStore.quotes;
+  const setQuotes = role === 'forwarder' ? forwarderStore.setQuotes : clientStore.setQuotes;
+  // For client: Accept/Reject actions
+  const updateQuoteStatus = role === 'client' ? clientStore.updateQuoteStatus : undefined;
+
   const [tab, setTab] = useState('all');
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
@@ -306,7 +405,11 @@ export default function QuoteTable() {
   };
 
   // Determine current mode (tab)
-  const columns = MODE_COLUMN_CONFIGS[tab] || MODE_COLUMN_CONFIGS['all'];
+  let columns = MODE_COLUMN_CONFIGS[tab] || MODE_COLUMN_CONFIGS['all'];
+  // For client role, filter out 'client', 'isTariff', and 'profit' columns
+  if (role === 'client') {
+    columns = columns.filter(col => col.key !== 'client' && col.key !== 'isTariff' && col.key !== 'profit');
+  }
 
   // Helper to safely get values for each column
   const getValue = (q: any, key: string) => {
@@ -381,7 +484,7 @@ export default function QuoteTable() {
   }, []);
 
   // Bulk action bar logic
-  const selectedQuotes = quotes.filter(q => selected.includes(q.id));
+  const selectedQuotes = quotes.filter((q: any) => selected.includes(q.id));
 
   // UI
   return (
@@ -490,45 +593,49 @@ export default function QuoteTable() {
             <Download className="w-4 h-4" />
             Export CSV
           </button>
-          <button className="px-4 py-2 rounded-lg bg-white text-gray-900 text-sm font-medium border border-gray-300 hover:bg-gray-200 flex items-center gap-2" onClick={() => setShowManualModal(true)}>
-            <Plus className="w-4 h-4" />
-            Manual Quotation
-          </button>
-          <button
-            className="px-4 py-2 rounded-lg bg-[#007bff] text-white text-sm font-semibold hover:bg-blue-700 flex items-center gap-2"
-            onClick={() => router.push('/quotes/new')}
-          >
-            <Plus className="w-4 h-4" />
-            Quote
-          </button>
+          {role === 'forwarder' && (
+            <>
+              <button className="px-4 py-2 rounded-lg bg-white text-gray-900 text-sm font-medium border border-gray-300 hover:bg-gray-200 flex items-center gap-2" onClick={() => setShowManualModal(true)}>
+                <Plus className="w-4 h-4" />
+                Manual Quotation
+              </button>
+              <button
+                className="px-4 py-2 rounded-lg bg-[#007bff] text-white text-sm font-semibold hover:bg-blue-700 flex items-center gap-2"
+                onClick={() => router.push('/quotes/new')}
+              >
+                <Plus className="w-4 h-4" />
+                Quote
+              </button>
+            </>
+          )}
         </div>
       </div>
       {/* Bulk Action Bar */}
       {selected.length > 0 && (
-            <div className="p-3 mb-2 bg-white border border-blue-200 rounded-lg flex items-center justify-between">
-              <div className="flex items-center gap-2 flex-wrap">
+        <div className="p-3 mb-2 bg-white border border-blue-200 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-2 flex-wrap">
             {selectedQuotes.map((q: any) => {
               const origin = q['origin'] || q['originAirport'] || '';
               const destination = q['destination'] || q['destinationAirport'] || '';
-                  return (
+              return (
                 <span key={q.id} className="flex items-center bg-blue-100 text-blue-800 text-xs font-medium px-3 py-2 rounded-full">
                   {q.id} {origin && destination ? `(${origin} → ${destination})` : ''}
-                      <button
-                        onClick={e => {
-                          e.stopPropagation();
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
                       setSelected(selected.filter(i => i !== q.id));
-                        }}
-                        className="ml-2 text-blue-400 hover:text-blue-700 focus:outline-none"
-                        title="Remove"
-                        style={{ lineHeight: 1 }}
-                      >
-                  <X className='w-4 h-4 text-gray-500 hover:text-gray-700'/>
-                      </button>
-                    </span>
-                  );
-                })}
-              </div>
-              <div className="flex items-center gap-3">
+                    }}
+                    className="ml-2 text-blue-400 hover:text-blue-700 focus:outline-none"
+                    title="Remove"
+                    style={{ lineHeight: 1 }}
+                  >
+                    <X className='w-4 h-4 text-gray-500 hover:text-gray-700'/>
+                  </button>
+                </span>
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-3">
             <button
               onClick={() => { if (selectedQuotes.length === 1) { setViewQuote(selectedQuotes[0]); setShowViewModal(true); }}}
               className={`px-4 py-2 text-sm font-medium text-[#007bff] bg-white rounded hover:text-blue-700 focus:outline-none transition-colors ${selectedQuotes.length !== 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -536,21 +643,42 @@ export default function QuoteTable() {
             >
               View
             </button>
-            <button
-              onClick={() => { if (selectedQuotes.length === 1) { setEditQuote(selectedQuotes[0]); setShowManualModal(true); }}}
-              className={`px-4 py-2 text-sm font-medium text-[#007bff] bg-white rounded hover:text-blue-700 focus:outline-none transition-colors ${selectedQuotes.length !== 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
-              disabled={selectedQuotes.length !== 1}
-            >
-              Edit
-            </button>
-                  <button
-                    onClick={() => setShowRemoveModal(true)}
-                    className="px-4 py-2 text-sm font-medium text-red-600 bg-white hover:text-red-700 focus:outline-none"
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
+            {role === 'forwarder' ? (
+              <>
+                <button
+                  onClick={() => { if (selectedQuotes.length === 1) { setEditQuote(selectedQuotes[0]); setShowManualModal(true); }}}
+                  className={`px-4 py-2 text-sm font-medium text-green-600 bg-white rounded hover:text-green-700 focus:outline-none transition-colors ${selectedQuotes.length !== 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={selectedQuotes.length !== 1}
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => setShowRemoveModal(true)}
+                  className="px-4 py-2 text-sm font-medium text-red-600 bg-white hover:text-red-700 focus:outline-none"
+                >
+                  Remove
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => updateQuoteStatus && updateQuoteStatus(selectedQuotes[0].id, 'accepted')}
+                  className={`px-4 py-2 text-sm font-medium text-green-600 bg-white rounded hover:text-green-700 focus:outline-none transition-colors ${selectedQuotes.length !== 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={selectedQuotes.length !== 1}
+                >
+                  Accept
+                </button>
+                <button
+                  onClick={() => updateQuoteStatus && updateQuoteStatus(selectedQuotes[0].id, 'rejected')}
+                  className={`px-4 py-2 text-sm font-medium text-red-600 bg-white rounded hover:text-red-700 focus:outline-none transition-colors ${selectedQuotes.length !== 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={selectedQuotes.length !== 1}
+                >
+                  Reject
+                </button>
+              </>
+            )}
+          </div>
+        </div>
       )}
       {/* Remove Confirmation Modal */}
       {showRemoveModal && (
@@ -612,7 +740,7 @@ export default function QuoteTable() {
                   toggleRow(q.id);
                 }}
               >
-                <td className="sticky left-0 z-10 bg-white w-12 px-0 py-0 border-r border-gray-100">
+                <td className="sticky left-0 z-10 bg-white w-12 px-0 py-0 border-r border-gray-200">
                   <div className="flex justify-center items-center h-full">
                     <input
                       type="checkbox"
@@ -637,6 +765,14 @@ export default function QuoteTable() {
                   ) : col.key === 'id' ? (
                     <td key={col.key} className="px-4 py-4 text-gray-900 font-mono flex items-center gap-1">
                       {getModeIcon(tab === 'all' ? q.mode : tab)}{getValue(q, col.key)}
+                    </td>
+                  ) : col.key === 'details' ? (
+                    <td key={col.key} className="px-4 py-4 text-gray-900">
+                      {[
+                        q.containertype,
+                        q.weightVolume,
+                        q.truckType
+                      ].filter(Boolean).join(', ') || '-'}
                     </td>
                   ) : (
                     <td key={col.key} className="px-4 py-4 text-gray-900">{getValue(q, col.key)}</td>

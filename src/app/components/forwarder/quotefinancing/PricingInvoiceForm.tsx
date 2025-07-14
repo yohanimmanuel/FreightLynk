@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, X as XIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useQuoteRateStore } from '../../../../store/quoterate';
+import { useQuoteRateStore } from '../../../../store/forwarderquote';
 import { useSearchParams } from 'next/navigation';
 
 import BookingDetailsModal from '../shipmentmanagement/BookingDetailsModal';

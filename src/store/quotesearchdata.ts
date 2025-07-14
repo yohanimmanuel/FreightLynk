@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Quote, useQuoteRateStore } from './quoterate';
+import { Quote, useQuoteRateStore } from './forwarderquote';
 
 // Define the search result interface
 export interface QuoteSearchResult {

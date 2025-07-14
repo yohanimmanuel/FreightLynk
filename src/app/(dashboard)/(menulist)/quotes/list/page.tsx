@@ -1,22 +1,28 @@
 'use client';
 
 import QuoteTable from "@/app/components/forwarder/quotefinancing/QuoteTable";
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuthStore, UserRole } from '@/store/authStore';
 import ProtectedRoute from '@/app/components/ProtectedRoute';
 
 const ClientUI = () => {
   return (
-    <div>
-      <h2>Client Quotes</h2>
-      <p>Coming Soon...</p>
+    <div className="p-4">
+     {/* Header */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">Your Quotes</h1>
+              <p className="text-sm text-gray-600 mt-2">Review your freight quotes</p>
+          </div>
+         </div>
+      </div>
+     <QuoteTable role="client" />
     </div>
   );
 };
 
 const ForwarderUI = () => {
-  const router = useRouter();
 
   return (
    <div className="p-4">
@@ -29,7 +35,7 @@ const ForwarderUI = () => {
           </div>
          </div>
       </div>
-     <QuoteTable />
+     <QuoteTable role="forwarder" />
     </div>
   );
 };

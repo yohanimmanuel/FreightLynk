@@ -22,7 +22,7 @@ type Booking = {
   pieces: number;
   status: string;
   eta: string;
-  transportMode: string;
+  transportModeValue?: string;
 };
 
 interface BookingTableProps {
@@ -84,9 +84,10 @@ const BookingTable: React.FC<BookingTableProps> = ({
             {booking[columnKey] as string}
           </span>
         );
-      case 'transportMode':
+      case 'transportModeValue':
+        // Use transportModeValue if present, fallback to transportMode
+        let mode = (booking['transportModeValue']|| '').toLowerCase();
         let ModeIcon = Ship;
-        const mode = (booking[columnKey] as string)?.toLowerCase();
         if (mode === 'air') ModeIcon = require('lucide-react').Plane;
         else if (mode === 'road') ModeIcon = require('lucide-react').Truck;
         else if (mode === 'sea') ModeIcon = require('lucide-react').Ship;
@@ -94,7 +95,7 @@ const BookingTable: React.FC<BookingTableProps> = ({
         return (
           <span className="flex items-center">
             <ModeIcon className="w-4 h-4 mr-1 text-gray-400" />
-            {(booking[columnKey] as string)?.toUpperCase()}
+            {mode ? mode.toUpperCase() : ''}
           </span>
         );
       default:
@@ -106,11 +107,11 @@ const BookingTable: React.FC<BookingTableProps> = ({
   const summaryColumns = [
     { key: 'id', label: 'Booking ID', width: '140px' },
     { key: 'poNumber', label: 'PO Number', width: '130px' },
-    { key: 'transportMode', label: 'Transport Mode', width: '120px' },
+    { key: 'transportModeValue', label: 'Transport Mode', width: '120px' },
     { key: 'productName', label: 'Goods', width: '180px' },
     { key: 'origin', label: 'Origin', width: '140px' },
     { key: 'destination', label: 'Destination', width: '140px' },
-    { key: 'eta', label: 'Estimated Arrival', width: '120px' },
+    { key: 'eta', label: 'Target Delivery Date', width: '120px' },
   ];
 
   // Pagination state
@@ -185,7 +186,7 @@ const BookingTable: React.FC<BookingTableProps> = ({
     { key: 'hsCode', label: 'HS Code', mandatory: false, width: '140px' },
     { key: 'shipper', label: 'Shipper', mandatory: false, width: '160px' },
     { key: 'consignee', label: 'Consignee', mandatory: false, width: '140px' }, 
-    { key: 'transportMode', label: 'Transport Mode', mandatory: false, width: '120px' },
+    { key: 'transportModeValue', label: 'Transport Mode', mandatory: false, width: '120px' },
     { key: 'origin', label: 'Origin', mandatory: false, width: '140px' },
     { key: 'destination', label: 'Destination', mandatory: false, width: '140px' },
     { key: 'shipmentType', label: 'Shipment Type', mandatory: false, width: '120px' },
@@ -196,7 +197,7 @@ const BookingTable: React.FC<BookingTableProps> = ({
     { key: 'volume', label: 'Volume', mandatory: false, width: '110px' },
     { key: 'pieces', label: 'Pieces', mandatory: false, width: '100px' },
     { key: 'cargoReadyDate', label: 'Cargo Ready Date', mandatory: false, width: '140px' },
-    { key: 'eta', label: 'ETA', mandatory: false, width: '120px' },
+    { key: 'eta', label: 'Target Delivery Date', mandatory: false, width: '120px' },
     { key: 'status', label: 'Status', mandatory: true, width: '120px' },
   ];
 

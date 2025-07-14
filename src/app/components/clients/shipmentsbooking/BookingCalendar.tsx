@@ -227,7 +227,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookings }) => {
           <div className="relative w-full max-w-6xl mx-auto">
             <BookingCalendarBig bookings={bookings} />
             <button
-              className="absolute top-2 right-2 p-2 bg-white rounded-full shadow hover:bg-gray-100"
+              className="absolute top-2 right-2 p-2 bg-white rounded-lg text-gray-700 hover:bg-gray-100"
               onClick={() => setShowBigCalendar(false)}
             >
               <X size={20} />

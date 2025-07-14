@@ -182,7 +182,7 @@ const BookingCalendarBig: React.FC<BookingCalendarBigProps> = ({ bookings }) => 
       <div className="w-full">
         {/* Header */}
         <div className="p-3 border-b border-gray-200">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-6">
             <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
               Booking Calendar
             </h3>

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { ChevronDown, Upload, Download, Plus, Search as SearchIcon, Ship, Plane, Truck, Trash2, X as XIcon } from 'lucide-react';
 import RateParser from './RateParser';
-import { Rate } from '../../../../store/quoterate';
-import { useQuoteRateStore } from '../../../../store/quoterate';
+import { Rate } from '../../../../store/forwarderquote';
+import { useQuoteRateStore } from '../../../../store/forwarderquote';
 
 // Mode-to-columns configuration for dynamic table rendering
 const MODE_COLUMN_CONFIGS = {

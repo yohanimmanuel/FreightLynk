@@ -3,38 +3,21 @@
 import { useEffect, useState } from 'react';
 import { useAuthStore, UserRole } from '@/store/authStore';
 import ProtectedRoute from '@/app/components/ProtectedRoute';
-import QuoteRequest from '@/app/components/forwarder/quotefinancing/QuoteRequest';
 
 const ClientUI = () => {
   return (
-    <div className="p-4">
-     {/* Header */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Your Quotes Requests</h1>
-              <p className="text-sm text-gray-600 mt-2">Review your freight quotes requests.</p>
-          </div>
-         </div>
-      </div>
-     <QuoteRequest role="client" />
+    <div>
+      <h2>Client Quotes Page</h2>
+      <p>Coming Soon...</p>
     </div>
   );
 };
 
 const ForwarderUI = () => {
   return (
-    <div className="p-4">
-     {/* Header */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Your Quote Requests</h1>
-              <p className="text-sm text-gray-600 mt-2">Review your freight quote requests.</p>
-          </div>
-         </div>
-      </div>
-     <QuoteRequest role="forwarder" />
+    <div>
+      <h2>Forwarder Quotes Page</h2>
+      <p>Coming Soon...</p>
     </div>
   );
 };
@@ -42,7 +25,7 @@ const ForwarderUI = () => {
 const LogisticsProviderUI = () => {
   return (
     <div>
-      <h2>Logistics Provider Customer Request Page</h2>
+      <h2>Logistics Provider Quotes Page</h2>
       <p>Coming Soon...</p>
     </div>
   );
@@ -51,13 +34,13 @@ const LogisticsProviderUI = () => {
 const AdminUI = () => {
   return (
     <div>
-      <h2>Admin Customer Request Page</h2>
+      <h2>Admin Quotes Page</h2>
       <p>Coming Soon...</p>
     </div>
   );
 };
 
-const CustomerRequestPage = () => {
+const QuotesPage = () => {
   const { user } = useAuthStore();
   const [roleBasedUI, setRoleBasedUI] = useState<React.ReactNode | null>(null);
 
@@ -91,4 +74,4 @@ const CustomerRequestPage = () => {
   );
 };
 
-export default CustomerRequestPage;
+export default QuotesPage;
