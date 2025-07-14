@@ -4,11 +4,11 @@ import BookingDetailsModal from '@/app/components/forwarder/shipmentmanagement/B
 import { Search, ChevronDown, X as XIcon, X, AlertTriangle } from 'lucide-react';
 
 import { useRouter } from 'next/navigation';
+import { mockForwarderBookings } from '@/store/forwarderbookings';
 
 // Booking type (should match client)
 type Booking = {
   id: string;
-  shipmentId?: string;
   poNumber: string;
   productName: string;
   hsCode: string;
@@ -32,7 +32,6 @@ type Booking = {
 
 const allColumns = [
   { key: 'id', label: 'Booking ID', mandatory: true },
-  { key: 'shipmentId', label: 'Shipment ID', mandatory: false },
   { key: 'poNumber', label: 'PO Number', mandatory: false },
   { key: 'productName', label: 'Product Name', mandatory: false },
   { key: 'shipper', label: 'Shipper', mandatory: false },
@@ -56,12 +55,12 @@ const statusOptions = [
 ];
 
 const defaultVisibleColumns = allColumns.filter(col => col.mandatory).map(col => col.key).concat([
-  'shipmentId', 'poNumber', 'productName', 'shipper', 'consignee', 'origin', 'destination', 'transportMode', 'shipmentType', 'incoterms', 'eta', 'quote'
+  'poNumber', 'productName', 'shipper', 'consignee', 'origin', 'destination', 'transportMode', 'shipmentType', 'incoterms', 'eta', 'quote'
 ]);
 
 const BookingManage: React.FC = () => {
-  // Use mock data for now
-  const bookings: Booking[] = [];
+  // Use mockForwarderBookings for now
+  const bookings: Booking[] = mockForwarderBookings;
   // Example: const bookings = useBookingStore(state => state.bookings);
 
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
