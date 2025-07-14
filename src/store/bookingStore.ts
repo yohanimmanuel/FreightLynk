@@ -74,9 +74,6 @@ export const useBookingStore = create<BookingStore>()(
   )
 );
 
-// Mock bookings for forwarder UI and calendar
-/*
-/*
 export const mockForwarderBookings = [
   {
     id: 'FLYNK-10001',
@@ -226,4 +223,3 @@ export const mockForwarderBookings = [
     containerQuantity: '',
   },
 ]; 
-*/

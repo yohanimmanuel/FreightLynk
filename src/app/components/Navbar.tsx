@@ -2,13 +2,16 @@
 
 import Image from "next/image";
 import { Search, MessageCircle, Bell, User, LogOut } from 'lucide-react';
+import { Menu as MenuIcon } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { useMenuContext } from '@/app/(dashboard)/layout';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 const Navbar = () => {
   const { user, logout } = useAuthStore();
   const router = useRouter();
+  const { toggleMenu } = useMenuContext();
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -39,6 +42,14 @@ const Navbar = () => {
 
   return (
     <div className="flex items-center justify-between p-4 z-30 relative">
+      {/* MENU COLLAPSE BUTTON */}
+      <button
+        onClick={toggleMenu}
+        className="mr-4 p-2 rounded-lg hover:bg-gray-200 transition-all duration-100 flex-shrink-0 group"
+        aria-label="Toggle menu"
+      >
+        <MenuIcon size={20} className="text-gray-700 transition-colors duration-100" />
+      </button>
       {/* SEARCH BAR */}
       <div className="hidden md:flex items-center gap-1 text-black text-xs rounded-full ring-[1.5px] ring-gray-300 px-3">
         <Search size={15} className="text-gray-500" />

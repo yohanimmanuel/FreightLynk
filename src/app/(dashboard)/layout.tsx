@@ -33,7 +33,7 @@ export default function DashboardLayout({
           {/* left */}
           <div className={`${
             isCollapsed ? 'w-[70px]' : 'w-[15%]'
-          } bg-white p-4 transition-all duration-300 border border-gray-200 min-w-[70px]`}>
+          } bg-white transition-all duration-300 border border-gray-200 min-w-[70px]`}>
             <Menu />
           </div>
           {/* right */}

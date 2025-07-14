@@ -21,8 +21,8 @@ export default function LandingPage() {
             <Image
               src="/FreightLynkLogo.svg"
               alt="FreightLynk Logo"
-              width={40}
-              height={40}
+              width={50}
+              height={50}
               className="animate-fade-in-up"
             />
             <span className="hidden lg:block font-bold text-[#007bff] text-2xl ml-1 menu-text animate-fade-in-up">FreightLynk.</span>

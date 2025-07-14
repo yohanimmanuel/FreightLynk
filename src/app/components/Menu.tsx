@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { 
   LayoutDashboard, 
   Users, 
@@ -41,7 +41,11 @@ import {
   BriefcaseBusiness,
   Earth,
   Globe,
-  CircleDollarSign
+  CircleDollarSign,
+  Search,
+  List,
+  Plane,
+  Banknote
 } from 'lucide-react';
 
 import { useMenuContext } from '@/app/(dashboard)/layout';
@@ -84,7 +88,26 @@ const menuItems: MenuSection[] = [
             icon: BriefcaseBusiness,
             label: "Quotes",
             href: "/quotes",
-            visible: ["admin", "client" , "forwarder", "logisticsprovider"],
+            visible: ["admin", "client", "logisticsprovider"],
+          },
+          {
+            icon: BriefcaseBusiness,
+            label: "Quotes",
+            href: "#",
+            visible: ["forwarder"],
+            hasSubmenu: true,
+            submenu: [
+              {
+                icon: List,
+                label: "List",
+                href: "/quotes/list",
+              },
+              {
+                icon: List,
+                label: "Customer Requests",
+                href: "/quotes/request",
+              },
+            ]
           },
           {
             icon: NotebookText,
@@ -96,18 +119,92 @@ const menuItems: MenuSection[] = [
             icon: CalendarCheck,
             label: "Bookings",
             href: "/bookings",
-            visible: ["admin", "client", "forwarder", "logisticsprovider"],
+            visible: ["admin", "client"],
+          },
+          {
+            icon: Package,
+            label: "Shipments",
+            href: "#",
+            visible: ["forwarder"],
+            hasSubmenu: true,
+            submenu: [
+              {
+                icon: List,
+                label: "Orders",
+                href: "/shipments/orders",
+              },
+              {
+                icon: List,
+                label: "Pre-alerts",
+                href: "/shipments/pre-alerts",
+              },
+              {
+                icon: List,
+                label: "Customs",
+                href: "/shipments/customs",
+              },
+              {
+                icon: List,
+                label: "Consolidation",
+                href: "/shipments/consolidation",
+              },
+              {
+                icon: List,
+                label: "Merge",
+                href: "/shipments/merge",
+              },
+              {
+                icon: List,
+                label: "Group",
+                href: "/shipments/group",
+              },
+            ]
+          },
+          {
+            icon: Package,
+            label: "Shipments",
+            href: "/shipments",
+            visible: ["admin", "client", "logisticsprovider"],
+          },
+          {
+            icon: Globe,
+            label: "Freight",
+            href: "#",
+            visible: ["forwarder"],
+            hasSubmenu: true,
+            submenu: [
+              {
+                icon: List,
+                label: "Ocean",
+                href: "/freight/ocean",
+              },
+              {
+                icon: List,
+                label: "Air",
+                href: "/freight/air",
+              },
+              {
+                icon: List,
+                label: "Road",
+                href: "/freight/road",
+              },
+              {
+                icon: List,
+                label: "Warehouse",
+                href: "/freight/warehouse",
+              },
+            ]
           },
           {
             icon: Globe,
             label: "Freight",
             href: "/freight",
-            visible: ["forwarder", "logisticsprovider"],
+            visible: ["logisticsprovider"],
           },
           {
-            icon: Warehouse,
-            label: "Warehouse",
-            href: "/warehouse",
+            icon: Banknote,
+            label: "Accounting",
+            href: "/accounting",
             visible: ["forwarder"],
           },
           {
@@ -117,16 +214,10 @@ const menuItems: MenuSection[] = [
             visible: ["forwarder", "logisticsprovider"],
           },
           {
-            icon: Package,
-            label: "Shipments",
-            href: "/shipments",
-            visible: ["admin", "client", "forwarder", "logisticsprovider"],
-          },
-          {
             icon: CreditCard,
             label: "Billings",
             href: "/billings",
-            visible: ["admin", "client", "forwarder", "logisticsprovider"],
+            visible: ["admin", "client"],
           },
           {
             icon: BarChart3,
@@ -186,6 +277,12 @@ const Menu = () => {
   const { isCollapsed, toggleMenu } = useMenuContext();
   const [expandedMenus, setExpandedMenus] = useState<{[key: string]: boolean}>({});
   const { canCreateBooking, userType } = useAuthCheck();
+  // Floating submenu state
+  const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
+  const [submenuPosition, setSubmenuPosition] = useState<{top: number, left: number}>({top: 0, left: 0});
+  const submenuTimeout = useRef<NodeJS.Timeout | null>(null);
+  // Store refs for each menu item
+  const menuItemRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
   
   // Function to get current user type with fallback to localStorage
   const getCurrentUserTypeFromPath = () => {
@@ -236,15 +333,10 @@ const Menu = () => {
 
   // Toggle submenu expansion
   const toggleSubmenu = (label: string) => {
-    setExpandedMenus(prev => {
-      const isCurrentlyExpanded = prev[label];
-      // If clicking on already expanded menu, close it
-      if (isCurrentlyExpanded) {
-        return { [label]: false };
-      }
-      // Otherwise, close all others and open this one
-      return { [label]: true };
-    });
+    setExpandedMenus(prev => ({
+      ...prev,
+      [label]: !prev[label],
+    }));
   };
 
   // Check if submenu item is active
@@ -266,11 +358,11 @@ const Menu = () => {
   };
 
   return (
-    <div className="text-sm h-full flex flex-col bg-white" data-menu>
+    <div className="p-4 text-sm h-full flex flex-col bg-white relative" data-menu>
       {/* Logo Section */}
-      <div className={`${isCollapsed ? 'mb-2' : 'mb-2'} ${!isCollapsed ? 'border-b border-gray-200 pb-4' : ''}`}>
-        {/* When expanded: logo and button side by side */}
-        {!isCollapsed && (
+      <div className={`${isCollapsed ? 'mb-2' : 'mb-2'}`}>
+        {/* Logo and (optionally) title */}
+        {!isCollapsed ? (
           <div className="flex items-center justify-between">
             <Link href="/landing" className="flex items-center min-w-0 group">
               <div className="flex items-center min-w-0 group-hover:text-blue-700 transition-colors duration-200">
@@ -280,55 +372,36 @@ const Menu = () => {
                     alt="FreightLynk Logo"
                     width={40}
                     height={40}
-                    className="animate-fade-in-up flex-shrink-0"
+                    className=""
                   />
                 </div>
-                <span className="font-bold text-[#007bff] text-xl menu-text animate-fade-in-up whitespace-nowrap ml-1 group-hover:text-blue-700 transition-colors duration-100">
+                <span className="font-bold text-[#007bff] text-2xl menu-text animate-fade-in-up whitespace-nowrap ml-1 transition-colors duration-100">
                 FreightLynk. 
                 </span>
               </div>   
             </Link>
-            
-            {/* Toggle Button beside logo when expanded */}
-            <button
-              onClick={toggleMenu}
-              className="p-2 rounded-lg hover:bg-gray-200 transition-all duration-100 flex-shrink-0 group"
-              aria-label="Collapse menu"
-            >
-              <X size={16} className="text-gray-500 group-hover:text-gray-700 transition-colors duration-100" />
-            </button>
           </div>
-        )}
-
-        {/* When collapsed: logo centered, button below */}
-        {isCollapsed && (
+        ) : (
           <div className="flex flex-col items-center space-y-3">
-           <Link href="/landing" className="flex items-center justify-center group">
+            <Link href="/landing" className="flex items-center justify-center group">
               <div className="bg-white">
                 <Image
                   src="/FreightLynkLogo.svg"
                   alt="FreightLynk Logo"
-                  width={40}
-                  height={40}
-                  className="animate-fade-in-up flex-shrink-0"
+                  width={45}
+                  height={45}
+                  className=""
                 />
               </div>
             </Link>
-            
-            {/* Toggle Button below logo when collapsed */}
-            <button
-              onClick={toggleMenu}
-              className="p-2.5 rounded-lg hover:bg-gray-200 transition-all duration-200 flex items-center justify-center group"
-              aria-label="Expand menu"
-            >
-              <MenuIcon size={16} className="text-gray-500 group-hover:text-gray-700 transition-colors duration-100" />
-            </button>
           </div>
         )}
+        {/* Always show border below logo/title */}
+        <div className="w-full border-b border-gray-200 my-2"></div>
       </div>
 
       {/* Menu Items */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto hide-scrollbar">
         {menuItems.map(i => (
           i.title === "MENU" && (
             <div className="flex flex-col space-y-2" key={i.title}>
@@ -357,15 +430,54 @@ const Menu = () => {
               )}
               {i.items
               .filter(item => {
-                return item.visible.length > 0 && item.visible.includes(currentUserType);
+                // Exclude Business and Settings from main menu
+                return item.visible.length > 0 && item.visible.includes(currentUserType) && item.label !== "Business" && item.label !== "Settings";
               })
               .map(item => {
                 const isActive = isParentMenuActive(item);
                 const href = item.label === 'Dashboard' ? getDashboardHref() : item.href;
                 const isExpanded = expandedMenus[item.label];
-                
+                const hasSubmenu = item.hasSubmenu && item.submenu;
+                // For collapsed sidebar, handle hover for floating submenu
+                const handleMouseEnter = () => {
+                  if (isCollapsed && hasSubmenu) {
+                    if (submenuTimeout.current) clearTimeout(submenuTimeout.current);
+                    setHoveredMenu(item.label);
+                    // Get the position of the menu icon
+                    const ref = menuItemRefs.current[item.label];
+                    if (ref) {
+                      const rect = ref.getBoundingClientRect();
+                      setSubmenuPosition({
+                        top: rect.top,
+                        left: rect.right,
+                      });
+                    }
+                  }
+                };
+                const handleMouseLeave = () => {
+                  if (isCollapsed && hasSubmenu) {
+                    // Add a small delay before hiding
+                    submenuTimeout.current = setTimeout(() => {
+                      setHoveredMenu(null);
+                    }, 150);
+                  }
+                };
+                const handleSubmenuEnter = () => {
+                  if (submenuTimeout.current) clearTimeout(submenuTimeout.current);
+                };
+                const handleSubmenuLeave = () => {
+                  submenuTimeout.current = setTimeout(() => {
+                    setHoveredMenu(null);
+                  }, 150);
+                };
                 return (
-                  <div key={item.label} className="overflow-hidden">
+                  <div
+                    key={item.label}
+                    className="overflow-hidden relative"
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={handleMouseLeave}
+                    ref={el => { if (hasSubmenu) menuItemRefs.current[item.label] = el; }}
+                  >
                     {/* Main Menu Item */}
                     <div 
                       className={`flex items-center gap-3 px-2.5 py-2 rounded-lg transition-all duration-100 group relative
@@ -375,9 +487,9 @@ const Menu = () => {
                         }`}
                     >
                       {/* For items with submenu, make entire row clickable for dropdown */}
-                      {item.hasSubmenu === true && item.submenu ? (
+                      {hasSubmenu ? (
                         <button
-                          onClick={() => toggleSubmenu(item.label)}
+                          onClick={() => !isCollapsed && toggleSubmenu(item.label)}
                           className="flex items-center gap-3 flex-1 w-full text-left"
                           title={isCollapsed ? item.label : undefined}
                         >
@@ -439,7 +551,6 @@ const Menu = () => {
                           )}
                         </Link>
                       )}
-                      
                       {/* Tooltip for collapsed state */}
                       {isCollapsed && (
                         <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-100 whitespace-nowrap z-50 shadow-lg">
@@ -448,8 +559,27 @@ const Menu = () => {
                         </div>
                       )}
                     </div>
-
-                    {/* Submenu Items */}
+                    {/* Floating Submenu Panel (collapsed mode) */}
+                    {isCollapsed && hasSubmenu && hoveredMenu === item.label && (
+                      <div
+                        className="fixed z-50 min-w-[180px] bg-white shadow-xl rounded-lg py-2 px-2 border border-gray-100 animate-fade-in-up"
+                        style={{ top: submenuPosition.top, left: submenuPosition.left + 4 }}
+                        onMouseEnter={handleSubmenuEnter}
+                        onMouseLeave={handleSubmenuLeave}
+                      >
+                        {(item.submenu ?? []).map(subItem => (
+                          <Link
+                            key={subItem.label}
+                            href={subItem.href}
+                            className="flex items-center gap-2 px-3 py-2 rounded-md text-gray-700 hover:bg-blue-100 hover:text-[#007bff] transition-colors duration-100 whitespace-nowrap"
+                          >
+                            <subItem.icon size={16} className="mr-1" />
+                            <span className="font-medium">{subItem.label}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                    {/* Submenu Items (expanded mode) */}
                     {item.hasSubmenu && item.submenu && !isCollapsed && isExpanded && (
                       <div className="ml-2 mt-1 space-y-1 pl-1">
                         {item.submenu.map(subItem => (
@@ -487,6 +617,79 @@ const Menu = () => {
             </div>
           )
         ))}
+        {/* Separated Section for Business and Settings */}
+        <div className="border-t border-gray-200 pt-4 mt-4 flex flex-col space-y-2">
+          {/* Business Menu Item */}
+          {menuItems[0].items.filter(item => item.label === "Business").map(item => {
+            const isActive = isParentMenuActive(item);
+            const href = item.href;
+            return (
+              <Link
+                key={item.label}
+                href={href as unknown as never}
+                className={`flex items-center gap-3 px-2.5 py-2 rounded-lg transition-all duration-100 group relative
+                  ${isActive 
+                    ? 'bg-blue-100 text-[#007bff] shadow-sm' 
+                    : 'text-gray-500 hover:bg-gray-200 hover:text-gray-800'
+                  }`}
+                title={isCollapsed ? item.label : undefined}
+              >
+                <div className="w-[20px] h-[20px] flex items-center justify-center flex-shrink-0">
+                  <item.icon 
+                    size={18}
+                    className={`transition-all duration-100 ${
+                      isActive 
+                        ? 'text-[#007bff]' 
+                        : 'text-gray-500 group-hover:text-gray-800'
+                    }`}
+                  />
+                </div>
+                {!isCollapsed && (
+                  <span className={`menu-text whitespace-nowrap font-medium transition-all duration-100 ${
+                    isActive ? 'text-[#007bff]' : 'group-hover:text-gray-800'
+                  }`}>
+                    {item.label}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+          {/* Settings Menu Item */}
+          {menuItems[0].items.filter(item => item.label === "Settings").map(item => {
+            const isActive = isParentMenuActive(item);
+            const href = item.href;
+            return (
+              <Link
+                key={item.label}
+                href={href as unknown as never}
+                className={`flex items-center gap-3 px-2.5 py-2 rounded-lg transition-all duration-100 group relative
+                  ${isActive 
+                    ? 'bg-blue-100 text-[#007bff] shadow-sm' 
+                    : 'text-gray-500 hover:bg-gray-200 hover:text-gray-800'
+                  }`}
+                title={isCollapsed ? item.label : undefined}
+              >
+                <div className="w-[20px] h-[20px] flex items-center justify-center flex-shrink-0">
+                  <item.icon 
+                    size={18}
+                    className={`transition-all duration-100 ${
+                      isActive 
+                        ? 'text-[#007bff]' 
+                        : 'text-gray-500 group-hover:text-gray-800'
+                    }`}
+                  />
+                </div>
+                {!isCollapsed && (
+                  <span className={`menu-text whitespace-nowrap font-medium transition-all duration-100 ${
+                    isActive ? 'text-[#007bff]' : 'group-hover:text-gray-800'
+                  }`}>
+                    {item.label}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

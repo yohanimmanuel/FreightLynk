@@ -5,7 +5,6 @@ import { MapPin, Ship, Clock, DollarSign, AlertTriangle, Bell, TrendingUp, Packa
 import ShipmentMapTracker from '@/app/components/clients/shipmentsbooking/ShipmentMapTracker';
 import BookingCalendar from '@/app/components/clients/shipmentsbooking/BookingCalendar';
 import Image from 'next/image';
-import ShipmentTable from '@/app/components/clients/shipmentsbooking/ShipmentTable';
 import ShipmentMilestone from '@/app/components/clients/shipmentsbooking/ShipmentMilestone';
 import IndustryNews from '@/app/components/clients/shipmentsbooking/IndustryNews';
 import ShipmentAlert from '@/app/components/clients/shipmentsbooking/ShipmentAlert';
@@ -14,6 +13,7 @@ import ProtectedRoute from '@/app/components/ProtectedRoute';
 import { UserRole } from '@/store/authStore';
 import { CalendarBooking } from '@/store/types';
 import { useBookingStore } from '@/store/bookingStore';
+import BookingTable from '@/app/components/clients/shipmentsbooking/BookingTable';
 
 type Booking = {
   id: string;
@@ -40,42 +40,47 @@ type Booking = {
 
 
 const FreightLynkDashboard = () => {
-  const router = useRouter();
-  
-  const [confirmedBookings, setConfirmedBookings] = useState<Booking[]>([]);
-  
-  // Load confirmed bookings from localStorage
-  const loadBookings = () => {
-    if (typeof window !== 'undefined') {
-      try {
-        const data = localStorage.getItem('confirmedBookings');
-        const bookings = data ? JSON.parse(data) : [];
-        console.log('Loading bookings from localStorage:', bookings);
-        setConfirmedBookings(bookings);
-      } catch (error) {
-        console.error('Error loading bookings:', error);
-        setConfirmedBookings([]);
-      }
-    }
+ const router = useRouter();
+
+   // Use the same confirmedBookings logic as the Bookings page
+   const [confirmedBookings, setConfirmedBookings] = useState<any[]>([]);
+
+   const loadBookings = () => {
+     if (typeof window !== 'undefined') {
+       try {
+         const data = localStorage.getItem('confirmedBookings');
+         const bookings = data ? JSON.parse(data) : [];
+         setConfirmedBookings(bookings);
+       } catch (error) {
+         setConfirmedBookings([]);
+       }
+     }
+   };
+
+   useEffect(() => {
+     loadBookings();
+     window.addEventListener('storage', loadBookings);
+     const interval = setInterval(loadBookings, 1000);
+     return () => {
+       window.removeEventListener('storage', loadBookings);
+       clearInterval(interval);
+     };
+   }, []);
+
+  // Handle navigation to the bookings page
+  const handleSeeAllBookings = () => {
+    router.push('/bookings');
   };
 
-  // Load bookings on mount and when storage changes
-  useEffect(() => {
-    // Initial load
-    loadBookings();
+  // Handle navigation to the tracking page
+  const handleSeeAllTracking = () => {
+    router.push('/shipments/track');
+  };
 
-    // Add event listeners
-    window.addEventListener('storage', loadBookings);
+  const handleSeeAllMilestone = () => {
+    router.push('/shipments/track');
+  };
 
-    // Set up interval to check localStorage every second
-    const interval = setInterval(loadBookings, 1000);
-
-    // Cleanup
-    return () => {
-      window.removeEventListener('storage', loadBookings);
-      clearInterval(interval);
-    };
-  }, []);
 
   // Map confirmedBookings to CalendarBooking[]
   const calendarBookings: CalendarBooking[] = confirmedBookings.map(b => ({
@@ -89,19 +94,6 @@ const FreightLynkDashboard = () => {
     cargoValue: b.status === 'Booked' ? 'awaiting pricing' : '',
     transportMode: b.transportModeValue || '',
   }));
-
-  
-  const handleSeeAllTracking = () => {
-    router.push('/shipments/track');
-  };
-
-  const handleSeeAllShipments = () => {
-    router.push('/shipments/all');
-  };
-
-  const handleSeeAllMilestone = () => {
-    router.push('/shipments/track');
-  };
   
   return (
     <ProtectedRoute allowedRoles={[UserRole.CLIENT]}>
@@ -129,18 +121,22 @@ const FreightLynkDashboard = () => {
             {/* Left side - Map and Table (75% width on large screens) */}
             <div className="lg:col-span-2 space-y-4">
               <ShipmentMapTracker onSeeAll={handleSeeAllTracking} />     
-              <ShipmentTable 
-                view="summary" 
-                onSeeAll={handleSeeAllShipments}
-              />  
+              {/* Booking summary view */}
+              <BookingTable
+                view="summary"
+                bookings={confirmedBookings}
+                onSeeAll={handleSeeAllBookings}
+                maxRows={5}
+                title="Your bookings"
+              />
               <ShipmentMilestone onSeeAll={handleSeeAllMilestone} />
+              <ShipmentAlert />
             </div>
             
             {/* Right side - Calendar (25% width on large screens) */}
             <div className="lg:col-span-1 space-y-4">
               <BookingCalendar bookings={calendarBookings} />
               <IndustryNews />
-              <ShipmentAlert />
             </div>
           </div>
         </div>

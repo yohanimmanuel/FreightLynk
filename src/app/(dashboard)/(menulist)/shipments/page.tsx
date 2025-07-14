@@ -43,11 +43,6 @@ const ClientUI = () => {
   const handleSeeAllBookings = () => {
     router.push('/bookings');
   };
-  
-   // Handle navigation to the shipments/all page
-  const handleSeeAllShipments = () => {
-    router.push('/shipments/all');
-  };
 
   // Handle navigation to the tracking page
   const handleSeeAllTracking = () => {
