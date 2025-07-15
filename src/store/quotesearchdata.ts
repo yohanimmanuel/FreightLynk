@@ -18,7 +18,22 @@ export interface QuoteSearchResult {
       price: number;
       currency: string;
     }
-  }
+  };
+  remark: string;
+  validFrom: string;
+  validUntil: string;
+  price: number;
+  currency: string;
+  detailCost: Array<{
+    type: string;
+    item: string;
+    description: string;
+    calculation: string;
+    quantity: number;
+    currency: string;
+    price: number;
+    amount: number;
+  }>;
 }
 
 interface PriceRange {
@@ -85,7 +100,17 @@ const mockSearchResults: QuoteSearchResult[] = [
       '20GP': { price: 1635.32, currency: 'USD' },
       '40GP': { price: 1840.00, currency: 'USD' },
       '40HC': { price: 2062.25, currency: 'USD' }
-    }
+    },
+    remark: '14DEM+14DET',
+    validFrom: '2023-10-01',
+    validUntil: '2023-12-05',
+    price: 1635.32,
+    currency: 'USD',
+    detailCost: [
+      { type: 'Ocean Freight', item: 'Ocean Freight (20\'DC)', description: 'Container Cost', calculation: 'By Container type (20\'DC)', quantity: 1, currency: 'USD', price: 1320, amount: 1320 },
+      { type: 'Origin Charge', item: 'THC (20\'DC)', description: 'Terminal Handling Charge', calculation: 'By Container type (20\'DC)', quantity: 1, currency: 'USD', price: 600, amount: 600 },
+      { type: 'Origin Charge', item: 'SEAL', description: 'Seal Fee Surcharge', calculation: 'By Containers count', quantity: 1, currency: 'USD', price: 12, amount: 12 }
+    ]
   },
   {
     id: 2,
@@ -101,7 +126,17 @@ const mockSearchResults: QuoteSearchResult[] = [
       '20GP': { price: 1781.53, currency: 'USD' },
       '40GP': { price: 1985.00, currency: 'USD' },
       '40HC': { price: 2108.25, currency: 'USD' }
-    }
+    },
+    remark: '14DEM+30DET',
+    validFrom: '2023-10-01',
+    validUntil: '2023-12-05',
+    price: 1781.53,
+    currency: 'USD',
+    detailCost: [
+      { type: 'Ocean Freight', item: 'Ocean Freight (20\'DC)', description: '', calculation: 'By Container type (20\'DC)', quantity: 1, currency: 'USD', price: 1400, amount: 1400 },
+      { type: 'Origin Charge', item: 'THC (20\'DC)', description: 'Terminal Handling Charge', calculation: 'By Container type (20\'DC)', quantity: 1, currency: 'USD', price: 650, amount: 650 },
+      { type: 'Origin Charge', item: 'SEAL', description: 'Seal Fee Surcharge', calculation: 'By Containers count', quantity: 1, currency: 'USD', price: 15, amount: 15 }
+    ]
   },
   {
     id: 3,
@@ -117,7 +152,17 @@ const mockSearchResults: QuoteSearchResult[] = [
       '20GP': { price: 1701.53, currency: 'USD' },
       '40GP': { price: 2005.00, currency: 'USD' },
       '40HC': { price: 2108.25, currency: 'USD' }
-    }
+    },
+    remark: '12DEM+10DET',
+    validFrom: '2023-10-01',
+    validUntil: '2023-12-05',
+    price: 1701.53,
+    currency: 'USD',
+    detailCost: [
+      { type: 'Ocean Freight', item: 'Ocean Freight (20\'DC)', description: '', calculation: 'By Container type (20\'DC)', quantity: 1, currency: 'USD', price: 1350, amount: 1350 },
+      { type: 'Origin Charge', item: 'THC (20\'DC)', description: 'Terminal Handling Charge', calculation: 'By Container type (20\'DC)', quantity: 1, currency: 'USD', price: 620, amount: 620 },
+      { type: 'Origin Charge', item: 'SEAL', description: 'Seal Fee Surcharge', calculation: 'By Containers count', quantity: 1, currency: 'USD', price: 10, amount: 10 }
+    ]
   }
 ];
 
