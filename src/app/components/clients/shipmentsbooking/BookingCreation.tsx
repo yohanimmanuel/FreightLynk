@@ -566,18 +566,18 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
                   ))
                 ) : (
                   ['fcl', 'lcl'].map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      disabled={formData.transportModeValue === 'air' && type === 'fcl'}
-                      className={`flex-1 px-4 py-3 text-xs border rounded-lg transition-colors
-                        ${formData.shipmentTypeValue === type ? 'bg-blue-50 border-blue-500 text-blue-700 font-semibold' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}
-                        ${formData.transportModeValue === 'air' && type === 'fcl' ? 'opacity-50 cursor-not-allowed' : ''}
-                        ${formData.transportModeValue === 'air' && type === 'lcl' ? 'font-bold' : ''}`}
-                      onClick={() => handleInputChange('shipmentTypeValue', type)}
-                    >
-                      {type === 'fcl' ? 'FCL' : 'LCL'}
-                    </button>
+                  <button
+                    key={type}
+                    type="button"
+                    disabled={formData.transportModeValue === 'air' && type === 'fcl'}
+                    className={`flex-1 px-4 py-3 text-xs border rounded-lg transition-colors
+                      ${formData.shipmentTypeValue === type ? 'bg-blue-50 border-blue-500 text-blue-700 font-semibold' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}
+                      ${formData.transportModeValue === 'air' && type === 'fcl' ? 'opacity-50 cursor-not-allowed' : ''}
+                      ${formData.transportModeValue === 'air' && type === 'lcl' ? 'font-bold' : ''}`}
+                    onClick={() => handleInputChange('shipmentTypeValue', type)}
+                  >
+                    {type === 'fcl' ? 'FCL' : 'LCL'}
+                  </button>
                   ))
                 )}
               </div>
@@ -632,7 +632,7 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
               </div>
             ) : (
               formData.shipmentTypeValue === 'fcl' && (
-                <div className="flex gap-2 items-center">
+              <div className="flex gap-2 items-center">
                   <input
                     type="number"
                     min="1"
@@ -641,21 +641,21 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
                     className={`w-20 p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.containerQuantity ? 'border-red-500' : ''}`}
                     placeholder="Qty"
                   />
-                  {['20ft', '40ft', '40ft-hc', '45ft-hc'].map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      className={`flex-1 px-4 py-3 text-xs border rounded-lg transition-colors
-                        ${formData.containerTypeValue === type ? 'bg-blue-50 border-blue-500 text-blue-700 font-semibold' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
-                      onClick={() => handleInputChange('containerTypeValue', type)}
-                    >
-                      {type === '20ft' && '20 ft'}
-                      {type === '40ft' && '40 ft'}
-                      {type === '40ft-hc' && '40 ft HC'}
-                      {type === '45ft-hc' && '45 ft HC'}
-                    </button>
-                  ))}
-                </div>
+                {['20ft', '40ft', '40ft-hc', '45ft-hc'].map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    className={`flex-1 px-4 py-3 text-xs border rounded-lg transition-colors
+                      ${formData.containerTypeValue === type ? 'bg-blue-50 border-blue-500 text-blue-700 font-semibold' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                    onClick={() => handleInputChange('containerTypeValue', type)}
+                  >
+                    {type === '20ft' && '20 ft'}
+                    {type === '40ft' && '40 ft'}
+                    {type === '40ft-hc' && '40 ft HC'}
+                    {type === '45ft-hc' && '45 ft HC'}
+                  </button>
+                ))}
+              </div>
               )
             )}
             {formData.shipmentTypeValue === 'fcl' && hasSubmitted && errors.containerQuantity && (

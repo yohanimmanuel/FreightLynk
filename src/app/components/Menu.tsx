@@ -188,11 +188,11 @@ const menuItems: MenuSection[] = [
                 label: "Road",
                 href: "/freight/road",
               },
-              {
-                icon: List,
-                label: "Warehouse",
-                href: "/freight/warehouse",
-              },
+             // {
+               // icon: List,
+               // label: "Warehouse",
+               // href: "/freight/warehouse",
+             // },
             ]
           },
           {

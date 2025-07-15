@@ -52,7 +52,30 @@ const QuoteSearch = () => {
   const [openDetailCost, setOpenDetailCost] = useState<number | null>(null);
   // Remove Remark button and openRemark state
 
+  const [showResults, setShowResults] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Add applied state for search
+  const [appliedTransportMode, setAppliedTransportMode] = useState(transportMode);
+  const [appliedCargoTab, setAppliedCargoTab] = useState(cargoTab);
+  const [appliedFclQuantities, setAppliedFclQuantities] = useState(fclQuantities);
+  const [appliedLclWeight, setAppliedLclWeight] = useState(lclWeight);
+  const [appliedLclVolume, setAppliedLclVolume] = useState(lclVolume);
+  const [appliedSearchParams, setAppliedSearchParams] = useState(searchParams);
+
   const handleSearch = () => {
+    setShowResults(false);
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      setShowResults(true);
+      setAppliedTransportMode(transportMode);
+      setAppliedCargoTab(cargoTab);
+      setAppliedFclQuantities({ ...fclQuantities });
+      setAppliedLclWeight(lclWeight);
+      setAppliedLclVolume(lclVolume);
+      setAppliedSearchParams({ ...searchParams });
+    }, 800); // Simulate loading delay
     // Simulate search functionality
     console.log('Searching with params:', searchParams);
   };
@@ -101,6 +124,128 @@ const QuoteSearch = () => {
       truckQuantity: '',
     }));
   }, [transportMode]);
+
+  // Helper to build detail cost rows based on mode and user input
+  interface DetailCostRow {
+    type: string;
+    item: string;
+    description: string;
+    calculation: string;
+    containerType?: string;
+    truckType?: string;
+    qty: number;
+    baseRate: number;
+    amount: number;
+    currency: string;
+  }
+  function buildDetailCostRows(
+    result: any,
+    transportMode: string,
+    cargoTab: string,
+    fclQuantities: { [key: string]: number },
+    lclWeight: string,
+    lclVolume: string,
+    searchParams: any
+  ): DetailCostRow[] {
+    const rows: DetailCostRow[] = [];
+    if (transportMode === 'Sea' && cargoTab === 'FCL') {
+      // FCL: one row per container type with qty > 0
+      Object.entries(fclQuantities).forEach(([type, qty]) => {
+        const qtyNum = typeof qty === 'number' ? qty : parseInt(qty as any) || 0;
+        if (qtyNum > 0 && result.rates[type]) {
+          const baseRate = result.rates[type].price;
+          rows.push({
+            type: 'Ocean Freight',
+            item: type,
+            description: 'Container Cost',
+            calculation: 'By container type',
+            containerType: type,
+            qty: qtyNum,
+            baseRate,
+            amount: baseRate * qtyNum,
+            currency: result.rates[type].currency,
+          });
+        }
+      });
+    } else if ((transportMode === 'Sea' && cargoTab === 'LCL') || transportMode === 'Air') {
+      // LCL or Air: show both per kg and per cbm, use chargeable
+      const weight = parseFloat(lclWeight) || 0;
+      const volume = parseFloat(lclVolume) || 0;
+      const perKg = result.lclRates?.perKg || result.ltlRates?.perKg || 0;
+      const perCbm = result.lclRates?.perCbm || result.ltlRates?.perCbm || 0;
+      const currency = result.lclRates?.currency || result.ltlRates?.currency || 'USD';
+      const weightCharge = weight * perKg;
+      const volumeCharge = volume * perCbm;
+      const chargeable = weightCharge > volumeCharge ? weightCharge : volumeCharge;
+      const chargeBasis = weightCharge > volumeCharge ? 'Weight' : 'Volume';
+      rows.push({
+        type: transportMode === 'Air' ? 'Air Freight' : 'LCL Freight',
+        item: chargeBasis,
+        description: chargeBasis === 'Weight' ? `Weight: ${weight} kg` : `Volume: ${volume} cbm`,
+        calculation: chargeBasis === 'Weight' ? 'By weight (kg)' : 'By volume (cbm)',
+        qty: chargeBasis === 'Weight' ? weight : volume,
+        baseRate: chargeBasis === 'Weight' ? perKg : perCbm,
+        amount: chargeable,
+        currency,
+      });
+    } else if (transportMode === 'Land' && cargoTab === 'FTL') {
+      // FTL: one row for selected truck type and quantity
+      const truckType = searchParams.truckType;
+      const qty = parseInt(searchParams.truckQuantity) || 0;
+      if (truckType && qty > 0 && result.ftlRates[truckType]) {
+        const baseRate = result.ftlRates[truckType].price;
+        rows.push({
+          type: 'Road Freight',
+          item: truckType,
+          description: 'Truck Cost',
+          calculation: 'By truck type',
+          truckType,
+          qty,
+          baseRate,
+          amount: baseRate * qty,
+          currency: result.ftlRates[truckType].currency,
+        });
+      }
+    } else if (transportMode === 'Land' && cargoTab === 'LTL') {
+      // LTL: same as LCL
+      const weight = parseFloat(lclWeight) || 0;
+      const volume = parseFloat(lclVolume) || 0;
+      const perKg = result.ltlRates?.perKg || 0;
+      const perCbm = result.ltlRates?.perCbm || 0;
+      const currency = result.ltlRates?.currency || 'USD';
+      const weightCharge = weight * perKg;
+      const volumeCharge = volume * perCbm;
+      const chargeable = weightCharge > volumeCharge ? weightCharge : volumeCharge;
+      const chargeBasis = weightCharge > volumeCharge ? 'Weight' : 'Volume';
+      rows.push({
+        type: 'Road Freight',
+        item: chargeBasis,
+        description: chargeBasis === 'Weight' ? `Weight: ${weight} kg` : `Volume: ${volume} cbm`,
+        calculation: chargeBasis === 'Weight' ? 'By weight (kg)' : 'By volume (cbm)',
+        qty: chargeBasis === 'Weight' ? weight : volume,
+        baseRate: chargeBasis === 'Weight' ? perKg : perCbm,
+        amount: chargeable,
+        currency,
+      });
+    }
+    return rows;
+  }
+
+  // Helper to check if all required fields are filled
+  function isSearchFormValid(transportMode: string, cargoTab: string, searchParams: any, fclQuantities: { [key: string]: number }, lclWeight: string, lclVolume: string) {
+    if (!searchParams.origin || !searchParams.destination) return false;
+    if (transportMode === 'Sea' && cargoTab === 'FCL') {
+      // At least one container type with qty > 0
+      return Object.values(fclQuantities).some(qty => qty > 0);
+    } else if ((transportMode === 'Sea' && cargoTab === 'LCL') || transportMode === 'Air') {
+      return parseFloat(lclWeight) > 0 && parseFloat(lclVolume) > 0;
+    } else if (transportMode === 'Land' && cargoTab === 'FTL') {
+      return searchParams.truckType && parseInt(searchParams.truckQuantity) > 0;
+    } else if (transportMode === 'Land' && cargoTab === 'LTL') {
+      return parseFloat(lclWeight) > 0 && parseFloat(lclVolume) > 0;
+    }
+    return false;
+  }
 
   return (
     <div>
@@ -219,7 +364,8 @@ const QuoteSearch = () => {
                 />
                 <button
                   onClick={handleSearch}
-                  className="px-30 py-2.5 bg-[#007bff] text-xs text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center ml-auto"
+                  disabled={!isSearchFormValid(transportMode, cargoTab, searchParams, fclQuantities, lclWeight, lclVolume)}
+                  className={`px-30 py-2.5 rounded-lg flex items-center justify-center ml-auto text-xs transition-colors ${isSearchFormValid(transportMode, cargoTab, searchParams, fclQuantities, lclWeight, lclVolume) ? 'bg-[#007bff] text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-400 cursor-not-allowed'}`}
                   style={{ whiteSpace: 'nowrap' }}
                 >
                   <Search className="w-4 h-4 mr-2" />
@@ -253,7 +399,8 @@ const QuoteSearch = () => {
                 />
                 <button
                   onClick={handleSearch}
-                  className="px-30 py-2.5 bg-[#007bff] text-xs text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
+                  disabled={!isSearchFormValid(transportMode, cargoTab, searchParams, fclQuantities, lclWeight, lclVolume)}
+                  className={`px-30 py-2.5 rounded-lg flex items-center justify-center text-xs transition-colors ${isSearchFormValid(transportMode, cargoTab, searchParams, fclQuantities, lclWeight, lclVolume) ? 'bg-[#007bff] text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-400 cursor-not-allowed'}`}
                 >
                   <Search className="w-4 h-4 mr-2" />
                   Search
@@ -451,148 +598,183 @@ const QuoteSearch = () => {
         </div>
 
         {/* Results Header */}
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-md font-semibold text-gray-900">
-            Results Found: {searchResults.length}
-          </h2>
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <Filter className="w-4 h-4 text-gray-500" />
-              <span className="text-sm text-gray-600">Sort by: </span>
-              <div className="relative" ref={sortDropdownRef}>
-                <button
-                  onClick={() => setShowSortDropdown(!showSortDropdown)}
-                  className="flex items-center text-sm text-[#007bff] font-medium hover:text-blue-700"
-                >
-                  {sortBy}
-                  <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
-                </button>
-                {showSortDropdown && (
-                  <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 w-48 z-50">
-                    <div className="p-2">
-                      {sortByOptions.map((option) => (
-                        <button
-                          key={option}
-                          onClick={() => { setSortBy(option); setShowSortDropdown(false); }}
-                          className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-sm transition-colors ${sortBy === option ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
-                        >
-                          {option}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+        {loading && (
+          <div className="flex flex-col items-center justify-center py-16">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-500"></div>
+            <span className="mt-4 text-gray-500 text-sm">Searching for quotes...</span>
           </div>
-        </div>
-
-        {/* Results */}
-        <div className="space-y-4">
-          {searchResults.map((result) => {
-            const isDetailOpen = openDetailCost === result.id;
-            // Remove Remark button and openRemark state
-
-            return (
-              <div key={result.id} className={`bg-white rounded-lg shadow-sm border border-gray-200 transition-all`}>
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-0 border divide-x divide-gray-200">
-                  {/* 1. Logo Column */}
-                  <div className="flex items-center justify-center py-4 px-2 lg:col-span-1">
-                    <img 
-                      src={result.logo} 
-                      alt={result.carrier}
-                      className="w-24 h-24 object-contain"
-                    />
-                  </div>
-                  {/* 2. Details/Journey Column (wider) */}
-                  <div className="flex flex-col justify-center py-2 px-4 mt-2 mb-2 lg:col-span-2">
-                    <div className="font-semibold text-gray-900 text-base mb-2">{result.carrier}</div>
-                    <div className="flex items-center gap-4 w-full">
-                      {/* Origin */}
-                      <div className="flex flex-col items-center">
-                        <span className="text-xs text-gray-700 font-medium uppercase">{result.origin}</span>
-                      </div>
-                      {/* Arrow */}
-                      <div className="flex flex-col items-center">
-                        <span className="text-gray-400 text-lg">→</span>
-                      </div>
-                      {/* Destination */}
-                      <div className="flex flex-col items-center">
-                        <span className="text-xs text-gray-700 font-medium uppercase">{result.destination}</span>
-                      </div>
-                      {/* TT and Validity */}
-                      <div className="flex flex-col items-end ml-auto">
-                        <span className="text-xs text-gray-500">Transit Time: <span className="text-gray-900 font-medium">{result.transitTime}</span></span>
-                        <span className="text-xs text-gray-500">Valid From: <span className="text-gray-900 font-medium">{result.validFrom}</span></span>
-                        <span className="text-xs text-gray-500">Valid Until: <span className="text-gray-900 font-medium">{result.validUntil}</span></span>
-                      </div>
-                    </div>
-                    {/* Remark */}
-                    <div className="w-full flex items-center mt-2">
-                      <span className="text-xs text-gray-500 italic">Remark: {result.remark || ''}</span>
-                    </div>
-                  </div>
-                  {/* 3. Price Column */}
-                  <div className="flex flex-col justify-center py-2 px-4 min-w-[160px] gap-2 lg:col-span-1">
-                    <div>
-                      <span className="text-xs font-medium text-gray-700">Price:</span>
-                      <div className="text-xl font-semibold text-[#007bff]">{result.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} {result.currency}</div>
-                    </div>
-                    <button className="mt-6 text-xs text-[#007bff] hover:text-blue-800" onClick={() => setOpenDetailCost(isDetailOpen ? null : result.id)}>
-                      Detail Cost
-                    </button>
-                  </div>
-                  {/* 4. Actions Column */}
-                  <div className="flex flex-col justify-center items-center py-2 px-4 lg:col-span-1">
+        )}
+        {showResults && !loading && (
+          <>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-md font-semibold text-gray-900">
+                Results Found: {searchResults.length}
+              </h2>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <Filter className="w-4 h-4 text-gray-500" />
+                  <span className="text-sm text-gray-600">Sort by: </span>
+                  <div className="relative" ref={sortDropdownRef}>
                     <button
-                      onClick={() => router.push('/quotes/list/addinfo')}
-                      className={`w-full px-4 py-2 rounded-md transition-colors text-sm font-medium flex items-center justify-center gap-2 bg-[#007bff] hover:bg-blue-700 text-white border border-[#007bff]`}
+                      onClick={() => setShowSortDropdown(!showSortDropdown)}
+                      className="flex items-center text-sm text-[#007bff] font-medium hover:text-blue-700"
                     >
-                      Select
+                      {sortBy}
+                      <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
                     </button>
+                    {showSortDropdown && (
+                      <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 w-48 z-50">
+                        <div className="p-2">
+                          {sortByOptions.map((option) => (
+                            <button
+                              key={option}
+                              onClick={() => { setSortBy(option); setShowSortDropdown(false); }}
+                              className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-sm transition-colors ${sortBy === option ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                            >
+                              {option}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-                {/* Detail Cost Dropdown */}
-                {isDetailOpen && (
-                  <div className="p-4 border-t border-gray-200 bg-white">
-                    <div className="font-medium text-gray-900 mb-2 text-sm">Quote Detail</div>
-                    <div className="overflow-x-auto rounded-lg">
-                      <table className="min-w-full text-xs text-left border border-gray-200 ">
-                        <thead>
-                          <tr className="bg-gray-50 text-gray-500 uppercase border border-gray-200">
-                            <th className="px-4 py-2">Type</th>
-                            <th className="px-4 py-2">Item</th>
-                            <th className="px-4 py-2">Description</th>
-                            <th className="px-4 py-2">Calculation</th>
-                            <th className="px-4 py-2">Qty</th>
-                            <th className="px-4 py-2">Currency</th>
-                            <th className="px-4 py-2">Price</th>
-                            <th className="px-4 py-2">Amount</th>
-                          </tr>
-                        </thead>
-                        <tbody className="text-gray-900">
-                          {result.detailCost.map((row, idx) => (
-                            <tr key={idx}>
-                              <td className="px-4 py-4">{row.type}</td>
-                              <td className="px-4 py-4">{row.item}</td>
-                              <td className="px-4 py-4">{row.description}</td>
-                              <td className="px-4 py-4">{row.calculation}</td>
-                              <td className="px-4 py-4">{row.quantity}</td>
-                              <td className="px-4 py-4">{row.currency}</td>
-                              <td className="px-4 py-4">{row.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                              <td className="px-4 py-4">{row.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
               </div>
-            );
-          })}
-        </div>
+            </div>
+            {/* Results */}
+            <div className="space-y-4">
+              {searchResults.map((result) => {
+                const isDetailOpen = openDetailCost === result.id;
+                // Remove Remark button and openRemark state
+
+                return (
+                  <div key={result.id} className={`bg-white rounded-lg shadow-sm border border-gray-200 transition-all`}>
+                    <div className="grid grid-cols-1 lg:grid-cols-5 gap-0 border divide-x divide-gray-200">
+                      {/* 1. Logo Column */}
+                      <div className="flex items-center justify-center py-4 px-2 lg:col-span-1">
+                        <img 
+                          src={result.logo} 
+                          alt={result.carrier}
+                          className="w-24 h-24 object-contain"
+                        />
+                      </div>
+                      {/* 2. Details/Journey Column (wider) */}
+                      <div className="flex flex-col justify-center py-2 px-4 mt-2 mb-2 lg:col-span-2">
+                        <div className="font-semibold text-gray-900 text-base mb-2">{result.carrier}</div>
+                        <div className="flex items-center gap-4 w-full">
+                          {/* Origin */}
+                          <div className="flex flex-col items-center">
+                            <span className="text-xs text-gray-700 font-medium uppercase">{result.origin}</span>
+                          </div>
+                          {/* Arrow */}
+                          <div className="flex flex-col items-center">
+                            <span className="text-gray-400 text-lg">→</span>
+                          </div>
+                          {/* Destination */}
+                          <div className="flex flex-col items-center">
+                            <span className="text-xs text-gray-700 font-medium uppercase">{result.destination}</span>
+                          </div>
+                          {/* TT and Validity */}
+                          <div className="flex flex-col items-end ml-auto">
+                            <span className="text-xs text-gray-500">Transit Time: <span className="text-gray-900 font-medium">{result.transitTime}</span></span>
+                            <span className="text-xs text-gray-500">Valid From: <span className="text-gray-900 font-medium">{result.validFrom}</span></span>
+                            <span className="text-xs text-gray-500">Valid Until: <span className="text-gray-900 font-medium">{result.validUntil}</span></span>
+                          </div>
+                        </div>
+                        {/* Remark */}
+                        <div className="w-full flex items-center mt-2">
+                          <span className="text-xs text-gray-500 italic">Remark: {result.remark || ''}</span>
+                        </div>
+                      </div>
+                      {/* 3. Price Column */}
+                      <div className="flex flex-col justify-center py-2 px-4 min-w-[160px] gap-2 lg:col-span-1">
+                        <div>
+                          <span className="text-xs font-medium text-gray-700">Price:</span>
+                          {(() => {
+                            const detailRows = buildDetailCostRows(result, appliedTransportMode, appliedCargoTab, appliedFclQuantities, appliedLclWeight, appliedLclVolume, appliedSearchParams);
+                            const totalAmount = detailRows.reduce((sum, row) => sum + (typeof row.amount === 'number' ? row.amount : 0), 0);
+                            const currency = detailRows[0]?.currency || result.currency;
+                            return (
+                              <div className="text-xl font-semibold text-[#007bff]">
+                                {totalAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} {currency}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                        <button className="mt-6 text-xs text-[#007bff] hover:text-blue-800" onClick={() => setOpenDetailCost(isDetailOpen ? null : result.id)}>
+                          Detail Cost
+                        </button>
+                      </div>
+                      {/* 4. Actions Column */}
+                      <div className="flex flex-col justify-center items-center py-2 px-4 lg:col-span-1">
+                        <button
+                          onClick={() => router.push('/quotes/list/addinfo')}
+                          className={`w-full px-4 py-2 rounded-md transition-colors text-sm font-medium flex items-center justify-center gap-2 bg-[#007bff] hover:bg-blue-700 text-white border border-[#007bff]`}
+                        >
+                          Select
+                        </button>
+                      </div>
+                    </div>
+                    {/* Detail Cost Dropdown */}
+                    {isDetailOpen && (
+                      <div className="p-4 border-t border-gray-200 bg-white">
+                        <div className="font-medium text-gray-900 mb-2 text-sm">Quote Detail</div>
+                        <div className="overflow-x-auto rounded-lg">
+                          <table className="min-w-full text-xs text-left border border-gray-200 ">
+                            <thead>
+                              <tr className="bg-gray-50 text-gray-500 uppercase border border-gray-200">
+                                {/* Dynamic columns based on mode/cargo */}
+                                <th className="px-4 py-2">Charge Type</th>
+                                <th className="px-4 py-2">Item</th>
+                                <th className="px-4 py-2">Description</th>
+                                <th className="px-4 py-2">Calculation</th>
+                                {((appliedTransportMode === 'Sea' && appliedCargoTab === 'FCL') || (appliedTransportMode === 'Land' && appliedCargoTab === 'FTL')) && <th className="px-4 py-2">Container/Truck Type</th>}
+                                {((appliedTransportMode === 'Sea' && appliedCargoTab === 'FCL') || (appliedTransportMode === 'Land' && appliedCargoTab === 'FTL')) && <th className="px-4 py-2">Qty</th>}
+                                {((appliedTransportMode === 'Sea' && appliedCargoTab === 'FCL') || (appliedTransportMode === 'Land' && appliedCargoTab === 'FTL')) && <th className="px-4 py-2">Base Rate</th>}
+                                {((appliedTransportMode === 'Sea' && appliedCargoTab === 'FCL') || (appliedTransportMode === 'Land' && appliedCargoTab === 'FTL')) && <th className="px-4 py-2">Amount</th>}
+                                {(((appliedTransportMode === 'Sea' && appliedCargoTab === 'LCL') || appliedTransportMode === 'Air' || (appliedTransportMode === 'Land' && appliedCargoTab === 'LTL'))) && <th className="px-4 py-2">Base Rate</th>}
+                                {(((appliedTransportMode === 'Sea' && appliedCargoTab === 'LCL') || appliedTransportMode === 'Air' || (appliedTransportMode === 'Land' && appliedCargoTab === 'LTL'))) && <th className="px-4 py-2">Qty</th>}
+                                {(((appliedTransportMode === 'Sea' && appliedCargoTab === 'LCL') || appliedTransportMode === 'Air' || (appliedTransportMode === 'Land' && appliedCargoTab === 'LTL'))) && <th className="px-4 py-2">Amount</th>}
+                              </tr>
+                            </thead>
+                            <tbody className="text-gray-900">
+                              {buildDetailCostRows(result, appliedTransportMode, appliedCargoTab, appliedFclQuantities, appliedLclWeight, appliedLclVolume, appliedSearchParams).map((row, idx) => (
+                                <tr key={idx}>
+                                  <td className="px-4 py-4">{row.type}</td>
+                                  <td className="px-4 py-4">{row.item}</td>
+                                  <td className="px-4 py-4">{row.description}</td>
+                                  <td className="px-4 py-4">{row.calculation}</td>
+                                  {((appliedTransportMode === 'Sea' && appliedCargoTab === 'FCL') || (appliedTransportMode === 'Land' && appliedCargoTab === 'FTL')) && <td className="px-4 py-4">{row.containerType || row.truckType}</td>}
+                                  {((appliedTransportMode === 'Sea' && appliedCargoTab === 'FCL') || (appliedTransportMode === 'Land' && appliedCargoTab === 'FTL')) && <td className="px-4 py-4">{row.qty}</td>}
+                                  {((appliedTransportMode === 'Sea' && appliedCargoTab === 'FCL') || (appliedTransportMode === 'Land' && appliedCargoTab === 'FTL')) && <td className="px-4 py-4">{row.baseRate}</td>}
+                                  {((appliedTransportMode === 'Sea' && appliedCargoTab === 'FCL') || (appliedTransportMode === 'Land' && appliedCargoTab === 'FTL')) && <td className="px-4 py-4">{row.amount}</td>}
+                                  {(((appliedTransportMode === 'Sea' && appliedCargoTab === 'LCL') || appliedTransportMode === 'Air' || (appliedTransportMode === 'Land' && appliedCargoTab === 'LTL'))) && <td className="px-4 py-4">{row.baseRate}</td>}
+                                  {(((appliedTransportMode === 'Sea' && appliedCargoTab === 'LCL') || appliedTransportMode === 'Air' || (appliedTransportMode === 'Land' && appliedCargoTab === 'LTL'))) && <td className="px-4 py-4">{row.qty}</td>}
+                                  {(((appliedTransportMode === 'Sea' && appliedCargoTab === 'LCL') || appliedTransportMode === 'Air' || (appliedTransportMode === 'Land' && appliedCargoTab === 'LTL'))) && <td className="px-4 py-4">{row.amount}</td>}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
+      {/* Spinner CSS if not present globally */}
+      <style jsx>{`
+        .animate-spin {
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };

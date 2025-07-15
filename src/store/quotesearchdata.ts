@@ -19,6 +19,14 @@ export interface QuoteSearchResult {
       currency: string;
     }
   };
+  lclRates: { perKg: number; perCbm: number; currency: string };
+  ftlRates: {
+    [truckType: string]: {
+      price: number;
+      currency: string;
+    }
+  };
+  ltlRates: { perKg: number; perCbm: number; currency: string };
   remark: string;
   validFrom: string;
   validUntil: string;
@@ -97,19 +105,32 @@ const mockSearchResults: QuoteSearchResult[] = [
     transitTime: '25 days',
     validity: '12-05-2023',
     rates: {
-      '20GP': { price: 1635.32, currency: 'USD' },
-      '40GP': { price: 1840.00, currency: 'USD' },
-      '40HC': { price: 2062.25, currency: 'USD' }
+      '20GP': { price: 1200, currency: 'USD' },
+      '40GP': { price: 1800, currency: 'USD' },
+      '40HC': { price: 2000, currency: 'USD' }
     },
+    lclRates: { perKg: 0.13, perCbm: 19.0, currency: 'USD' },
+    ftlRates: {
+      'Wingbox': { price: 500, currency: 'USD' },
+      'Box Truck': { price: 400, currency: 'USD' },
+      'Reefer': { price: 600, currency: 'USD' },
+      'Flatbed': { price: 550, currency: 'USD' },
+      'Lowbed': { price: 700, currency: 'USD' },
+      'Container Chassis': { price: 480, currency: 'USD' }
+    },
+    ltlRates: { perKg: 0.18, perCbm: 22.0, currency: 'USD' },
     remark: '14DEM+14DET',
     validFrom: '2023-10-01',
     validUntil: '2023-12-05',
-    price: 1635.32,
+    price: 0, // Will be calculated dynamically
     currency: 'USD',
     detailCost: [
-      { type: 'Ocean Freight', item: 'Ocean Freight (20\'DC)', description: 'Container Cost', calculation: 'By Container type (20\'DC)', quantity: 1, currency: 'USD', price: 1320, amount: 1320 },
-      { type: 'Origin Charge', item: 'THC (20\'DC)', description: 'Terminal Handling Charge', calculation: 'By Container type (20\'DC)', quantity: 1, currency: 'USD', price: 600, amount: 600 },
-      { type: 'Origin Charge', item: 'SEAL', description: 'Seal Fee Surcharge', calculation: 'By Containers count', quantity: 1, currency: 'USD', price: 12, amount: 12 }
+      { type: 'Ocean Freight', item: 'FCL', description: 'Container Cost', calculation: 'By container type', quantity: 0, currency: 'USD', price: 0, amount: 0 },
+      { type: 'LCL Freight', item: 'LCL', description: 'Volumetric Pricing', calculation: 'By volume (cbm)', quantity: 0, currency: 'USD', price: 0, amount: 0 },
+      { type: 'Road Freight', item: 'FTL', description: 'Truck Cost', calculation: 'By truck type', quantity: 0, currency: 'USD', price: 0, amount: 0 },
+      { type: 'Road Freight', item: 'LTL', description: 'Volumetric Pricing', calculation: 'By volume (cbm)', quantity: 0, currency: 'USD', price: 0, amount: 0 },
+      { type: 'Origin Charge', item: 'THC', description: 'Terminal Handling Charge', calculation: 'Per container/truck', quantity: 0, currency: 'USD', price: 0, amount: 0 },
+      { type: 'Origin Charge', item: 'SEAL', description: 'Seal Fee Surcharge', calculation: 'Per container/truck', quantity: 0, currency: 'USD', price: 0, amount: 0 }
     ]
   },
   {
@@ -123,19 +144,32 @@ const mockSearchResults: QuoteSearchResult[] = [
     transitTime: '25 days',
     validity: '12-05-2023',
     rates: {
-      '20GP': { price: 1781.53, currency: 'USD' },
-      '40GP': { price: 1985.00, currency: 'USD' },
-      '40HC': { price: 2108.25, currency: 'USD' }
+      '20GP': { price: 1250, currency: 'USD' },
+      '40GP': { price: 1850, currency: 'USD' },
+      '40HC': { price: 2050, currency: 'USD' }
     },
+    lclRates: { perKg: 0.15, perCbm: 20.0, currency: 'USD' },
+    ftlRates: {
+      'Wingbox': { price: 520, currency: 'USD' },
+      'Box Truck': { price: 410, currency: 'USD' },
+      'Reefer': { price: 630, currency: 'USD' },
+      'Flatbed': { price: 570, currency: 'USD' },
+      'Lowbed': { price: 720, currency: 'USD' },
+      'Container Chassis': { price: 495, currency: 'USD' }
+    },
+    ltlRates: { perKg: 0.20, perCbm: 23.0, currency: 'USD' },
     remark: '14DEM+30DET',
     validFrom: '2023-10-01',
     validUntil: '2023-12-05',
-    price: 1781.53,
+    price: 0,
     currency: 'USD',
     detailCost: [
-      { type: 'Ocean Freight', item: 'Ocean Freight (20\'DC)', description: '', calculation: 'By Container type (20\'DC)', quantity: 1, currency: 'USD', price: 1400, amount: 1400 },
-      { type: 'Origin Charge', item: 'THC (20\'DC)', description: 'Terminal Handling Charge', calculation: 'By Container type (20\'DC)', quantity: 1, currency: 'USD', price: 650, amount: 650 },
-      { type: 'Origin Charge', item: 'SEAL', description: 'Seal Fee Surcharge', calculation: 'By Containers count', quantity: 1, currency: 'USD', price: 15, amount: 15 }
+      { type: 'Ocean Freight', item: 'FCL', description: 'Container Cost', calculation: 'By container type', quantity: 0, currency: 'USD', price: 0, amount: 0 },
+      { type: 'LCL Freight', item: 'LCL', description: 'Volumetric Pricing', calculation: 'By volume (cbm)', quantity: 0, currency: 'USD', price: 0, amount: 0 },
+      { type: 'Road Freight', item: 'FTL', description: 'Truck Cost', calculation: 'By truck type', quantity: 0, currency: 'USD', price: 0, amount: 0 },
+      { type: 'Road Freight', item: 'LTL', description: 'Volumetric Pricing', calculation: 'By volume (cbm)', quantity: 0, currency: 'USD', price: 0, amount: 0 },
+      { type: 'Origin Charge', item: 'THC', description: 'Terminal Handling Charge', calculation: 'Per container/truck', quantity: 0, currency: 'USD', price: 0, amount: 0 },
+      { type: 'Origin Charge', item: 'SEAL', description: 'Seal Fee Surcharge', calculation: 'Per container/truck', quantity: 0, currency: 'USD', price: 0, amount: 0 }
     ]
   },
   {
@@ -149,19 +183,32 @@ const mockSearchResults: QuoteSearchResult[] = [
     transitTime: '24 days',
     validity: '12-05-2023',
     rates: {
-      '20GP': { price: 1701.53, currency: 'USD' },
-      '40GP': { price: 2005.00, currency: 'USD' },
-      '40HC': { price: 2108.25, currency: 'USD' }
+      '20GP': { price: 1220, currency: 'USD' },
+      '40GP': { price: 1820, currency: 'USD' },
+      '40HC': { price: 2020, currency: 'USD' }
     },
+    lclRates: { perKg: 0.14, perCbm: 18.5, currency: 'USD' },
+    ftlRates: {
+      'Wingbox': { price: 510, currency: 'USD' },
+      'Box Truck': { price: 405, currency: 'USD' },
+      'Reefer': { price: 620, currency: 'USD' },
+      'Flatbed': { price: 560, currency: 'USD' },
+      'Lowbed': { price: 710, currency: 'USD' },
+      'Container Chassis': { price: 490, currency: 'USD' }
+    },
+    ltlRates: { perKg: 0.19, perCbm: 21.5, currency: 'USD' },
     remark: '12DEM+10DET',
     validFrom: '2023-10-01',
     validUntil: '2023-12-05',
-    price: 1701.53,
+    price: 0,
     currency: 'USD',
     detailCost: [
-      { type: 'Ocean Freight', item: 'Ocean Freight (20\'DC)', description: '', calculation: 'By Container type (20\'DC)', quantity: 1, currency: 'USD', price: 1350, amount: 1350 },
-      { type: 'Origin Charge', item: 'THC (20\'DC)', description: 'Terminal Handling Charge', calculation: 'By Container type (20\'DC)', quantity: 1, currency: 'USD', price: 620, amount: 620 },
-      { type: 'Origin Charge', item: 'SEAL', description: 'Seal Fee Surcharge', calculation: 'By Containers count', quantity: 1, currency: 'USD', price: 10, amount: 10 }
+      { type: 'Ocean Freight', item: 'FCL', description: 'Container Cost', calculation: 'By container type', quantity: 0, currency: 'USD', price: 0, amount: 0 },
+      { type: 'LCL Freight', item: 'LCL', description: 'Volumetric Pricing', calculation: 'By volume (cbm)', quantity: 0, currency: 'USD', price: 0, amount: 0 },
+      { type: 'Road Freight', item: 'FTL', description: 'Truck Cost', calculation: 'By truck type', quantity: 0, currency: 'USD', price: 0, amount: 0 },
+      { type: 'Road Freight', item: 'LTL', description: 'Volumetric Pricing', calculation: 'By volume (cbm)', quantity: 0, currency: 'USD', price: 0, amount: 0 },
+      { type: 'Origin Charge', item: 'THC', description: 'Terminal Handling Charge', calculation: 'Per container/truck', quantity: 0, currency: 'USD', price: 0, amount: 0 },
+      { type: 'Origin Charge', item: 'SEAL', description: 'Seal Fee Surcharge', calculation: 'Per container/truck', quantity: 0, currency: 'USD', price: 0, amount: 0 }
     ]
   }
 ];
