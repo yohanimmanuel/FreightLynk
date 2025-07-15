@@ -110,7 +110,7 @@ export default function QuoteNewClient() {
           disabled={!selectedClientId || !selectedContactId}
           onClick={() => {
             if (selectedClientId && selectedContactId) {
-              router.push('/quotes/search');
+              router.push('/quotes/list/search');
             }
           }}
         >

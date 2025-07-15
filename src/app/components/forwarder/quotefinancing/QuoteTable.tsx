@@ -601,7 +601,7 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
               </button>
               <button
                 className="px-4 py-2 rounded-lg bg-[#007bff] text-white text-sm font-semibold hover:bg-blue-700 flex items-center gap-2"
-                onClick={() => router.push('/quotes/new')}
+                onClick={() => router.push('/quotes/list/new')}
               >
                 <Plus className="w-4 h-4" />
                 Quote

@@ -514,7 +514,7 @@ const QuoteSearch = () => {
             <button
               onClick={() => {
                 handleCreateQuote();
-                router.push('/quotes/addinfo');
+                router.push('/quotes/list/addinfo');
               }}
               disabled={selectedQuotes.some(id => !selectedContainerTypes[id])}
               className={`bg-green-500 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium shadow-lg focus:outline-none focus:ring-4 focus:ring-green-300 ${selectedQuotes.some(id => !selectedContainerTypes[id]) ? 'opacity-50 cursor-not-allowed' : ''}`}

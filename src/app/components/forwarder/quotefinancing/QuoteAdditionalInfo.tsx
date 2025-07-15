@@ -208,7 +208,7 @@ export default function QuoteAdditionalInfo() {
         <button
           type="button"
           className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-200"
-          onClick={() => router.push('/quotes/search')}
+          onClick={() => router.push('/quotes/list/search')}
         >
           Back
         </button>
