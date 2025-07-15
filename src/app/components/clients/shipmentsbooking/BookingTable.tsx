@@ -202,7 +202,7 @@ const BookingTable: React.FC<BookingTableProps> = ({
   ];
 
   // Default visible columns
-  const defaultVisibleColumns = ['id', 'poNumber', 'productName', 'shipper', 'consignee', 'origin', 'destination', 'shipmentType', 'status', 'eta', 'transportMode', 'incoterms'];
+  const defaultVisibleColumns = ['id', 'poNumber', 'productName', 'shipper', 'consignee', 'origin', 'destination', 'shipmentType', 'status', 'eta', 'transportModeValue', 'incoterms'];
   
   const [visibleColumns, setVisibleColumns] = useState(defaultVisibleColumns);
   const [searchTerm, setSearchTerm] = useState('');
@@ -594,6 +594,7 @@ const BookingTable: React.FC<BookingTableProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div ref={modalRef} className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm mx-2">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Are you sure you wanted to remove this booking data?</h2>
+            <p className="text-sm text-gray-600 mb-4">*If you remove this booking, you will no longer see any of the related shipment, quote request, or shipment milestone/watchlist data for this booking.</p>
             <div className="flex justify-end gap-2 mt-6">
               <button
                 className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-100"

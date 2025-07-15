@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ChevronDown, ChevronUp, Package, Users, Truck, MapPin, Target, Scale, FileText, Tag, MessageSquare, Info, Plus, X, Trash2 } from 'lucide-react';
 import POSummaryTable from '../purchasesorders/POSummaryTable';
 import POManagementTable from '../purchasesorders/POManagementTable';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import ReactDOM from 'react-dom';
 import { useBookingStore } from '@/store/bookingStore';
 import { usePOStore } from '@/store/poStore';
@@ -143,6 +143,7 @@ const Dropdown: React.FC<{
 
 const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   // Use Zustand selectors for reactive state
   const formData = useBookingStore(state => state.formData);
   const setFormData = useBookingStore(state => state.setFormData);
@@ -150,6 +151,7 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
   const setSelectedPOs = useBookingStore(state => state.setSelectedPOs);
   const tradeRole = useBookingStore(state => state.tradeRole);
   const setTradeRole = useBookingStore(state => state.setTradeRole);
+  const clearBooking = useBookingStore(state => state.clearBooking);
   
   // State management
   const [showPOSelection, setShowPOSelection] = useState(false);
@@ -327,6 +329,13 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem('bookingSubmitted');
     }
+  }, []);
+
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      clearBooking();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   console.log('Input value:', formData.shipmentName);
@@ -543,33 +552,87 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
                 Shipment Type <span className="text-red-500">*</span>
               </label>
               <div className="flex gap-2">
-                {['fcl', 'lcl'].map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    disabled={formData.transportModeValue === 'air' && type === 'fcl'}
-                    className={`flex-1 px-4 py-3 text-xs border rounded-lg transition-colors
-                      ${formData.shipmentTypeValue === type ? 'bg-blue-50 border-blue-500 text-blue-700 font-semibold' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}
-                      ${formData.transportModeValue === 'air' && type === 'fcl' ? 'opacity-50 cursor-not-allowed' : ''}
-                      ${formData.transportModeValue === 'air' && type === 'lcl' ? 'font-bold' : ''}`}
-                    onClick={() => handleInputChange('shipmentTypeValue', type)}
-                  >
-                    {type === 'fcl' ? 'FCL' : 'LCL'}
-                  </button>
-                ))}
+                {formData.transportModeValue === 'land' ? (
+                  ['ftl', 'ltl'].map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      className={`flex-1 px-4 py-3 text-xs border rounded-lg transition-colors
+                        ${formData.shipmentTypeValue === type ? 'bg-blue-50 border-blue-500 text-blue-700 font-semibold' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                      onClick={() => handleInputChange('shipmentTypeValue', type)}
+                    >
+                      {type === 'ftl' ? 'FTL' : 'LTL'}
+                    </button>
+                  ))
+                ) : (
+                  ['fcl', 'lcl'].map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      disabled={formData.transportModeValue === 'air' && type === 'fcl'}
+                      className={`flex-1 px-4 py-3 text-xs border rounded-lg transition-colors
+                        ${formData.shipmentTypeValue === type ? 'bg-blue-50 border-blue-500 text-blue-700 font-semibold' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}
+                        ${formData.transportModeValue === 'air' && type === 'fcl' ? 'opacity-50 cursor-not-allowed' : ''}
+                        ${formData.transportModeValue === 'air' && type === 'lcl' ? 'font-bold' : ''}`}
+                      onClick={() => handleInputChange('shipmentTypeValue', type)}
+                    >
+                      {type === 'fcl' ? 'FCL' : 'LCL'}
+                    </button>
+                  ))
+                )}
               </div>
               {hasSubmitted && errors.shipmentTypeValue && (
                 <p className="text-xs text-red-500 mt-1">{errors.shipmentTypeValue}</p>
               )}
             </div>
-            {/* Container Type */}
-            {formData.shipmentTypeValue === 'lcl' ? (
+            {/* Truck Type and Quantity for FTL */}
+            {formData.transportModeValue === 'land' && formData.shipmentTypeValue === 'ftl' && (
+              <div className="flex gap-2 items-center">
+                <div className="w-24">
+                  <label className="block text-xs font-medium text-gray-700 mb-2">
+                    Qty <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={formData.truckQuantity || ''}
+                    onChange={(e) => handleInputChange('truckQuantity', e.target.value)}
+                    className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.truckQuantity ? 'border-red-500' : ''}`}
+                    placeholder="Qty"
+                  />
+                  {hasSubmitted && errors.truckQuantity && (
+                    <p className="text-xs text-red-500 mt-1">{errors.truckQuantity}</p>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs font-medium text-gray-700 mb-2">
+                    Truck Type <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.truckType || ''}
+                    onChange={(e) => handleInputChange('truckType', e.target.value)}
+                    className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.truckType ? 'border-red-500' : ''}`}
+                    placeholder="Enter truck type (e.g. 20ft, 40ft, Reefer, Flatbed, etc.)"
+                  />
+                  {hasSubmitted && errors.truckType && (
+                    <p className="text-xs text-red-500 mt-1">{errors.truckType}</p>
+                  )}
+                </div>
+              </div>
+            )}
+            {/* Container Type for FCL, Cargo & Load Specs for LCL/LTL */}
+            {formData.transportModeValue === 'land' && formData.shipmentTypeValue === 'ltl' ? (
+              <div className="text-xs text-gray-600 mt-3 mb-2">
+                Specify your cargo & load details below for consolidation and handling.
+              </div>
+            ) : formData.shipmentTypeValue === 'lcl' ? (
               <div className="text-xs text-gray-600 mt-3 mb-2">
                 Specify your cargo & load details below for consolidation and handling.
               </div>
             ) : (
-              <div className="flex gap-2 items-center">
-                {formData.shipmentTypeValue === 'fcl' && (
+              formData.shipmentTypeValue === 'fcl' && (
+                <div className="flex gap-2 items-center">
                   <input
                     type="number"
                     min="1"
@@ -578,22 +641,22 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
                     className={`w-20 p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.containerQuantity ? 'border-red-500' : ''}`}
                     placeholder="Qty"
                   />
-                )}
-                {['20ft', '40ft', '40ft-hc', '45ft-hc'].map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    className={`flex-1 px-4 py-3 text-xs border rounded-lg transition-colors
-                      ${formData.containerTypeValue === type ? 'bg-blue-50 border-blue-500 text-blue-700 font-semibold' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
-                    onClick={() => handleInputChange('containerTypeValue', type)}
-                  >
-                    {type === '20ft' && '20 ft'}
-                    {type === '40ft' && '40 ft'}
-                    {type === '40ft-hc' && '40 ft HC'}
-                    {type === '45ft-hc' && '45 ft HC'}
-                  </button>
-                ))}
-              </div>
+                  {['20ft', '40ft', '40ft-hc', '45ft-hc'].map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      className={`flex-1 px-4 py-3 text-xs border rounded-lg transition-colors
+                        ${formData.containerTypeValue === type ? 'bg-blue-50 border-blue-500 text-blue-700 font-semibold' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                      onClick={() => handleInputChange('containerTypeValue', type)}
+                    >
+                      {type === '20ft' && '20 ft'}
+                      {type === '40ft' && '40 ft'}
+                      {type === '40ft-hc' && '40 ft HC'}
+                      {type === '45ft-hc' && '45 ft HC'}
+                    </button>
+                  ))}
+                </div>
+              )
             )}
             {formData.shipmentTypeValue === 'fcl' && hasSubmitted && errors.containerQuantity && (
               <p className="text-xs text-red-500 mt-1">{errors.containerQuantity}</p>

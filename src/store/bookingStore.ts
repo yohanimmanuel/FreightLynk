@@ -51,6 +51,8 @@ const initialFormData = {
   packageTypeValue: '',
   packageCount: '',
   containerQuantity: '',
+  truckType: '',
+  truckQuantity: '',
 };
 
 export const useBookingStore = create<BookingStore>()(

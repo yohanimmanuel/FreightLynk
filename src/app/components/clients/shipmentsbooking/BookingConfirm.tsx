@@ -88,53 +88,6 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
     }
   ];
 
-  const getTransportIcon = (mode: string) => {
-    switch (mode) {
-      case 'sea': return Ship;
-      case 'air': return Plane;
-      case 'land': return Truck;
-      default: return Ship;
-    }
-  };
-
-  const StepIndicator = ({ steps }: { steps: any[] }) => (
-    <div className="flex items-center justify-between bg-white rounded-lg border border-gray-200 p-4 mb-4">
-      {steps.map((step, index) => {
-        const Icon = step.icon;
-        return (
-          <div key={step.id} className="flex items-center">
-            <div className="flex flex-col items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                step.status === 'completed' 
-                  ? 'bg-green-100 text-green-600' 
-                  : step.status === 'current'
-                    ? 'bg-blue-100 text-[#007bff]'
-                    : 'bg-gray-100 text-gray-400'
-              }`}>
-                <Icon className="w-5 h-5" />
-              </div>
-              <span className={`text-sm font-medium mt-2 ${
-                step.status === 'current' ? 'text-[#007bff]' : 'text-gray-600'
-              }`}>
-                {step.label}
-              </span>
-              <span className="text-xs text-gray-400 mt-1">
-                {step.status === 'completed' && 'Completed by Sharon Johnston on Mar 12, 2021'}
-                {step.status === 'current' && 'FreightLynk to provide pricing in 24 to 48 hours'}
-                {step.status === 'pending' && ''}
-              </span>
-            </div>
-            {index < steps.length - 1 && (
-              <div className={`w-20 h-0.5 mx-4 ${
-                step.status === 'completed' ? 'bg-green-200' : 'bg-gray-200'
-              }`} />
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-
   // --- Current Status Card ---
   const CurrentStatusCard = () => (
     <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
@@ -247,6 +200,8 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
         transportModeValue: formData.transportModeValue,
         packageType: formData.packageTypeValue || formData.packageType,
         goodsDescription: formData.goodsDescription,
+        truckType: formData.truckType,
+        truckQuantity: formData.truckQuantity,
         // Properly format selectedPOs for storage
         selectedPOs: selectedPOs.map(po => ({
           poId: po.poId,
@@ -361,6 +316,8 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
     transportModeValue: externalBooking.transportModeValue,
     packageType: externalBooking.packageTypeValue || externalBooking.packageType,
     goodsDescription: externalBooking.goodsDescription,
+    truckType: externalBooking.truckType,
+    truckQuantity: externalBooking.truckQuantity,
     // Ensure selectedPOs is properly formatted for POSummaryTable
     selectedPOs: Array.isArray(externalBooking.selectedPOs) ? externalBooking.selectedPOs : [],
   } : {
@@ -398,6 +355,8 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
     transportModeValue: formData.transportModeValue,
     packageType: formData.packageTypeValue || formData.packageType,
     goodsDescription: formData.goodsDescription,
+    truckType: formData.truckType,
+    truckQuantity: formData.truckQuantity,
     selectedPOs: selectedPOs,
   };
 
@@ -454,6 +413,8 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
                   transportModeValue: formData.transportModeValue,
                   packageType: formData.packageTypeValue || formData.packageType,
                   goodsDescription: formData.goodsDescription,
+                  truckType: formData.truckType,
+                  truckQuantity: formData.truckQuantity,
                   // Properly format selectedPOs for storage
                   selectedPOs: selectedPOs.map(po => ({
                     poId: po.poId,
@@ -756,10 +717,31 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
                           <span className="text-gray-500">Shipment Type:</span>
                           <span className="ml-2 text-gray-900">{(displayData.shipmentTypeValue || displayData.shipmentType || '-').toUpperCase()}</span>
                         </div>
-                        <div>
-                          <span className="text-gray-500">Container Type:</span>
-                          <span className="ml-2 text-gray-900">{displayData.containerTypeValue || displayData.containerType || '-'}</span>
-                        </div>
+                        {/* Container/Truck Type & Quantity Logic */}
+                        {displayData.shipmentTypeValue === 'fcl' && (
+                          <>
+                            <div>
+                              <span className="text-gray-500">Container Type:</span>
+                              <span className="ml-2 text-gray-900">{displayData.containerTypeValue || displayData.containerType || '-'}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Container Quantity:</span>
+                              <span className="ml-2 text-gray-900">{displayData.containerQuantity || '-'}</span>
+                            </div>
+                          </>
+                        )}
+                        {displayData.shipmentTypeValue === 'ftl' && (
+                          <>
+                            <div>
+                              <span className="text-gray-500">Truck Type:</span>
+                              <span className="ml-2 text-gray-900">{displayData.truckType || '-'}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Truck Quantity:</span>
+                              <span className="ml-2 text-gray-900">{displayData.truckQuantity || '-'}</span>
+                            </div>
+                          </>
+                        )}
                         <div>
                           <span className="text-gray-500">Incoterm:</span>
                           <span className="ml-2 text-gray-900">{displayData.incotermsValue || displayData.incoterms || '-'}</span>

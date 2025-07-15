@@ -409,7 +409,7 @@ const Menu = () => {
               {isClientSection && (
                 isCollapsed ? (
                   <Link
-                    href="/bookings/create"
+                    href="/bookings/create?new=1"
                     className="flex items-center justify-center p-2 rounded-lg bg-[#007bff] text-white hover:bg-blue-600 transition-colors duration-200 shadow-sm"
                     title="Create Booking"
                   >
@@ -417,7 +417,7 @@ const Menu = () => {
                   </Link>
                 ) : (
                   <Link
-                    href="/bookings/create"
+                    href="/bookings/create?new=1"
                     className="flex items-center justify-center px-4 py-2.5 rounded-lg
                              bg-[#007bff] text-white font-medium w-full
                              hover:bg-blue-600 transition-colors duration-200

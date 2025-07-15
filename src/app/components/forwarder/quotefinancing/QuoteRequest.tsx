@@ -198,26 +198,46 @@ export default function QuoteRequest({ role = 'forwarder', hasBookings = true }:
   } else if (role === 'client') {
     // Map confirmedBookings to quote request rows
     const today = new Date().toLocaleDateString('en-CA');
-    requests = bookingStore.confirmedBookings.map((b: any, idx: number) => ({
-      id: b.bookingId || `REQ-${idx+1}`,
-      customer: b.shipperValue || 'Demo User',
-      provider: b.provider || '',
-      // Show as '100kg/20cbm' (with units)
-      details: (b.weight && b.volume) ? `${b.weight}kg/${b.volume}cbm` : b.weight ? `${b.weight}kg` : b.volume ? `${b.volume}cbm` : '',
-      origin: b.originPort || '',
-      destination: b.destinationPort || '',
-      cargoReadyDate: b.cargoReadyDate || '',
-      expectedDelivery: b.eta || '',
-      attachment: b.attachment || 'No attached file',
-      status: b.status || 'Booked',
-      incoterms: b.incotermsValue || '',
-      remark: '', // Always blank for client
-      createdBy: 'Demo User',
-      createdOn: today,
-      mode: b.transportModeValue || '',
-      notes: '',
-      commodities: b.productName || '', // Use 'productName' for commodities
-    }));
+    requests = bookingStore.confirmedBookings.map((b: any, idx: number) => {
+      // Determine mode for tab and icon
+      let mode = '';
+      if (b.transportModeValue === 'sea') {
+        mode = b.shipmentTypeValue?.toLowerCase() === 'fcl' ? 'fcl' : 'lcl';
+      } else if (b.transportModeValue === 'air') {
+        mode = 'air';
+      } else if (b.transportModeValue === 'land') {
+        mode = b.shipmentTypeValue?.toLowerCase() === 'ftl' ? 'ftl' : 'ltl';
+      }
+      // Build details string
+      let details = '';
+      if (b.transportModeValue === 'sea' && b.shipmentTypeValue?.toLowerCase() === 'fcl') {
+        details = `${b.containerQuantity || ''} x ${b.containerTypeValue || ''}`;
+      } else if (b.transportModeValue === 'land' && b.shipmentTypeValue?.toLowerCase() === 'ftl') {
+        details = `${b.truckQuantity || ''} x ${b.truckType || ''}`;
+      } else {
+        // Default: weight/volume/cargo
+        details = (b.weight && b.volume) ? `${b.weight}kg/${b.volume}cbm` : b.weight ? `${b.weight}kg` : b.volume ? `${b.volume}cbm` : '';
+      }
+      return {
+        id: b.bookingId || `REQ-${idx+1}`,
+        customer: b.shipperValue || 'Demo User',
+        provider: b.provider || '',
+        details,
+        origin: b.originPort || '',
+        destination: b.destinationPort || '',
+        cargoReadyDate: b.cargoReadyDate || '',
+        expectedDelivery: b.eta || '',
+        attachment: b.attachment || 'No attached file',
+        status: b.status || 'Booked',
+        incoterms: b.incotermsValue || '',
+        remark: '', // Always blank for client
+        createdBy: 'Demo User',
+        createdOn: today,
+        mode,
+        notes: '',
+        commodities: b.productName || '', // Use 'productName' for commodities
+      };
+    });
   }
   const [localRequests, setLocalRequests] = useState<RequestType[]>(requests);
 
