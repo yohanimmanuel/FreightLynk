@@ -36,7 +36,7 @@ type DetailCostRow = {
 };
 
 const QuoteInvoice = () => {
-  const { searchCriteria, selectedQuoteDetails, additionalInfo } = useQuoteSearchStore();
+  const { searchCriteria, selectedQuoteDetails, additionalInfo, shipmentType, shipmentTypeDescription } = useQuoteSearchStore();
   const { user } = useAuthStore();
   const quote = selectedQuoteDetails;
   
@@ -199,6 +199,14 @@ const QuoteInvoice = () => {
                 </>
               )}
             </div>
+            {/* Add shipment type info here */}
+            <div className="mt-2">
+              <span className="font-semibold text-gray-700 text-xs">Shipment Type: </span>
+              <span className="text-xs text-gray-900">{shipmentType}</span>
+              {shipmentType === 'Other' && shipmentTypeDescription && (
+                <span className="block text-xs text-gray-600 mt-1">Description: {shipmentTypeDescription}</span>
+              )}
+            </div>
             <div className="flex flex-col gap-3 mt-4">
               <div className="font-semibold text-gray-900 text-md mb-1">To:</div>
               {!isEditing ? (
@@ -250,6 +258,16 @@ const QuoteInvoice = () => {
             <div>
               <div className="font-semibold text-gray-900 mb-2 text-xs uppercase tracking-wider">Additional Information</div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-gray-900">
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Shipment Type:</span>
+                  <span className="font-semibold">{shipmentType}</span>
+                </div>
+                {shipmentType === 'Other' && shipmentTypeDescription && (
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-500">Description:</span>
+                    <span className="font-semibold">{shipmentTypeDescription}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-xs"><span className="text-gray-500">Mode:</span><span className="font-semibold">{selectedQuoteDetails?.modeLabel || '-'}</span></div>
                 <div className="flex justify-between text-xs"><span className="text-gray-500">Transit Time:</span><span className="font-semibold">{quote.transitTime}</span></div>
                 <div className="flex justify-between text-xs"><span className="text-gray-500">Remark:</span><span className="font-semibold">{editRemark}</span></div>

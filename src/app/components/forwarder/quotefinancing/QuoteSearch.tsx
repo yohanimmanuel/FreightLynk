@@ -458,7 +458,7 @@ const QuoteSearch = () => {
 
   return (
     <div>
-      <div className="w-full mx-auto">
+      <div className="w-full mx-auto">  
         {/* Search Form */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-8">
           <div className="flex flex-col lg:flex-row gap-4 items-end">

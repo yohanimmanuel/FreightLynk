@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { useBookingStore } from '@/store/bookingStore';
 import BookingDetailsModal from '@/app/components/forwarder/shipmentmanagement/BookingDetailsModal';
 import { Search, ChevronDown, X as XIcon, X, AlertTriangle } from 'lucide-react';
 

@@ -138,26 +138,26 @@ const menuItems: MenuSection[] = [
                 label: "Pre-alerts",
                 href: "/shipments/pre-alerts",
               },
-              {
-                icon: List,
-                label: "Customs",
-                href: "/shipments/customs",
-              },
-              {
-                icon: List,
-                label: "Consolidation",
-                href: "/shipments/consolidation",
-              },
-              {
-                icon: List,
-                label: "Merge",
-                href: "/shipments/merge",
-              },
-              {
-                icon: List,
-                label: "Group",
-                href: "/shipments/group",
-              },
+              // {
+              //   icon: List,
+              //   label: "Customs",
+              //   href: "/shipments/customs",
+              // },
+              // {
+              //   icon: List,
+              //   label: "Consolidation",
+              //   href: "/shipments/consolidation",
+              // },
+              // {
+              //   icon: List,
+              //   label: "Merge",
+              //   href: "/shipments/merge",
+              // },
+              // {
+              //   icon: List,
+              //   label: "Group",
+              //   href: "/shipments/group",
+              // },
             ]
           },
           {

@@ -261,6 +261,11 @@ interface QuoteSearchStore {
   setAdditionalInfo: (info: any) => void;
   selectedQuoteDetails: any;
   setSelectedQuoteDetails: (details: any) => void;
+  // Shipment type selection for Export/Import/Domestic/Other
+  shipmentType: string;
+  setShipmentType: (type: string) => void;
+  shipmentTypeDescription: string;
+  setShipmentTypeDescription: (desc: string) => void;
 }
 
 // Create the store
@@ -305,6 +310,11 @@ export const useQuoteSearchStore = create<QuoteSearchStore>()(
       setAdditionalInfo: (info: any) => set({ additionalInfo: info }),
       selectedQuoteDetails: {},
       setSelectedQuoteDetails: (details: any) => set({ selectedQuoteDetails: details }),
+      // Shipment type state and actions
+      shipmentType: 'Export',
+      setShipmentType: (type: string) => set({ shipmentType: type }),
+      shipmentTypeDescription: '',
+      setShipmentTypeDescription: (desc: string) => set({ shipmentTypeDescription: desc }),
     }),
     {
       name: 'quote-search-storage'

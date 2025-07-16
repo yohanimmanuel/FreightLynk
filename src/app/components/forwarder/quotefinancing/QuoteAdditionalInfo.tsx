@@ -9,7 +9,7 @@ const INCOTERMS = ['FOB', 'CIF', 'EXW', 'DAP', 'DDP'];
 const FREIGHT_TERMS = ['Prepaid', 'Collect', 'Third Party'];
 
 export default function QuoteAdditionalInfo() {
-  const { setAdditionalInfo } = useQuoteSearchStore();
+  const { setAdditionalInfo, shipmentType, setShipmentType, shipmentTypeDescription, setShipmentTypeDescription } = useQuoteSearchStore();
   const [tab, setTab] = useState('Export');
   const [showShipmentModeDropdown, setShowShipmentModeDropdown] = useState(false);
   const [shipmentMode, setShipmentMode] = useState(SHIPMENT_MODES[0]);
@@ -45,6 +45,18 @@ export default function QuoteAdditionalInfo() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [showShipmentModeDropdown, showIncotermDropdown, showFreightTermDropdown]);
 
+  // Sync tab with Zustand store
+  React.useEffect(() => {
+    setTab(shipmentType || 'Export');
+  }, [shipmentType]);
+
+  // When tab changes, update Zustand store
+  const handleTabChange = (t: string) => {
+    setTab(t);
+    setShipmentType(t);
+    if (t !== 'Other') setShipmentTypeDescription('');
+  };
+
   const router = useRouter();
 
   // When the form is submitted or updated, call setAdditionalInfo
@@ -66,12 +78,26 @@ export default function QuoteAdditionalInfo() {
           <button
             key={t}
             className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${tab === t ? 'bg-[#007bff] text-white border-[#007bff]' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
-            onClick={() => setTab(t)}
+            onClick={() => handleTabChange(t)}
           >
             {t}
           </button>
         ))}
       </div>
+      {/* If 'Other' is selected, show description input */}
+      {tab === 'Other' && (
+        <div className="mb-4">
+          <label className="block text-xs font-medium text-gray-500 mb-1">Please specify the type of shipment or describe your case <span className="text-red-500">*</span></label>
+          <input
+            type="text"
+            className="w-full px-3 py-2 border border-gray-300 text-xs text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Describe your shipment type..."
+            value={shipmentTypeDescription}
+            onChange={e => setShipmentTypeDescription(e.target.value)}
+            required
+          />
+        </div>
+      )}
       {/* Form */}
       <form className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div>
