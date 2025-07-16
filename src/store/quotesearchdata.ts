@@ -98,16 +98,27 @@ const mockSearchResults: QuoteSearchResult[] = [
     id: 1,
     carrier: 'MAERSK',
     logo: '/maersk.png',
-    origin: 'KEELUNG, TAIPEI',
+    origin: 'SINGAPORE, SINGAPORE',
     destination: 'LOS ANGELES, US',
-    departure: '10-10-2023',
-    arrival: '10-30-2023',
+    departure: '2025-08-10',
+    arrival: '2025-09-04',
     transitTime: '25 days',
-    validity: '12-05-2023',
+    validity: '2025-11-01',
     rates: {
-      '20GP': { price: 1200, currency: 'USD' },
-      '40GP': { price: 1800, currency: 'USD' },
-      '40HC': { price: 2000, currency: 'USD' }
+      '20DC': { price: 1200, currency: 'USD' },
+      '40DC': { price: 1800, currency: 'USD' },
+      '40HC': { price: 2000, currency: 'USD' },
+      '45HC': { price: 2200, currency: 'USD' },
+      '20RF': { price: 2500, currency: 'USD' },
+      '40RF': { price: 3200, currency: 'USD' },
+      '20OT': { price: 2100, currency: 'USD' },
+      '40OT': { price: 2900, currency: 'USD' },
+      '20FR': { price: 2300, currency: 'USD' },
+      '40FR': { price: 3100, currency: 'USD' },
+      '20Tank': { price: 2600, currency: 'USD' },
+      '40Tank': { price: 3400, currency: 'USD' },
+      'FOOCDC': { price: 2700, currency: 'USD' },
+      'FOOCHC': { price: 3500, currency: 'USD' }
     },
     lclRates: { perKg: 0.13, perCbm: 19.0, currency: 'USD' },
     ftlRates: {
@@ -120,8 +131,8 @@ const mockSearchResults: QuoteSearchResult[] = [
     },
     ltlRates: { perKg: 0.18, perCbm: 22.0, currency: 'USD' },
     remark: '14DEM+14DET',
-    validFrom: '2023-10-01',
-    validUntil: '2023-12-05',
+    validFrom: '2025-08-01',
+    validUntil: '2025-11-01',
     price: 0, // Will be calculated dynamically
     currency: 'USD',
     detailCost: [
@@ -137,16 +148,27 @@ const mockSearchResults: QuoteSearchResult[] = [
     id: 2,
     carrier: 'EVERGREEN',
     logo: '/evergreen.svg',
-    origin: 'KEELUNG, TAIPEI',
-    destination: 'LOS ANGELES, US',
-    departure: '10-10-2023',
-    arrival: '10-30-2023',
+    origin: 'JAKARTA, INDONESIA',
+    destination: 'KUALA LUMPUR, MALAYSIA',
+    departure: '2025-08-10',
+    arrival: '2025-09-04',
     transitTime: '25 days',
-    validity: '12-05-2023',
+    validity: '2025-11-01',
     rates: {
-      '20GP': { price: 1250, currency: 'USD' },
-      '40GP': { price: 1850, currency: 'USD' },
-      '40HC': { price: 2050, currency: 'USD' }
+      '20DC': { price: 1250, currency: 'USD' },
+      '40DC': { price: 1850, currency: 'USD' },
+      '40HC': { price: 2050, currency: 'USD' },
+      '45HC': { price: 2250, currency: 'USD' },
+      '20RF': { price: 2550, currency: 'USD' },
+      '40RF': { price: 3250, currency: 'USD' },
+      '20OT': { price: 2150, currency: 'USD' },
+      '40OT': { price: 2950, currency: 'USD' },
+      '20FR': { price: 2350, currency: 'USD' },
+      '40FR': { price: 3150, currency: 'USD' },
+      '20Tank': { price: 2650, currency: 'USD' },
+      '40Tank': { price: 3450, currency: 'USD' },
+      'FOOCDC': { price: 2750, currency: 'USD' },
+      'FOOCHC': { price: 3550, currency: 'USD' }
     },
     lclRates: { perKg: 0.15, perCbm: 20.0, currency: 'USD' },
     ftlRates: {
@@ -159,8 +181,8 @@ const mockSearchResults: QuoteSearchResult[] = [
     },
     ltlRates: { perKg: 0.20, perCbm: 23.0, currency: 'USD' },
     remark: '14DEM+30DET',
-    validFrom: '2023-10-01',
-    validUntil: '2023-12-05',
+    validFrom: '2025-08-01',
+    validUntil: '2025-11-01',
     price: 0,
     currency: 'USD',
     detailCost: [
@@ -178,14 +200,25 @@ const mockSearchResults: QuoteSearchResult[] = [
     logo: '/hapaglloyd.svg',
     origin: 'KEELUNG, TAIPEI',
     destination: 'LOS ANGELES, US',
-    departure: '10-10-2023',
-    arrival: '10-30-2023',
+    departure: '2025-08-10',
+    arrival: '2025-09-03',
     transitTime: '24 days',
-    validity: '12-05-2023',
+    validity: '2025-11-01',
     rates: {
-      '20GP': { price: 1220, currency: 'USD' },
-      '40GP': { price: 1820, currency: 'USD' },
-      '40HC': { price: 2020, currency: 'USD' }
+      '20DC': { price: 1220, currency: 'USD' },
+      '40DC': { price: 1820, currency: 'USD' },
+      '40HC': { price: 2020, currency: 'USD' },
+      '45HC': { price: 2220, currency: 'USD' },
+      '20RF': { price: 2520, currency: 'USD' },
+      '40RF': { price: 3220, currency: 'USD' },
+      '20OT': { price: 2120, currency: 'USD' },
+      '40OT': { price: 2920, currency: 'USD' },
+      '20FR': { price: 2320, currency: 'USD' },
+      '40FR': { price: 3120, currency: 'USD' },
+      '20Tank': { price: 2620, currency: 'USD' },
+      '40Tank': { price: 3420, currency: 'USD' },
+      'FOOCDC': { price: 2720, currency: 'USD' },
+      'FOOCHC': { price: 3520, currency: 'USD' }
     },
     lclRates: { perKg: 0.14, perCbm: 18.5, currency: 'USD' },
     ftlRates: {
@@ -198,8 +231,8 @@ const mockSearchResults: QuoteSearchResult[] = [
     },
     ltlRates: { perKg: 0.19, perCbm: 21.5, currency: 'USD' },
     remark: '12DEM+10DET',
-    validFrom: '2023-10-01',
-    validUntil: '2023-12-05',
+    validFrom: '2025-08-01',
+    validUntil: '2025-11-01',
     price: 0,
     currency: 'USD',
     detailCost: [
@@ -219,6 +252,15 @@ interface QuoteSearchStore {
   setSearchResults: (results: QuoteSearchResult[]) => void;
   addToQuoteTable: (searchResultId: number, containerType: string, priceRange?: PriceRange) => string | null;
   createQuotesFromSelection: (selections: {id: number, containerType: string, priceRange?: PriceRange}[]) => string[];
+  selectedQuoteId: number | null;
+  setSelectedQuoteId: (id: number | null) => void;
+  // New fields for unified quote flow
+  searchCriteria: any;
+  setSearchCriteria: (criteria: any) => void;
+  additionalInfo: any;
+  setAdditionalInfo: (info: any) => void;
+  selectedQuoteDetails: any;
+  setSelectedQuoteDetails: (details: any) => void;
 }
 
 // Create the store
@@ -253,7 +295,16 @@ export const useQuoteSearchStore = create<QuoteSearchStore>()(
           .filter((id): id is string => id !== null);
         
         return createdQuoteIds;
-      }
+      },
+      selectedQuoteId: null,
+      setSelectedQuoteId: (id: number | null) => set({ selectedQuoteId: id }),
+      // New state and actions
+      searchCriteria: {},
+      setSearchCriteria: (criteria: any) => set({ searchCriteria: criteria }),
+      additionalInfo: {},
+      setAdditionalInfo: (info: any) => set({ additionalInfo: info }),
+      selectedQuoteDetails: {},
+      setSelectedQuoteDetails: (details: any) => set({ selectedQuoteDetails: details }),
     }),
     {
       name: 'quote-search-storage'

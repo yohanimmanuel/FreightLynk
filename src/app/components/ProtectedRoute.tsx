@@ -24,9 +24,10 @@ export default function ProtectedRoute({
 }: ProtectedRouteProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated, user, checkPermission } = useAuthStore();
+  const { isAuthenticated, user, checkPermission, hasHydrated } = useAuthStore();
   
   useEffect(() => {
+    if (!hasHydrated) return; // Wait for hydration
     // If not authenticated, redirect to login
     if (!isAuthenticated) {
       router.push('/login');
@@ -56,7 +57,14 @@ export default function ProtectedRoute({
         return;
       }
     }
-  }, [isAuthenticated, user, allowedRoles, requiredPermissions, router, pathname, checkPermission]);
+  }, [isAuthenticated, user, allowedRoles, requiredPermissions, router, pathname, checkPermission, hasHydrated]);
+
+  // Debug panel for troubleshooting auth/hydration issues
+
+  // Wait for hydration before rendering or redirecting
+  if (!hasHydrated) {
+    return null;
+  }
 
   // If we're checking authentication, show nothing
   if (!isAuthenticated || !user) {

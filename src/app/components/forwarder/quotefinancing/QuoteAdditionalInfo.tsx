@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useQuoteSearchStore } from '../../../../store/quotesearchdata';
 
 const TABS = ['Export', 'Import', 'Domestic', 'Other'];
 const SHIPMENT_MODES = ['Freehand', 'Nominated', 'Spot', 'Contract'];
@@ -8,6 +9,7 @@ const INCOTERMS = ['FOB', 'CIF', 'EXW', 'DAP', 'DDP'];
 const FREIGHT_TERMS = ['Prepaid', 'Collect', 'Third Party'];
 
 export default function QuoteAdditionalInfo() {
+  const { setAdditionalInfo } = useQuoteSearchStore();
   const [tab, setTab] = useState('Export');
   const [showShipmentModeDropdown, setShowShipmentModeDropdown] = useState(false);
   const [shipmentMode, setShipmentMode] = useState(SHIPMENT_MODES[0]);
@@ -15,12 +17,19 @@ export default function QuoteAdditionalInfo() {
   const [incoterm, setIncoterm] = useState('');
   const [showFreightTermDropdown, setShowFreightTermDropdown] = useState(false);
   const [freightTerm, setFreightTerm] = useState('');
-  const [companyBranch, setCompanyBranch] = useState('');
-  const [etd, setEtd] = useState('');
-  const [cargoReadyDate, setCargoReadyDate] = useState('');
-  const [commodities, setCommodities] = useState('');
-  const [ofPriceFeedback, setOfPriceFeedback] = useState('');
-  const [note, setNote] = useState('');
+
+  // Define formState to hold all form values
+  const [formState, setFormState] = useState({
+    companyBranch: '',
+    etd: '',
+    cargoReadyDate: '',
+    ofPriceFeedback: '',
+    note: '',
+    commodities: '',
+    incoterm: '',
+    freightTerm: '',
+    // ...add other fields as needed
+  });
 
   // Dropdown close on outside click
   const shipmentModeRef = useRef<HTMLDivElement>(null);
@@ -37,6 +46,13 @@ export default function QuoteAdditionalInfo() {
   }, [showShipmentModeDropdown, showIncotermDropdown, showFreightTermDropdown]);
 
   const router = useRouter();
+
+  // When the form is submitted or updated, call setAdditionalInfo
+  const handleFormChange = (updatedFields: Partial<typeof formState>) => {
+    const newState = { ...formState, ...updatedFields };
+    setFormState(newState);
+    setAdditionalInfo(newState);
+  };
 
   return (
     <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6 mt-10">
@@ -64,8 +80,8 @@ export default function QuoteAdditionalInfo() {
             type="text"
             className="w-full px-3 py-2 border border-gray-300 text-xs text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="Search"
-            value={companyBranch}
-            onChange={e => setCompanyBranch(e.target.value)}
+            value={formState.companyBranch}
+            onChange={e => handleFormChange({ companyBranch: e.target.value })}
           />
         </div>
         <div>
@@ -98,12 +114,21 @@ export default function QuoteAdditionalInfo() {
           </div>
         </div>
         <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Cargo ready date</label>
+          <input
+            type="date"
+            className="w-full px-3 py-2 border border-gray-300 text-xs text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            value={formState.cargoReadyDate}
+            onChange={e => handleFormChange({ cargoReadyDate: e.target.value })}
+          />
+        </div>
+        <div>
           <label className="block text-xs font-medium text-gray-500 mb-1">ETD</label>
           <input
             type="date"
             className="w-full px-3 py-2 border border-gray-300 text-xs text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            value={etd}
-            onChange={e => setEtd(e.target.value)}
+            value={formState.etd}
+            onChange={e => handleFormChange({ etd: e.target.value })}
           />
         </div>
         <div>
@@ -124,7 +149,7 @@ export default function QuoteAdditionalInfo() {
                     <button
                       key={opt}
                       type="button"
-                      onClick={() => { setIncoterm(opt); setShowIncotermDropdown(false); }}
+                      onClick={() => { setIncoterm(opt); setShowIncotermDropdown(false); handleFormChange({ incoterm: opt }); }}
                       className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${incoterm === opt ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
                     >
                       {opt}
@@ -136,21 +161,12 @@ export default function QuoteAdditionalInfo() {
           </div>
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">Cargo ready date</label>
-          <input
-            type="date"
-            className="w-full px-3 py-2 border border-gray-300 text-xs text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            value={cargoReadyDate}
-            onChange={e => setCargoReadyDate(e.target.value)}
-          />
-        </div>
-        <div>
           <label className="block text-xs font-medium text-gray-500 mb-1">Commodities</label>
           <input
             type="text"
             className="w-full px-3 py-2 border border-gray-300 text-xs text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            value={commodities}
-            onChange={e => setCommodities(e.target.value)}
+            value={formState.commodities}
+            onChange={e => handleFormChange({ commodities: e.target.value })}
             placeholder="Commodities"
           />
         </div>
@@ -159,8 +175,8 @@ export default function QuoteAdditionalInfo() {
           <input
             type="text"
             className="w-full px-3 py-2 border border-gray-300 text-xs text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            value={ofPriceFeedback}
-            onChange={e => setOfPriceFeedback(e.target.value)}
+            value={formState.ofPriceFeedback}
+            onChange={e => handleFormChange({ ofPriceFeedback: e.target.value })}
             placeholder="Feedback"
           />
         </div>
@@ -182,7 +198,7 @@ export default function QuoteAdditionalInfo() {
                     <button
                       key={opt}
                       type="button"
-                      onClick={() => { setFreightTerm(opt); setShowFreightTermDropdown(false); }}
+                      onClick={() => { setFreightTerm(opt); setShowFreightTermDropdown(false); handleFormChange({ freightTerm: opt }); }}
                       className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${freightTerm === opt ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
                     >
                       {opt}
@@ -197,8 +213,8 @@ export default function QuoteAdditionalInfo() {
           <label className="block text-xs font-medium text-gray-500 mb-1">Note</label>
           <textarea
             className="w-full px-3 py-2 border border-gray-300 text-xs text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[60px]"
-            value={note}
-            onChange={e => setNote(e.target.value)}
+            value={formState.note}
+            onChange={e => handleFormChange({ note: e.target.value })}
             placeholder="Add any notes here..."
           />
         </div>
@@ -212,10 +228,12 @@ export default function QuoteAdditionalInfo() {
         >
           Back
         </button>
-        <div className="flex gap-2">
-          <button type="button" className="px-4 py-2 text-sm text-white bg-[#007bff] rounded-lg hover:bg-blue-700">Save</button>
-          <button type="button" className="px-4 py-2 text-sm text-white bg-[#007bff] rounded-lg hover:bg-blue-700">Save & Send</button>
-        </div>
+        <button 
+          onClick={() => router.push('/quotes/list/invoice')}
+          type="button" 
+          className="px-4 py-2 text-sm text-white bg-[#007bff] rounded-lg hover:bg-blue-700">
+          Next
+        </button>
       </div>
     </div>
   );

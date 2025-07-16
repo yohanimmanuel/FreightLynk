@@ -72,6 +72,8 @@ interface AuthState {
   register: (userData: any) => Promise<boolean>;
   logout: () => void;
   checkPermission: (permission: string) => boolean;
+  hasHydrated: boolean;
+  setHasHydrated: (state: boolean) => void;
 }
 
 // Create auth store
@@ -81,6 +83,8 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuthenticated: false,
       token: null,
+      hasHydrated: false,
+      setHasHydrated: (state: boolean) => set({ hasHydrated: state }),
 
       // Login function
       login: async (email: string, password: string) => {
@@ -184,6 +188,9 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage', // name for localStorage key
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 ); 

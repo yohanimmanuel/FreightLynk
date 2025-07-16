@@ -6,9 +6,10 @@ import { useAuthStore, UserRole } from '@/store/authStore';
 
 export default function Home() {
   const router = useRouter();
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, hasHydrated } = useAuthStore();
 
   useEffect(() => {
+    if (!hasHydrated) return;
     if (isAuthenticated && user) {
       // Redirect based on user role
       switch (user.role) {
@@ -31,7 +32,10 @@ export default function Home() {
       // If not authenticated, redirect to landing page
       router.push('/landing');
     }
-  }, [isAuthenticated, user, router]);
+  }, [isAuthenticated, user, router, hasHydrated]);
 
+  if (!hasHydrated) {
+    return null; // Or a loading spinner
+  }
   return null; // No UI needed as we're redirecting
 }

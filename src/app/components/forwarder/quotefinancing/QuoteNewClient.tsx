@@ -101,7 +101,12 @@ export default function QuoteNewClient() {
         </div>
       </div>
       <div className="flex justify-end gap-2 mt-6">
-        <button type="button" className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-200">Cancel</button>
+        <button 
+          type="button" className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-200"
+          onClick={() => router.push('/quotes/list')}
+          >
+          Cancel
+        </button>
         <button
           type="button"
           className={`px-4 py-2 text-sm rounded-lg transition-colors font-medium ${!selectedClientId || !selectedContactId

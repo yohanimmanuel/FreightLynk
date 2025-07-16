@@ -6,7 +6,12 @@ import { useQuoteSearchStore, QuoteSearchResult } from '../../../../store/quotes
 import { useRouter } from 'next/navigation';
 
 const QuoteSearch = () => {
-  const { searchResults, createQuotesFromSelection } = useQuoteSearchStore();
+  const {
+    searchResults,
+    setSelectedQuoteId,
+    setSearchCriteria,
+    setSelectedQuoteDetails
+  } = useQuoteSearchStore();
   const router = useRouter();
   
   const [searchParams, setSearchParams] = useState({
@@ -23,8 +28,6 @@ const QuoteSearch = () => {
 
   const [sortBy, setSortBy] = useState('Cheapest First');
   const [selectedQuote, setSelectedQuote] = useState<number | null>(null);
-  const [selectedContainerTypes, setSelectedContainerTypes] = useState<{[key: number]: string}>({});
-  const [customPriceRanges, setCustomPriceRanges] = useState<{[key: number]: {min: string, max: string}}>({});
   const [transportMode, setTransportMode] = useState('Sea');
   const [showCargoTypeModal, setShowCargoTypeModal] = useState(false);
   const [cargoTab, setCargoTab] = useState('FCL');
@@ -75,7 +78,16 @@ const QuoteSearch = () => {
       setAppliedLclWeight(lclWeight);
       setAppliedLclVolume(lclVolume);
       setAppliedSearchParams({ ...searchParams });
-    }, 800); // Simulate loading delay
+      // Store search criteria in Zustand
+      setSearchCriteria({
+        transportMode,
+        cargoTab,
+        fclQuantities,
+        lclWeight,
+        lclVolume,
+        searchParams
+      });
+    }, 800);
     // Simulate search functionality
     console.log('Searching with params:', searchParams);
   };
@@ -247,10 +259,206 @@ const QuoteSearch = () => {
     return false;
   }
 
+  // When a quote is selected (example: in your select button handler)
+  const handleSelectQuote = (quoteResult: QuoteSearchResult, index: number) => {
+    setSelectedQuote(index);
+    setSelectedQuoteId(quoteResult.id);
+    // Build modeLabel and cargoLabel for invoice
+    let modeLabel = '';
+    let cargoLabel = '';
+    type TableRow = {
+      chargeType: string;
+      item: string;
+      description: string;
+      calculation: string;
+      containerType?: string;
+      qty: number;
+      baseRate: number;
+      amount: number;
+      currency: string;
+    };
+    let tableRows: TableRow[] = [];
+    if (appliedTransportMode === 'Sea' && appliedCargoTab === 'FCL') {
+      modeLabel = 'Sea FCL';
+      // Build cargo label and table rows for FCL
+      const containers = Object.entries(appliedFclQuantities)
+        .filter(([type, qty]) => qty > 0)
+        .map(([type, qty]) => ({ type, qty: Number(qty) }));
+      cargoLabel = containers.map(c => `${c.qty} x ${c.type}`).join(', ');
+      tableRows = containers.map(({ type, qty }) => ({
+        chargeType: 'Ocean Freight',
+        item: type,
+        description: 'Container Cost',
+        calculation: 'By container type',
+        containerType: type,
+        qty,
+        baseRate: quoteResult.rates[type]?.price || 0,
+        amount: (quoteResult.rates[type]?.price || 0) * qty,
+        currency: quoteResult.rates[type]?.currency || 'USD',
+      }));
+    } else if (appliedTransportMode === 'Sea' && appliedCargoTab === 'LCL') {
+      modeLabel = 'Sea LCL';
+      // Use the same logic and values as displayed in the QuoteSearch result
+      // Assume the user selected either perKg or perCbm as the chargeable basis
+      // For this implementation, pass both values and let the UI display as in the search result
+      cargoLabel = `${appliedLclWeight}kg / ${appliedLclVolume}cbm`;
+      // Use the same calculation as in the search result
+      // If the QuoteSearch result table shows perCbm, use perCbm; if perKg, use perKg
+      // Here, we assume the chargeable basis is volume if volumeCharge >= weightCharge, else weight
+      const weight = parseFloat(appliedLclWeight) || 0;
+      const volume = parseFloat(appliedLclVolume) || 0;
+      const perKg = quoteResult.lclRates?.perKg || 0;
+      const perCbm = quoteResult.lclRates?.perCbm || 0;
+      const currency = quoteResult.lclRates?.currency || 'USD';
+      const weightCharge = weight * perKg;
+      const volumeCharge = volume * perCbm;
+      let chargeableBasis = '';
+      let baseRate = 0;
+      let qty = 0;
+      let description = '';
+      let calculation = '';
+      if (volumeCharge >= weightCharge) {
+        chargeableBasis = 'Volume';
+        baseRate = perCbm;
+        qty = volume;
+        description = `Volume: ${volume} cbm`;
+        calculation = 'By volume (cbm)';
+      } else {
+        chargeableBasis = 'Weight';
+        baseRate = perKg;
+        qty = weight;
+        description = `Weight: ${weight} kg`;
+        calculation = 'By weight (kg)';
+      }
+      tableRows = [
+        {
+          chargeType: 'LCL Freight',
+          item: chargeableBasis,
+          description,
+          calculation,
+          qty,
+          baseRate,
+          amount: baseRate * qty,
+          currency,
+        },
+      ];
+    } else if (appliedTransportMode === 'Air') {
+      modeLabel = 'Air LCL';
+      // Use the same logic and values as displayed in the QuoteSearch result
+      cargoLabel = `${appliedLclWeight}kg / ${appliedLclVolume}cbm`;
+      const weight = parseFloat(appliedLclWeight) || 0;
+      const volume = parseFloat(appliedLclVolume) || 0;
+      const perKg = quoteResult.lclRates?.perKg || 0;
+      const perCbm = quoteResult.lclRates?.perCbm || 0;
+      const currency = quoteResult.lclRates?.currency || 'USD';
+      const weightCharge = weight * perKg;
+      const volumeCharge = volume * perCbm;
+      let chargeableBasis = '';
+      let baseRate = 0;
+      let qty = 0;
+      let description = '';
+      let calculation = '';
+      if (volumeCharge >= weightCharge) {
+        chargeableBasis = 'Volume';
+        baseRate = perCbm;
+        qty = volume;
+        description = `Volume: ${volume} cbm`;
+        calculation = 'By volume (cbm)';
+      } else {
+        chargeableBasis = 'Weight';
+        baseRate = perKg;
+        qty = weight;
+        description = `Weight: ${weight} kg`;
+        calculation = 'By weight (kg)';
+      }
+      tableRows = [
+        {
+          chargeType: 'Air Freight',
+          item: chargeableBasis,
+          description,
+          calculation,
+          qty,
+          baseRate,
+          amount: baseRate * qty,
+          currency,
+        },
+      ];
+    } else if (appliedTransportMode === 'Land' && appliedCargoTab === 'FTL') {
+      modeLabel = 'Land FTL';
+      cargoLabel = `${appliedSearchParams.truckQuantity || 1} x ${appliedSearchParams.truckType}`;
+      tableRows = [
+        {
+          chargeType: 'Road Freight',
+          item: appliedSearchParams.truckType,
+          description: 'Truck Cost',
+          calculation: 'By truck type',
+          containerType: appliedSearchParams.truckType,
+          qty: Number(appliedSearchParams.truckQuantity) || 1,
+          baseRate: quoteResult.ftlRates?.[appliedSearchParams.truckType]?.price || 0,
+          amount: (quoteResult.ftlRates?.[appliedSearchParams.truckType]?.price || 0) * (Number(appliedSearchParams.truckQuantity) || 1),
+          currency: quoteResult.ftlRates?.[appliedSearchParams.truckType]?.currency || 'USD',
+        },
+      ];
+    } else if (appliedTransportMode === 'Land' && appliedCargoTab === 'LTL') {
+      modeLabel = 'Land LTL';
+      // Use the same logic and values as displayed in the QuoteSearch result
+      // (Assume similar to LCL logic)
+      const weight = parseFloat(appliedLclWeight) || 0;
+      const volume = parseFloat(appliedLclVolume) || 0;
+      const perKg = quoteResult.ltlRates?.perKg || 0;
+      const perCbm = quoteResult.ltlRates?.perCbm || 0;
+      const currency = quoteResult.ltlRates?.currency || 'USD';
+      const weightCharge = weight * perKg;
+      const volumeCharge = volume * perCbm;
+      let chargeableBasis = '';
+      let baseRate = 0;
+      let qty = 0;
+      let description = '';
+      let calculation = '';
+      if (volumeCharge >= weightCharge) {
+        chargeableBasis = 'Volume';
+        baseRate = perCbm;
+        qty = volume;
+        description = `Volume: ${volume} cbm`;
+        calculation = 'By volume (cbm)';
+      } else {
+        chargeableBasis = 'Weight';
+        baseRate = perKg;
+        qty = weight;
+        description = `Weight: ${weight} kg`;
+        calculation = 'By weight (kg)';
+      }
+      tableRows = [
+        {
+          chargeType: 'LTL Freight',
+          item: chargeableBasis,
+          description,
+          calculation,
+          qty,
+          baseRate,
+          amount: baseRate * qty,
+          currency,
+        },
+      ];
+    }
+    setSelectedQuoteDetails({
+      ...quoteResult,
+      transportMode: appliedTransportMode,
+      cargoTab: appliedCargoTab,
+      fclQuantities: appliedFclQuantities,
+      lclWeight: appliedLclWeight,
+      lclVolume: appliedLclVolume,
+      searchParams: appliedSearchParams,
+      modeLabel,
+      cargoLabel,
+      tableRows,
+    });
+    router.push('/quotes/list/addinfo');
+  };
+
   return (
     <div>
       <div className="w-full mx-auto">
-
         {/* Search Form */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-8">
           <div className="flex flex-col lg:flex-row gap-4 items-end">
@@ -606,89 +814,89 @@ const QuoteSearch = () => {
         )}
         {showResults && !loading && (
           <>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-md font-semibold text-gray-900">
-                Results Found: {searchResults.length}
-              </h2>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <Filter className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm text-gray-600">Sort by: </span>
-                  <div className="relative" ref={sortDropdownRef}>
-                    <button
-                      onClick={() => setShowSortDropdown(!showSortDropdown)}
-                      className="flex items-center text-sm text-[#007bff] font-medium hover:text-blue-700"
-                    >
-                      {sortBy}
-                      <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
-                    </button>
-                    {showSortDropdown && (
-                      <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 w-48 z-50">
-                        <div className="p-2">
-                          {sortByOptions.map((option) => (
-                            <button
-                              key={option}
-                              onClick={() => { setSortBy(option); setShowSortDropdown(false); }}
-                              className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-sm transition-colors ${sortBy === option ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
-                            >
-                              {option}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-md font-semibold text-gray-900">
+            Results Found: {searchResults.length}
+          </h2>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <Filter className="w-4 h-4 text-gray-500" />
+              <span className="text-sm text-gray-600">Sort by: </span>
+              <div className="relative" ref={sortDropdownRef}>
+                <button
+                  onClick={() => setShowSortDropdown(!showSortDropdown)}
+                  className="flex items-center text-sm text-[#007bff] font-medium hover:text-blue-700"
+                >
+                  {sortBy}
+                  <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
+                </button>
+                {showSortDropdown && (
+                  <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 w-48 z-50">
+                    <div className="p-2">
+                      {sortByOptions.map((option) => (
+                        <button
+                          key={option}
+                          onClick={() => { setSortBy(option); setShowSortDropdown(false); }}
+                          className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-sm transition-colors ${sortBy === option ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
-            {/* Results */}
-            <div className="space-y-4">
-              {searchResults.map((result) => {
+          </div>
+        </div>
+        {/* Results */}
+        <div className="space-y-4">
+              {searchResults.map((result, idx) => {
                 const isDetailOpen = openDetailCost === result.id;
                 // Remove Remark button and openRemark state
 
                 return (
                   <div key={result.id} className={`bg-white rounded-lg shadow-sm border border-gray-200 transition-all`}>
-                    <div className="grid grid-cols-1 lg:grid-cols-5 gap-0 border divide-x divide-gray-200">
-                      {/* 1. Logo Column */}
-                      <div className="flex items-center justify-center py-4 px-2 lg:col-span-1">
-                        <img 
-                          src={result.logo} 
-                          alt={result.carrier}
-                          className="w-24 h-24 object-contain"
-                        />
-                      </div>
-                      {/* 2. Details/Journey Column (wider) */}
-                      <div className="flex flex-col justify-center py-2 px-4 mt-2 mb-2 lg:col-span-2">
-                        <div className="font-semibold text-gray-900 text-base mb-2">{result.carrier}</div>
-                        <div className="flex items-center gap-4 w-full">
-                          {/* Origin */}
-                          <div className="flex flex-col items-center">
-                            <span className="text-xs text-gray-700 font-medium uppercase">{result.origin}</span>
-                          </div>
-                          {/* Arrow */}
-                          <div className="flex flex-col items-center">
-                            <span className="text-gray-400 text-lg">→</span>
-                          </div>
-                          {/* Destination */}
-                          <div className="flex flex-col items-center">
-                            <span className="text-xs text-gray-700 font-medium uppercase">{result.destination}</span>
-                          </div>
-                          {/* TT and Validity */}
-                          <div className="flex flex-col items-end ml-auto">
-                            <span className="text-xs text-gray-500">Transit Time: <span className="text-gray-900 font-medium">{result.transitTime}</span></span>
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-0 border divide-x divide-gray-200">
+                {/* 1. Logo Column */}
+                <div className="flex items-center justify-center py-4 px-2 lg:col-span-1">
+                  <img 
+                    src={result.logo} 
+                    alt={result.carrier}
+                    className="w-24 h-24 object-contain"
+                  />
+                </div>
+                {/* 2. Details/Journey Column (wider) */}
+                <div className="flex flex-col justify-center py-2 px-4 mt-2 mb-2 lg:col-span-2">
+                  <div className="font-semibold text-gray-900 text-base mb-2">{result.carrier}</div>
+                  <div className="flex items-center gap-4 w-full">
+                    {/* Origin */}
+                    <div className="flex flex-col items-center">
+                      <span className="text-xs text-gray-700 font-medium uppercase">{result.origin}</span>
+                    </div>
+                    {/* Arrow */}
+                    <div className="flex flex-col items-center">
+                      <span className="text-gray-400 text-lg">→</span>
+                    </div>
+                    {/* Destination */}
+                    <div className="flex flex-col items-center">
+                      <span className="text-xs text-gray-700 font-medium uppercase">{result.destination}</span>
+                    </div>
+                    {/* TT and Validity */}
+                    <div className="flex flex-col items-end ml-auto">
+                      <span className="text-xs text-gray-500">Transit Time: <span className="text-gray-900 font-medium">{result.transitTime}</span></span>
                             <span className="text-xs text-gray-500">Valid From: <span className="text-gray-900 font-medium">{result.validFrom}</span></span>
                             <span className="text-xs text-gray-500">Valid Until: <span className="text-gray-900 font-medium">{result.validUntil}</span></span>
-                          </div>
-                        </div>
+                    </div>
+                  </div>
                         {/* Remark */}
                         <div className="w-full flex items-center mt-2">
                           <span className="text-xs text-gray-500 italic">Remark: {result.remark || ''}</span>
-                        </div>
-                      </div>
+                  </div>
+                </div>
                       {/* 3. Price Column */}
-                      <div className="flex flex-col justify-center py-2 px-4 min-w-[160px] gap-2 lg:col-span-1">
-                        <div>
+                <div className="flex flex-col justify-center py-2 px-4 min-w-[160px] gap-2 lg:col-span-1">
+                  <div>
                           <span className="text-xs font-medium text-gray-700">Price:</span>
                           {(() => {
                             const detailRows = buildDetailCostRows(result, appliedTransportMode, appliedCargoTab, appliedFclQuantities, appliedLclWeight, appliedLclVolume, appliedSearchParams);
@@ -697,24 +905,24 @@ const QuoteSearch = () => {
                             return (
                               <div className="text-xl font-semibold text-[#007bff]">
                                 {totalAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} {currency}
-                              </div>
+                          </div>
                             );
                           })()}
                         </div>
                         <button className="mt-6 text-xs text-[#007bff] hover:text-blue-800" onClick={() => setOpenDetailCost(isDetailOpen ? null : result.id)}>
                           Detail Cost
                         </button>
-                      </div>
-                      {/* 4. Actions Column */}
-                      <div className="flex flex-col justify-center items-center py-2 px-4 lg:col-span-1">
-                        <button
-                          onClick={() => router.push('/quotes/list/addinfo')}
+                </div>
+                {/* 4. Actions Column */}
+                <div className="flex flex-col justify-center items-center py-2 px-4 lg:col-span-1">
+                          <button
+                          onClick={() => handleSelectQuote(result, idx)}
                           className={`w-full px-4 py-2 rounded-md transition-colors text-sm font-medium flex items-center justify-center gap-2 bg-[#007bff] hover:bg-blue-700 text-white border border-[#007bff]`}
-                        >
+                                  >
                           Select
-                        </button>
-                      </div>
-                    </div>
+                                  </button>
+                              </div>
+                            </div>
                     {/* Detail Cost Dropdown */}
                     {isDetailOpen && (
                       <div className="p-4 border-t border-gray-200 bg-white">
@@ -735,6 +943,8 @@ const QuoteSearch = () => {
                                 {(((appliedTransportMode === 'Sea' && appliedCargoTab === 'LCL') || appliedTransportMode === 'Air' || (appliedTransportMode === 'Land' && appliedCargoTab === 'LTL'))) && <th className="px-4 py-2">Base Rate</th>}
                                 {(((appliedTransportMode === 'Sea' && appliedCargoTab === 'LCL') || appliedTransportMode === 'Air' || (appliedTransportMode === 'Land' && appliedCargoTab === 'LTL'))) && <th className="px-4 py-2">Qty</th>}
                                 {(((appliedTransportMode === 'Sea' && appliedCargoTab === 'LCL') || appliedTransportMode === 'Air' || (appliedTransportMode === 'Land' && appliedCargoTab === 'LTL'))) && <th className="px-4 py-2">Amount</th>}
+                                {/* Always show Currency column */}
+                                <th className="px-4 py-2">Currency</th>
                               </tr>
                             </thead>
                             <tbody className="text-gray-900">
@@ -751,6 +961,8 @@ const QuoteSearch = () => {
                                   {(((appliedTransportMode === 'Sea' && appliedCargoTab === 'LCL') || appliedTransportMode === 'Air' || (appliedTransportMode === 'Land' && appliedCargoTab === 'LTL'))) && <td className="px-4 py-4">{row.baseRate}</td>}
                                   {(((appliedTransportMode === 'Sea' && appliedCargoTab === 'LCL') || appliedTransportMode === 'Air' || (appliedTransportMode === 'Land' && appliedCargoTab === 'LTL'))) && <td className="px-4 py-4">{row.qty}</td>}
                                   {(((appliedTransportMode === 'Sea' && appliedCargoTab === 'LCL') || appliedTransportMode === 'Air' || (appliedTransportMode === 'Land' && appliedCargoTab === 'LTL'))) && <td className="px-4 py-4">{row.amount}</td>}
+                                  {/* Always show Currency cell */}
+                                  <td className="px-4 py-4">{row.currency}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -758,7 +970,7 @@ const QuoteSearch = () => {
                         </div>
                       </div>
                     )}
-                  </div>
+                </div>
                 );
               })}
             </div>
@@ -780,3 +992,4 @@ const QuoteSearch = () => {
 };
 
 export default QuoteSearch;
+
