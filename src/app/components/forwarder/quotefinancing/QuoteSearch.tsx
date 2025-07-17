@@ -452,6 +452,11 @@ const QuoteSearch = () => {
       modeLabel,
       cargoLabel,
       tableRows,
+      provider: quoteResult.provider,
+      originType: appliedSearchParams.originType,
+      destinationType: appliedSearchParams.destinationType,
+      serviceType: `${appliedSearchParams.originType || 'Port'} to ${appliedSearchParams.destinationType || 'Port'}`,
+      transitPort: quoteResult.transitPort,
     });
     router.push('/quotes/list/addinfo');
   };
@@ -862,13 +867,13 @@ const QuoteSearch = () => {
                 <div className="flex items-center justify-center py-4 px-2 lg:col-span-1">
                   <img 
                     src={result.logo} 
-                    alt={result.carrier}
+                    alt={result.provider}
                     className="w-24 h-24 object-contain"
                   />
                 </div>
                 {/* 2. Details/Journey Column (wider) */}
                 <div className="flex flex-col justify-center py-2 px-4 mt-2 mb-2 lg:col-span-2">
-                  <div className="font-semibold text-gray-900 text-base mb-2">{result.carrier}</div>
+                  <div className="font-semibold text-gray-900 text-base mb-2">{result.provider}</div>
                   <div className="flex items-center gap-4 w-full">
                     {/* Origin */}
                     <div className="flex flex-col items-center">
@@ -885,10 +890,16 @@ const QuoteSearch = () => {
                     {/* TT and Validity */}
                     <div className="flex flex-col items-end ml-auto">
                       <span className="text-xs text-gray-500">Transit Time: <span className="text-gray-900 font-medium">{result.transitTime}</span></span>
-                            <span className="text-xs text-gray-500">Valid From: <span className="text-gray-900 font-medium">{result.validFrom}</span></span>
-                            <span className="text-xs text-gray-500">Valid Until: <span className="text-gray-900 font-medium">{result.validUntil}</span></span>
+                      <span className="text-xs text-gray-500">Valid From: <span className="text-gray-900 font-medium">{result.validFrom}</span></span>
+                      <span className="text-xs text-gray-500">Valid Until: <span className="text-gray-900 font-medium">{result.validUntil}</span></span>
                     </div>
                   </div>
+                  {result.transitPort && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs text-gray-500">Transit Port:</span>
+                      <span className="text-xs text-gray-900 font-semibold">{result.transitPort}</span>
+                    </div>
+                  )}
                         {/* Remark */}
                         <div className="w-full flex items-center mt-2">
                           <span className="text-xs text-gray-500 italic">Remark: {result.remark || ''}</span>

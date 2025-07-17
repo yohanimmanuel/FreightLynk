@@ -56,7 +56,7 @@ export interface Rate {
 
 // Quote interface (simplified version of Rate)
 export interface Quote {
-  id: string; // QT-CurrentYear-4 generated numbers
+  id: string;
   lane: string;
   mode: 'ocean' | 'air' | 'road';
   containertype: string;
@@ -64,130 +64,25 @@ export interface Quote {
   baseRate: number;
   price: string;
   transitTime: string;
-  carrier: string;
+  provider: string;
   validity: string;
   status: 'sent' | 'draft' | 'requested' | 'expired';
+  origin: string;
+  destination: string;
+  incoterms: string;
+  remark: string;
+  serviceType?: string;
+  transitPort?: string;
+  client?: string;
+  isTariff?: boolean;
+  profit?: string;
+  createdBy?: string;
+  createdDate?: string;
+  notes?: string;
+  details?: string;
+  truckType?: string;
+  weightVolume?: string;
 }
-
-// Mock data for rates (single source of truth)
-const mockRates: Rate[] = [
-  {
-    id: 1,
-    provider: 'COSCO Shipping',
-    origin: 'Shanghai',
-    destination: 'Los Angeles',
-    ocean40dc: '2100',
-    currency: 'USD',
-    validFrom: '2024-06-01',
-    validTo: '2024-07-31',
-    status: 'draft',
-  },
-  {
-    id: 2,
-    provider: 'Maersk Line',
-    origin: 'Hamburg',
-    destination: 'Singapore',
-    ocean40dc: '1650',
-    currency: 'USD',
-    validFrom: '2024-05-15',
-    validTo: '2024-06-30',
-    status: 'draft',
-  },
-  {
-    id: 3,
-    provider: 'Cathay Pacific Cargo',
-    originAirport: 'Hong Kong',
-    destinationAirport: 'Frankfurt',
-    rate100: '7500',
-    currency: 'USD',
-    validFrom: '2024-06-01',
-    validTo: '2024-07-15',
-    status: 'draft',
-  },
-];
-
-// Generate quotes from rates data
-const generateQuotesFromRates = (rates: Rate[]): Quote[] => {
-  const currentYear = new Date().getFullYear();
-  return rates.map((rate, index) => ({
-    id: `QT-${currentYear}-${String(index + 1).padStart(4, '0')}`,
-    // Use provider and origin-destination for lane
-    lane: `${rate.provider || ''} ${rate.origin || rate.originAirport || ''} - ${rate.destination || rate.destinationAirport || ''}`.trim(),
-    mode: rate.originAirport || rate.destinationAirport ? 'air' : (rate.truckType ? 'road' : 'ocean'),
-    containertype: '', // No containertype field in new Rate
-    currency: rate.currency || '',
-    baseRate: rate.baseRate ? Number(rate.baseRate) : 0,
-    price: rate.price || '',
-    transitTime: rate.transitTime || '',
-    carrier: rate.provider || '',
-    validity: `Valid until ${rate.validTo || ''}`,
-    status: 'draft' as const
-  }));
-};
-
-// Helper to infer mode for legacy rates (only FCL, LCL, AIR, FTL, LTL)
-function inferMode(rate: Rate): string {
-  // AIR: if airport fields exist
-  if (rate.originAirport || rate.destinationAirport || rate.airline) return 'AIR';
-  // FTL/LTL: if truckType exists
-  if (rate.truckType) {
-    // Heuristic: if minCharge or baseRate is present, assume LTL, else FTL
-    if (rate.minCharge || rate.baseRate) return 'LTL';
-    return 'FTL';
-  }
-  // LCL: if no container fields but has price or baseRate (heuristic)
-  const hasFclContainer = rate.ocean20dc || rate.ocean40dc || rate.ocean40hc || rate.ocean45hc;
-  const hasLcl = rate.price || rate.baseRate;
-  if (!hasFclContainer && hasLcl) return 'LCL';
-  // FCL: if container fields exist
-  if (hasFclContainer) return 'FCL';
-  // Default fallback
-  return 'FCL';
-}
-
-// Mock quote requests for forwarder role only
-export const mockQuoteRequests = [
-  {
-    id: 'R2305012',
-    customer: 'American Trade',
-    provider: 'COSCO Shipping',
-    details: '40"DC x 1',
-    origin: 'LOUISVILLE, US',
-    destination: 'SHANGHAI, CN',
-    transitTime: '15 days',
-    attachment: 'No attached file',
-    status: 'Booked',
-    incoterms: 'FOB',
-    remark: 'Urgent delivery',
-    createdBy: 'Dara Evans',
-    createdOn: 'May 19, 2023 14:55',
-    mode: 'fcl',
-    notes: '',
-    commodity: 'GENERAL CARGO',
-    expectedDelivery: '2023-06-02',
-    cargoReadyDate: '2023-05-31',
-  },
-  {
-    id: 'R2305013',
-    customer: 'Fast Up',
-    provider: 'Maersk Line',
-    details: '20"DC x 2',
-    origin: 'LOS ANGELES, US',
-    destination: 'DUBAI, AE',
-    transitTime: '22 days',
-    attachment: 'No attached file',
-    status: 'Booked',
-    incoterms: 'FOB',
-    remark: 'Handle with care',
-    createdBy: 'Dara Evans',
-    createdOn: 'May 19, 2023 14:53',
-    mode: 'fcl',
-    notes: '',
-    commodity: 'ELECTRONICS',
-    expectedDelivery: '2023-07-10',
-    cargoReadyDate: '2023-06-25',
-  },
-];
 
 // Zustand store interface
 export interface QuoteRateStore {
@@ -218,58 +113,32 @@ export interface QuoteRateStore {
 // Create the store
 export const useQuoteRateStore = create<QuoteRateStore>()(
   persist(
-    (set, get) => {
-      // Migrate legacy rates to ensure mode is set
-      let migratedRates = mockRates.map(rate => ({ ...rate, mode: rate.mode || inferMode(rate) }));
-      return {
-        rates: migratedRates,
-        quotes: generateQuotesFromRates(migratedRates),
+    (set, get) => ({
+      rates: [],
+      quotes: [],
       selectedRate: null,
       selectedQuote: null,
-      
-      // Rate actions
-      setRates: (rates: Rate[]) => set({ rates }),
-      addRate: (rate: Rate) => set((state) => ({ rates: [...state.rates, rate ]})),
-      updateRate: (updatedRate: Rate) => 
-        set((state) => ({
-          rates: state.rates.map(rate => 
-            rate.id === updatedRate.id ? updatedRate : rate
-          )
-        })),
-      deleteRate: (id: number) => 
-        set((state) => ({
-          rates: state.rates.filter(rate => rate.id !== id)
-        })),
-      setSelectedRate: (rate: Rate | null) => set({ selectedRate: rate }),
-      
-      // Quote actions
-      setQuotes: (quotes: Quote[]) => set({ quotes }),
-      addQuote: (quote: Quote) => set((state) => ({ quotes: [...state.quotes, quote ]})),
-      updateQuote: (updatedQuote: Quote) => 
-        set((state) => ({
-          quotes: state.quotes.map(quote => 
-            quote.id === updatedQuote.id ? updatedQuote : quote
-          )
-        })),
-      deleteQuote: (id: string) => 
-        set((state) => ({
-          quotes: state.quotes.filter(quote => quote.id !== id)
-        })),
-      setSelectedQuote: (quote: Quote | null) => set({ selectedQuote: quote }),
-      
-      // Utility actions
-      generateQuotesFromRates: () => {
-        const { rates } = get();
-        const quotes = generateQuotesFromRates(rates);
-        set({ quotes });
-      },
-      updateQuotesFromRates: () => {
-        const { rates } = get();
-        const quotes = generateQuotesFromRates(rates);
-        set({ quotes });
-      }
-      };
-    },
+      setRates: (rates) => set({ rates }),
+      addRate: (rate) => set((state) => ({ rates: [...state.rates, rate] })),
+      updateRate: (updatedRate) => set((state) => ({
+        rates: state.rates.map(rate => rate.id === updatedRate.id ? updatedRate : rate)
+      })),
+      deleteRate: (id) => set((state) => ({
+        rates: state.rates.filter(rate => rate.id !== id)
+      })),
+      setSelectedRate: (rate) => set({ selectedRate: rate }),
+      setQuotes: (quotes) => set({ quotes }),
+      addQuote: (quote) => set((state) => ({ quotes: [...state.quotes, quote] })),
+      updateQuote: (updatedQuote) => set((state) => ({
+        quotes: state.quotes.map(quote => quote.id === updatedQuote.id ? updatedQuote : quote)
+      })),
+      deleteQuote: (id) => set((state) => ({
+        quotes: state.quotes.filter(quote => quote.id !== id)
+      })),
+      setSelectedQuote: (quote) => set({ selectedQuote: quote }),
+      generateQuotesFromRates: () => set({ quotes: [] }),
+      updateQuotesFromRates: () => set({ quotes: [] }),
+    }),
     {
       name: 'quote-rate-storage'
     }

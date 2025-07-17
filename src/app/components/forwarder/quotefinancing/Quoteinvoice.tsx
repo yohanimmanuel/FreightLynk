@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuoteSearchStore, QuoteSearchResult } from '../../../../store/quotesearchdata';
 import { useAuthStore } from '../../../../store/authStore';
 import { Edit, Send, Plus, Download } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useQuoteRateStore } from '../../../../store/forwarderquote';
 
 // Utility to generate a unique Quote ID
 function generateQuoteId() {
@@ -14,31 +16,13 @@ function formatDate(date: Date) {
   return date.toISOString().split('T')[0];
 }
 
-// Table columns config
-const FCL_FTL_COLUMNS = [
-  'Charge Type', 'Item', 'Description', 'Calculation', 'Container/Truck Type', 'Qty', 'Base Rate', 'Amount', 'Currency'
-];
-const LCL_LTL_AIR_COLUMNS = [
-  'Charge Type', 'Item', 'Description', 'Calculation', 'Base Rate', 'Qty', 'Amount', 'Currency'
-];
-
-type DetailCostRow = {
-  type: string;
-  item: string;
-  description: string;
-  calculation: string;
-  containerType?: string;
-  truckType?: string;
-  qty: number;
-  baseRate: number;
-  amount: number;
-  currency: string;
-};
-
 const QuoteInvoice = () => {
   const { searchCriteria, selectedQuoteDetails, additionalInfo, shipmentType, shipmentTypeDescription } = useQuoteSearchStore();
   const { user } = useAuthStore();
+  const router = useRouter();
   const quote = selectedQuoteDetails;
+  const addQuote = useQuoteRateStore(state => state.addQuote);
+  const quotes = useQuoteRateStore(state => state.quotes);
   
   // If no quote is selected, show a message
   if (!quote) return <div className="text-center text-gray-500 py-12">No quote selected. Please select a quote from the search results.</div>;
@@ -68,6 +52,10 @@ const QuoteInvoice = () => {
     // Optionally update editFrom/editTo if those fields are part of the quote in the future
   }, [quote]);
 
+  // Generate quoteId ONCE for both invoice and table
+  const [quoteId] = useState(() => typeof quote.id === 'string' ? quote.id : generateQuoteId());
+  const hasAddedQuote = useRef<string | null>(null);
+
   // --- Handlers ---
   const handleEdit = () => {
     setOriginalState({ from: { ...editFrom }, to: { ...editTo }, remark: editRemark });
@@ -86,24 +74,6 @@ const QuoteInvoice = () => {
     setIsEditing(false);
   };
 
-  // Dynamic FROM info
-  const FROM_INFO = {
-    company: user?.companyName || 'Demo Company (FreightLynk LLC)',
-    address: '1000 20th Street NW, Suite 400, Washington D.C. 20036',
-    phone: '(028) 1208 281055',
-    preparedBy: user?.fullName || 'Demo User',
-    mobile: '(028) 1208 281055',
-    email: user?.email || 'demo123@gmail.com',
-  };
-
-  // Assume FCL for demo; in real use, this would be dynamic
-  const mode = 'Sea';
-  const cargoTab = 'FCL';
-  const fclQuantities: { [key: string]: number } = { '20DC': 1 }; // Demo: 1x20DC
-  const lclWeight = '';
-  const lclVolume = '';
-  const searchParams = {};
-
   // Use tableRows from selectedQuoteDetails for the quote table
   const tableRows = selectedQuoteDetails?.tableRows || [];
 
@@ -113,7 +83,6 @@ const QuoteInvoice = () => {
   // Dates
   const createdOn = formatDate(new Date());
   const validUntil = quote.validUntil;
-  const quoteId = generateQuoteId();
 
   // Extract additional info fields
   const etd = additionalInfo?.etd || selectedQuoteDetails?.etd || '-';
@@ -127,27 +96,67 @@ const QuoteInvoice = () => {
   const shipmentMode = additionalInfo?.shipmentMode || selectedQuoteDetails?.shipmentMode || '-';
   const commodities = additionalInfo?.commodities || '-';
 
+  // Auto-map and send main invoice data to QuoteTable on mount or when quote changes
+  useEffect(() => {
+    if (!quote) return;
+    if (hasAddedQuote.current === quoteId) return;
+    const mappedQuote = {
+      id: quoteId,
+      lane: `${quote.origin} - ${quote.destination}`,
+      mode: (() => {
+        const label = (quote.modeLabel || '').toUpperCase();
+        if (label.includes('SEA') && label.includes('FCL')) return 'FCL';
+        if (label.includes('SEA') && label.includes('LCL')) return 'LCL';
+        if (label.includes('AIR')) return 'AIR';
+        if (label.includes('LAND') && label.includes('FTL')) return 'FTL';
+        if (label.includes('LAND') && label.includes('LTL')) return 'LTL';
+        return 'FCL';
+      })() as import('../../../../store/forwarderquote').Quote['mode'],
+      containertype: quote.containertype || '',
+      currency: quote.currency || '',
+      baseRate: Number(quote.tableRows?.[0]?.baseRate) || 0,
+      price: quote.tableRows?.[0]?.baseRate?.toString() || '',
+      transitTime: quote.transitTime || '',
+      provider: quote.provider || '',
+      validity: quote.validUntil || '',
+      status: 'draft' as 'draft',
+      origin: quote.origin || '',
+      destination: quote.destination || '',
+      incoterms: quote.incoterms || '',
+      remark: quote.remark || '',
+      serviceType: quote.serviceType || '',
+      transitPort: quote.transitPort || '',
+      client: quote.client || '',
+      isTariff: quote.isTariff || false,
+      profit: quote.profit || '',
+      createdBy: quote.createdBy || '',
+      createdDate: quote.createdDate || '',
+      notes: quote.notes || '',
+      details: quote.details || '',
+      truckType: quote.truckType || '',
+      weightVolume: quote.weightVolume || '',
+    };
+    addQuote(mappedQuote);
+    hasAddedQuote.current = quoteId;
+  }, [quoteId, quote]);
+
   return (
     <>
-      {/* DEV: Reset Demo Data Button */}
-      <div className="mb-4 flex justify-end">
-        <button
-          className="px-3 py-1 rounded bg-red-100 text-red-700 border border-red-300 text-xs hover:bg-red-200 transition-colors"
-          onClick={() => {
-            localStorage.removeItem('quote-search-storage');
-            window.location.reload();
-          }}
-        >
-          Reset Demo Data
-        </button>
-      </div>
       {/* Button Row */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2">
           {!isEditing ? (
-            <button className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium hover:bg-gray-100 transition-colors flex items-center gap-2" onClick={handleEdit}>
-              <Edit className="w-4 h-4" /> Edit
-            </button>
+            <>
+              <button className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium hover:bg-gray-100 transition-colors flex items-center gap-2" onClick={handleEdit}>
+                <Edit className="w-4 h-4" /> Edit
+              </button>
+              <button className="px-4 py-2 rounded-lg bg-white text-gray-900 font-medium hover:bg-gray-200 border border-gray-300 transition-colors flex items-center gap-2" onClick={() => router.push('/quotes/list')}>
+                View All Quotes
+              </button>
+              <button className="px-4 py-2 rounded-lg bg-[#FFA726] text-white font-medium hover:bg-[#fb8c00] transition-colors flex items-center gap-2">
+                <Send className="w-4 h-4" /> Send
+              </button>
+            </>
           ) : (
             <>
               <button className="px-4 py-2 rounded-lg bg-[#007bff] text-white font-medium hover:bg-blue-700 transition-colors flex items-center gap-2" onClick={handleSave}>
@@ -158,9 +167,6 @@ const QuoteInvoice = () => {
               </button>
             </>
           )}
-          <button className="px-4 py-2 rounded-lg bg-[#FFA726] text-white font-medium hover:bg-[#fb8c00] transition-colors flex items-center gap-2">
-            <Send className="w-4 h-4" /> Send
-          </button>
         </div>
         <div className="flex gap-2">
           <button className="px-4 py-2 rounded-lg bg-[#007bff] text-white font-medium hover:bg-blue-700 transition-colors flex items-center gap-2">
@@ -199,14 +205,6 @@ const QuoteInvoice = () => {
                 </>
               )}
             </div>
-            {/* Add shipment type info here */}
-            <div className="mt-2">
-              <span className="font-semibold text-gray-700 text-xs">Shipment Type: </span>
-              <span className="text-xs text-gray-900">{shipmentType}</span>
-              {shipmentType === 'Other' && shipmentTypeDescription && (
-                <span className="block text-xs text-gray-600 mt-1">Description: {shipmentTypeDescription}</span>
-              )}
-            </div>
             <div className="flex flex-col gap-3 mt-4">
               <div className="font-semibold text-gray-900 text-md mb-1">To:</div>
               {!isEditing ? (
@@ -232,6 +230,7 @@ const QuoteInvoice = () => {
               <img src={quote.logo} alt="Logo" className="w-32 h-16 object-contain mx-auto" />
             </div>
             <div className="text-3xl text-gray-900 font-semibold uppercase mt-2 text-right w-full">Quotation</div>
+            <div className="text-md text-gray-700 font-semibold mt-1 text-right w-full">{quote.provider}</div>
             <div className="text-xs text-gray-600 mt-2 text-right w-full">Created on: <span className="font-medium text-gray-900">{createdOn}</span></div>
             <div className="text-xs text-gray-600 text-right w-full">Valid until: <span className="font-medium text-gray-900">{validUntil}</span></div>
             <div className="text-xs text-gray-600 text-right w-full">Quote ID: <span className="font-medium text-gray-900">{quoteId}</span></div>
@@ -251,7 +250,8 @@ const QuoteInvoice = () => {
                 <div className="flex justify-between text-xs"><span className="text-gray-500">Port of Loading:</span><span className="font-semibold">{quote.origin}</span></div>
                 <div className="flex justify-between text-xs"><span className="text-gray-500">Port of Discharge:</span><span className="font-semibold">{quote.destination}</span></div>
                 <div className="flex justify-between text-xs"><span className="text-gray-500">Port of Delivery:</span><span className="font-semibold">{quote.destination}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-gray-500">Transit Port:</span><span className="font-semibold">-</span></div>
+                <div className="flex justify-between text-xs"><span className="text-gray-500">Transit Port:</span><span className="font-semibold">{quote.transitPort || '-'}</span></div>
+                <div className="flex justify-between text-xs"><span className="text-gray-500">Location Type:</span><span className="font-semibold">{quote.serviceType || '-'}</span></div>
               </div>
             </div>
             {/* Additional Information */}

@@ -5,13 +5,14 @@ import { Quote, useQuoteRateStore } from './forwarderquote';
 // Define the search result interface
 export interface QuoteSearchResult {
   id: number;
-  carrier: string;
+  provider: string;
   logo: string;
   origin: string;
   destination: string;
   departure: string;
   arrival: string;
   transitTime: string;
+  transitPort?: string;
   validity: string;
   rates: {
     [containerType: string]: {
@@ -86,9 +87,24 @@ export const convertToQuote = (
     baseRate: rateInfo.price,
     price: priceDisplay,
     transitTime: searchResult.transitTime,
-    carrier: searchResult.carrier.toUpperCase(),
+    provider: searchResult.provider.toUpperCase(),
     validity: `Valid until ${searchResult.validity}`,
-    status: 'draft'
+    status: 'draft',
+    origin: searchResult.origin,
+    destination: searchResult.destination,
+    incoterms: '',
+    remark: searchResult.remark || '',
+    serviceType: '',
+    transitPort: searchResult.transitPort || '',
+    client: '',
+    isTariff: false,
+    profit: '',
+    createdBy: '',
+    createdDate: '',
+    notes: '',
+    details: '',
+    truckType: '',
+    weightVolume: '',
   };
 };
 
@@ -96,13 +112,14 @@ export const convertToQuote = (
 const mockSearchResults: QuoteSearchResult[] = [
   {
     id: 1,
-    carrier: 'MAERSK',
+    provider: 'MAERSK',
     logo: '/maersk.png',
     origin: 'SINGAPORE, SINGAPORE',
     destination: 'LOS ANGELES, US',
     departure: '2025-08-10',
     arrival: '2025-09-04',
     transitTime: '25 days',
+    transitPort: 'YOKOHAMA, JP',
     validity: '2025-11-01',
     rates: {
       '20DC': { price: 1200, currency: 'USD' },
@@ -146,13 +163,14 @@ const mockSearchResults: QuoteSearchResult[] = [
   },
   {
     id: 2,
-    carrier: 'EVERGREEN',
+    provider: 'EVERGREEN',
     logo: '/evergreen.svg',
     origin: 'JAKARTA, INDONESIA',
     destination: 'KUALA LUMPUR, MALAYSIA',
     departure: '2025-08-10',
     arrival: '2025-09-04',
     transitTime: '25 days',
+    transitPort: 'SINGAPORE, SG',
     validity: '2025-11-01',
     rates: {
       '20DC': { price: 1250, currency: 'USD' },
@@ -196,13 +214,14 @@ const mockSearchResults: QuoteSearchResult[] = [
   },
   {
     id: 3,
-    carrier: 'HAPAG-LLOYD',
+    provider: 'HAPAG-LLOYD',
     logo: '/hapaglloyd.svg',
     origin: 'KEELUNG, TAIPEI',
     destination: 'LOS ANGELES, US',
     departure: '2025-08-10',
     arrival: '2025-09-03',
     transitTime: '24 days',
+    transitPort: 'BUSAN, KR',
     validity: '2025-11-01',
     rates: {
       '20DC': { price: 1220, currency: 'USD' },

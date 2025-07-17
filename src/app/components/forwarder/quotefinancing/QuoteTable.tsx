@@ -13,7 +13,7 @@ const QUOTE_TABS = [
   { label: 'LTL', value: 'ltl', icon: <Truck className="w-4 h-4 mr-1" /> },
 ];
 
-const VALID_MODES = ['fcl', 'lcl', 'air', 'ftl', 'ltl'];
+const VALID_MODES = ['ocean', 'air', 'road'];
 
 const FILTERS = [
   { label: 'All', value: 'all' },
@@ -345,6 +345,8 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
   // For client: Accept/Reject actions
   const updateQuoteStatus = role === 'client' ? clientStore.updateQuoteStatus : undefined;
 
+  console.log('All quotes in store:', quotes);
+
   const [tab, setTab] = useState('all');
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
@@ -434,15 +436,15 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
   const filteredQuotes = quotes.filter(q => {
     // Tab filter (mode)
     const tabMatch = tab === 'all'
-      ? (q.mode && VALID_MODES.includes(q.mode.toLowerCase()))
+      ? true // Show all quotes in ALL tab
       : (q.mode && q.mode.toLowerCase() === tab);
     // Filter (not implemented, placeholder)
     const filterMatch = filter === 'all';
-    // Search (by id, lane, carrier) with type checks
+    // Search (by id, lane, provider) with type checks
     const searchMatch =
       (typeof q.id === 'string' && q.id.toLowerCase().includes(search.toLowerCase())) ||
       (typeof q.lane === 'string' && q.lane.toLowerCase().includes(search.toLowerCase())) ||
-      (typeof q.carrier === 'string' && q.carrier.toLowerCase().includes(search.toLowerCase()));
+      (typeof q.provider === 'string' && q.provider.toLowerCase().includes(search.toLowerCase()));
     // Status
     const statusMatch = status === 'all' || q.status === status;
     return tabMatch && filterMatch && searchMatch && statusMatch;
@@ -614,11 +616,11 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
       {selected.length > 0 && (
         <div className="p-3 mb-2 bg-white border border-blue-200 rounded-lg flex items-center justify-between">
           <div className="flex items-center gap-2 flex-wrap">
-            {selectedQuotes.map((q: any) => {
+            {selectedQuotes.slice(0, 3).map((q: any) => {
               const origin = q['origin'] || q['originAirport'] || '';
               const destination = q['destination'] || q['destinationAirport'] || '';
               return (
-                <span key={q.id} className="flex items-center bg-blue-100 text-blue-800 text-xs font-medium px-3 py-2 rounded-full">
+                <span key={`selected-quote-${q.id}`} className="flex items-center bg-blue-100 text-blue-800 text-xs font-medium px-3 py-2 rounded-full">
                   {q.id} {origin && destination ? `(${origin} → ${destination})` : ''}
                   <button
                     onClick={e => {
@@ -634,6 +636,11 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
                 </span>
               );
             })}
+            {selectedQuotes.length > 3 && (
+              <span key="selected-quotes-more" className="flex items-center bg-blue-100 text-blue-800 text-xs font-medium px-3 py-2 rounded-full">
+                +{selectedQuotes.length - 3} more
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -764,7 +771,7 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
                     </td>
                   ) : col.key === 'id' ? (
                     <td key={col.key} className="px-4 py-4 text-gray-900 font-mono flex items-center gap-1">
-                      {getModeIcon(tab === 'all' ? q.mode : tab)}{getValue(q, col.key)}
+                      {getModeIcon(q.mode)}{getValue(q, col.key)}
                     </td>
                   ) : col.key === 'details' ? (
                     <td key={col.key} className="px-4 py-4 text-gray-900">
