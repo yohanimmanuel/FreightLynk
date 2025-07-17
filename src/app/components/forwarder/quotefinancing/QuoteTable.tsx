@@ -438,11 +438,11 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
       : (q.mode && q.mode.toLowerCase() === tab);
     // Filter (not implemented, placeholder)
     const filterMatch = filter === 'all';
-    // Search (by id, lane, carrier)
+    // Search (by id, lane, carrier) with type checks
     const searchMatch =
-      q.id?.toLowerCase().includes(search.toLowerCase()) ||
-      q.lane?.toLowerCase().includes(search.toLowerCase()) ||
-      q.carrier?.toLowerCase().includes(search.toLowerCase());
+      (typeof q.id === 'string' && q.id.toLowerCase().includes(search.toLowerCase())) ||
+      (typeof q.lane === 'string' && q.lane.toLowerCase().includes(search.toLowerCase())) ||
+      (typeof q.carrier === 'string' && q.carrier.toLowerCase().includes(search.toLowerCase()));
     // Status
     const statusMatch = status === 'all' || q.status === status;
     return tabMatch && filterMatch && searchMatch && statusMatch;
