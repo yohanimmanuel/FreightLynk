@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Search, ChevronDown, X, Menu, Ship, Box, Plane, Truck, Upload, Download, CheckCircle, XCircle } from 'lucide-react';
-import { useQuoteRateStore, mockQuoteRequests } from '@/store/forwarderquote';
+import { useQuoteRateStore } from '@/store/forwarderquote';
 import { useClientQuoteStore } from '@/store/clientquotes';
 import { useBookingStore } from '@/store/bookingStore';
 
@@ -194,7 +194,7 @@ export default function QuoteRequest({ role = 'forwarder', hasBookings = true }:
   // Requests data source
   let requests: RequestType[] = [];
   if (role === 'forwarder') {
-    requests = mockQuoteRequests;
+    requests = [];
   } else if (role === 'client') {
     // Map confirmedBookings to quote request rows
     const today = new Date().toLocaleDateString('en-CA');

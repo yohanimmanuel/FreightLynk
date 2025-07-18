@@ -200,27 +200,46 @@ const QuoteInvoice = () => {
       containertype: fclContainerTypes, // All container types and quantities for FCL
       truckType: ftlTruckTypes,        // All truck types and quantities for FTL
       weightVolume: lclWeightVolume,   // Weight/volume for LCL, AIR, LTL
-      details: detailsField,           // Summary for ALL tab
       currency: quote.currency || '',
       baseRate: Number(quote.tableRows?.[0]?.baseRate) || 0,
-      price: totalAmount.toString(),
+      price: totalAmount?.toString() || '',
       transitTime: quote.transitTime || '',
-      provider: quote.provider || '-',
+      provider: quote.provider || '',
       validity: quote.validUntil || '',
       status: 'draft' as 'draft',
       origin: quote.origin || '',
       destination: quote.destination || '',
-      incoterms: additionalInfo?.incoterm || '',
+      incoterms: additionalInfo?.incoterm || quote.incoterms || '',
       remark: quote.remark || '',
       serviceType: quote.serviceType || '',
       transitPort: quote.transitPort || '',
-      client: editTo.company || '',
-      isTariff: additionalInfo?.isTariff || 'No',
+      client: editTo.company || quote.client || '',
+      isTariff: additionalInfo?.isTariff ?? quote.isTariff ?? false,
       profit: quote.profit || '',
       createdBy: quote.createdBy || '',
       createdDate: quote.createdDate || '',
-      notes: additionalInfo?.note || '',
+      notes: additionalInfo?.note || quote.notes || '',
+      details: detailsField || quote.details || '',
+      // Expanded fields for invoice:
+      from: quote.from || {
+        company: user?.companyName || '',
+        address: '', phone: '', preparedBy: user?.fullName || '', mobile: '', email: user?.email || '', contact: ''
+      },
+      to: quote.to || {
+        company: editTo.company || '', address: editTo.address || '', phone: editTo.phone || '', contact: editTo.contact || ''
+      },
+      tableRows: quote.tableRows || [],
+      additionalInfo: quote.additionalInfo || additionalInfo || {},
+      companyBranch: quote.companyBranch || '',
+      companyName: quote.companyName || user?.companyName || '',
+      companyLogo: quote.companyLogo || '',
+      shipmentType: quote.shipmentType || '',
+      shipmentTypeDescription: quote.shipmentTypeDescription || '',
+      validUntil: quote.validUntil || '',
+      originAirport: quote.originAirport || '',
+      destinationAirport: quote.destinationAirport || ''
     };
+
     setCurrentDraftQuote(mappedQuote);
     hasAddedQuote.current = quoteId;
   }, [quoteId, quote, editTo.company]);
@@ -243,6 +262,8 @@ const QuoteInvoice = () => {
     return () => clearTimeout(timeout);
   }, [currentDraftQuote]);
 
+  const isAlreadySubmitted = quotes.some(q => q.id === currentDraftQuote?.id);
+
   if (loadingDraft) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -259,16 +280,20 @@ const QuoteInvoice = () => {
         <div className="flex gap-2">
           {!isEditing ? (
             <>
-              <button className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium hover:bg-gray-100 transition-colors flex items-center gap-2" onClick={handleEdit}>
-                <Edit className="w-4 h-4" /> Edit
-              </button>
-              <button className="px-4 py-2 rounded-lg bg-[#FFA726] text-white font-medium hover:bg-[#fb8c00] transition-colors flex items-center gap-2" onClick={() => {
-                if (currentDraftQuote) {
-                  addQuote(currentDraftQuote);
-                  clearCurrentDraftQuote();
-                  router.push('/quotes/list'); // Adjust path if needed
-                }
-              }}>
+            <button className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium hover:bg-gray-100 transition-colors flex items-center gap-2" onClick={handleEdit}>
+              <Edit className="w-4 h-4" /> Edit
+            </button>
+              <button
+                className="px-4 py-2 rounded-lg bg-[#FFA726] text-white font-medium hover:bg-[#fb8c00] transition-colors flex items-center gap-2"
+                onClick={() => {
+                  if (!isAlreadySubmitted && currentDraftQuote) {
+                    addQuote(currentDraftQuote);
+                    // Do NOT clearCurrentDraftQuote here!
+                  }
+                  router.push('/quotes/list');
+                }}
+                title={isAlreadySubmitted ? 'This quote has already been submitted.' : 'Submit this quote'}
+              >
                 Submit
               </button>
               <button className="px-4 py-2 rounded-lg bg-green-500 text-white font-medium hover:bg-green-600 transition-colors flex items-center gap-2">

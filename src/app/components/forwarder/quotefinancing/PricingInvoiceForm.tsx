@@ -227,7 +227,7 @@ const PricingInvoiceForm: React.FC = () => {
       setMeta((prev) => ({
         ...prev,
         invoiceId: selected.id,
-        carrier: selected.carrier || '',
+        carrier: selected.provider || '',
         dateIssued: (selected as any).dateIssued || today,
         validUntil: (selected as any).validUntil || '',
         currency: selected.currency || defaultCurrency,

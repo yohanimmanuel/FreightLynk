@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Quote, useQuoteRateStore } from './forwarderquote';
+import { Quote, QuoteAdditionalInfo, QuoteParty, useQuoteRateStore } from './forwarderquote';
 
 // Define the search result interface
 export interface QuoteSearchResult {
@@ -54,7 +54,10 @@ interface PriceRange {
 export const convertToQuote = (
   searchResult: QuoteSearchResult, 
   containerType: string, 
-  priceRange?: PriceRange
+  priceRange?: PriceRange,
+  from?: QuoteParty,
+  to?: QuoteParty,
+  additionalInfo?: QuoteAdditionalInfo
 ): Quote => {
   const currentYear = new Date().getFullYear();
   const rateInfo = searchResult.rates[containerType];
@@ -105,6 +108,11 @@ export const convertToQuote = (
     details: '',
     truckType: '',
     weightVolume: '',
+    from: from || { company: '', address: '', phone: '' },
+    to: to || { company: '', address: '', phone: '' },
+    tableRows: [],
+    additionalInfo: additionalInfo || {} as QuoteAdditionalInfo,
+    validUntil: searchResult.validUntil || searchResult.validity || '',
   };
 };
 
@@ -302,7 +310,11 @@ export const useQuoteSearchStore = create<QuoteSearchStore>()(
         
         if (searchResult) {
           try {
-            const newQuote = convertToQuote(searchResult, containerType, priceRange);
+            const { additionalInfo, selectedQuoteDetails } = get();
+            const from = selectedQuoteDetails?.from;
+            const to = selectedQuoteDetails?.to;
+            const info = additionalInfo;
+            const newQuote = convertToQuote(searchResult, containerType, priceRange, from, to, info);
             const quoteStore = useQuoteRateStore.getState();
             quoteStore.addQuote(newQuote);
             return newQuote.id;

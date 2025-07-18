@@ -2,11 +2,18 @@ import React, { useState, useRef } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { partnerDirectory } from '../../../../store/partnerCompanyData';
 import { useRouter } from 'next/navigation';
+import { useQuoteRateStore } from '../../../../store/forwarderquote';
 
 // Filter only clients
 const clients = partnerDirectory;
 
 export default function QuoteNewClient() {
+  // Clear draft on mount
+  const clearCurrentDraftQuote = useQuoteRateStore(state => state.clearCurrentDraftQuote);
+  React.useEffect(() => {
+    clearCurrentDraftQuote();
+  }, [clearCurrentDraftQuote]);
+
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const [selectedContactId, setSelectedContactId] = useState<number | null>(null);
   const [showClientDropdown, setShowClientDropdown] = useState(false);

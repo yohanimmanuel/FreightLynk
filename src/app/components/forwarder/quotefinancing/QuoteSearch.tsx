@@ -710,23 +710,23 @@ const QuoteSearch = () => {
                       <div className="flex flex-col gap-4">
                         {ftlTrucks.map((truck, idx) => (
                           <div key={idx} className="flex items-center gap-2">
-                            <span className="w-30 text-xs font-medium text-gray-700">Truck Type:</span>
-                            <input
-                              type="text"
+                          <span className="w-30 text-xs font-medium text-gray-700">Truck Type:</span>
+                          <input
+                            type="text"
                               value={truck.truckType}
                               onChange={e => setFtlTrucks(trucks => trucks.map((t, i) => i === idx ? { ...t, truckType: e.target.value } : t))}
-                              className="w-40 px-2 py-2 border border-gray-300 rounded-lg text-xs text-left text-gray-900"
-                              placeholder="e.g. 40ft Flatbed"
-                            />
-                            <span className="w-30 text-xs font-medium text-gray-700">Quantity:</span>
-                            <input
-                              type="number"
-                              min="1"
+                            className="w-40 px-2 py-2 border border-gray-300 rounded-lg text-xs text-left text-gray-900"
+                            placeholder="e.g. 40ft Flatbed"
+                          />
+                          <span className="w-30 text-xs font-medium text-gray-700">Quantity:</span>
+                          <input
+                            type="number"
+                            min="1"
                               value={truck.truckQuantity}
                               onChange={e => setFtlTrucks(trucks => trucks.map((t, i) => i === idx ? { ...t, truckQuantity: Number(e.target.value) } : t))}
                               className="w-24 px-2 py-2 border border-gray-300 rounded-lg text-xs text-left text-gray-900"
-                              placeholder="e.g. 2"
-                            />
+                            placeholder="e.g. 2"
+                          />
                             <button
                               className="px-2 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-gray-500 rounded-lg"
                               onClick={() => setFtlTrucks(trucks => trucks.filter((_, i) => i !== idx))}
@@ -735,7 +735,7 @@ const QuoteSearch = () => {
                             >
                               <Minus className="w-4 h-4" />
                             </button>
-                          </div>
+                        </div>
                         ))}
                         <button
                           className="w-fit px-4 py-2 bg-[#007bff] text-white border border-[#007bff] hover:bg-blue-700 rounded-lg text-xs font-semibold mt-2"

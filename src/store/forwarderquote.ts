@@ -55,6 +55,43 @@ export interface Rate {
 }
 
 // Quote interface (simplified version of Rate)
+export interface QuoteParty {
+  company: string;
+  address: string;
+  phone: string;
+  preparedBy?: string;
+  mobile?: string;
+  email?: string;
+  contact?: string;
+}
+
+export interface QuoteLineItem {
+  chargeType: string;
+  item: string;
+  description: string;
+  calculation: string;
+  qty: number;
+  baseRate: number;
+  currency: string;
+  amount: number;
+}
+
+export interface QuoteAdditionalInfo {
+  isTariff?: boolean | string;
+  shipmentType?: string;
+  companyBranch?: string;
+  incoterms?: string;
+  remark?: string;
+  notes?: string;
+  freightTerms?: string;
+  commodities?: string;
+  ofPriceFeedback?: string;
+  transitTime?: string;
+  cargoReadyDate?: string;
+  validUntil?: string;
+  etd?: string;
+}
+
 export interface Quote {
   id: string;
   lane: string;
@@ -82,7 +119,22 @@ export interface Quote {
   details?: string;
   truckType?: string;
   weightVolume?: string;
+
+  // Expanded fields for invoice
+  from: QuoteParty;
+  to: QuoteParty;
+  tableRows: QuoteLineItem[];
+  additionalInfo: QuoteAdditionalInfo;
+  companyBranch?: string;
+  companyName?: string;
+  companyLogo?: string; // URL or base64
+  shipmentType?: string;
+  shipmentTypeDescription?: string;
+  validUntil?: string;
+  originAirport?: string;
+  destinationAirport?: string;
 }
+
 
 // Zustand store interface
 export interface QuoteRateStore {
@@ -127,19 +179,19 @@ export const useQuoteRateStore = create<QuoteRateStore>()(
       addRate: (rate) => set((state) => ({ rates: [...state.rates, rate] })),
       updateRate: (updatedRate) => set((state) => ({
         rates: state.rates.map(rate => rate.id === updatedRate.id ? updatedRate : rate)
-      })),
+        })),
       deleteRate: (id) => set((state) => ({
-        rates: state.rates.filter(rate => rate.id !== id)
-      })),
+          rates: state.rates.filter(rate => rate.id !== id)
+        })),
       setSelectedRate: (rate) => set({ selectedRate: rate }),
       setQuotes: (quotes) => set({ quotes }),
       addQuote: (quote) => set((state) => ({ quotes: [...state.quotes, quote] })),
       updateQuote: (updatedQuote) => set((state) => ({
         quotes: state.quotes.map(quote => quote.id === updatedQuote.id ? updatedQuote : quote)
-      })),
+        })),
       deleteQuote: (id) => set((state) => ({
-        quotes: state.quotes.filter(quote => quote.id !== id)
-      })),
+          quotes: state.quotes.filter(quote => quote.id !== id)
+        })),
       setSelectedQuote: (quote) => set({ selectedQuote: quote }),
       setCurrentDraftQuote: (quote) => set({ currentDraftQuote: quote }),
       updateCurrentDraftQuote: (updates) => set(state => ({ currentDraftQuote: { ...state.currentDraftQuote, ...updates } as Quote }) as Partial<QuoteRateStore>),

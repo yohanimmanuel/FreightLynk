@@ -149,190 +149,6 @@ function getModeIcon(mode: string) {
   }
 }
 
-// ManualQuoteModal for manual quote creation
-function ManualQuoteModal({ open, onClose, mode, onSave, initialData }: { open: boolean; onClose: () => void; mode: string; onSave: (data: any) => void; initialData?: any }) {
-  const [selectedMode, setSelectedMode] = React.useState(mode === 'all' ? 'FCL' : mode.toUpperCase());
-  const columns = MODE_COLUMN_CONFIGS[selectedMode.toLowerCase()] || MODE_COLUMN_CONFIGS['all'];
-  const [form, setForm] = React.useState<any>(() => Object.fromEntries(columns.map(col => [col.key, ''])));
-  const [showModeDropdown, setShowModeDropdown] = React.useState(false);
-  React.useEffect(() => {
-    if (open && initialData) {
-      setForm(initialData);
-      setSelectedMode(initialData.mode || (mode === 'all' ? 'FCL' : mode.toUpperCase()));
-    } else if (open) {
-      setForm(Object.fromEntries(columns.map(col => [col.key, ''])));
-      setSelectedMode(mode === 'all' ? 'FCL' : mode.toUpperCase());
-    }
-    // eslint-disable-next-line
-  }, [open, mode, initialData]);
-  React.useEffect(() => {
-    setForm((f: any) => Object.fromEntries(columns.map(col => [col.key, f[col.key] || ''])));
-    // eslint-disable-next-line
-  }, [selectedMode]);
-  if (!open) return null;
-  const quoteId = form.id || `QT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-    return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full p-4 max-h-[80vh] overflow-y-auto scrollbar-hide">
-        <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-2 ">
-          <h2 className="text-lg font-semibold text-gray-900">Manual Quotation {mode === 'all' ? '' : `(${selectedMode})`}</h2>
-          <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 focus:outline-none">
-            <span className="sr-only">Close</span>
-            <X className="w-4 h-4"/>
-          </button>
-        </div>
-        <form onSubmit={e => { e.preventDefault(); onSave({ ...form, mode: selectedMode, id: quoteId, status: 'draft' }); }}>
-          {mode === 'all' && (
-            <div className="mb-4">
-              <label className="block text-xs font-medium text-gray-500 mb-1">Mode</label>
-              <div className="relative">
-                <button
-                  type="button"
-                  className="px-3 py-2 w-full text-xs text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-left relative"
-                  onClick={() => setShowModeDropdown(v => !v)}
-                >
-                  {selectedMode}
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <svg className={`w-4 h-4 transition-transform ${showModeDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                  </span>
-                </button>
-                {showModeDropdown && (
-                  <div className="absolute left-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 w-full z-50">
-                    <div className="p-2">
-                      {['FCL', 'LCL', 'AIR', 'FTL', 'LTL'].map(opt => (
-                        <button
-                          key={opt}
-                          onClick={() => { setSelectedMode(opt); setShowModeDropdown(false); }}
-                          className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${selectedMode === opt ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-          <div className="mb-4 flex items-center gap-2">
-            <span className="text-xs text-gray-500">Quote ID:</span>
-            <span className="font-mono text-xs text-gray-900 flex items-center">{getModeIcon(selectedMode)}{quoteId}</span>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            {columns.filter(col => col.key !== 'id' && col.key !== 'notes').map((col) => (
-              <div key={col.key}>
-                <label className="block text-xs font-medium text-gray-500 mb-1">{col.label}</label>
-                <input
-                  className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={form[col.key] || ''}
-                  onChange={e => setForm((f: any) => ({ ...f, [col.key]: e.target.value }))}
-                  name={col.key}
-                  type="text"
-                  placeholder={col.label}
-                />
-              </div>
-            ))}
-          </div>
-          {/* Notes Section as description textarea */}
-          <div className="mt-4">
-            <label className="block text-xs font-medium text-gray-500 mb-1">Notes</label>
-            <textarea
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              rows={3}
-              placeholder="Add notes..."
-              value={form.notes || ''}
-              onChange={e => setForm((f: any) => ({ ...f, notes: e.target.value }))}
-              name="notes"
-            />
-          </div>
-          <div className="flex justify-end gap-2 mt-6 border-t border-gray-200 pt-4">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-200">Cancel</button>
-            <button type="submit" className="px-4 py-2 text-sm text-white bg-[#007bff] rounded-lg hover:bg-blue-700">Save</button>
-          </div>
-        </form>
-        </div>
-      </div>
-    );
-}
-
-function ViewQuoteModal({ open, onClose, quote, columns }: { open: boolean; onClose: () => void; quote: any; columns: any[] }) {
-  if (!open || !quote) return null;
-
-  // Helper to render status badge
-  function renderStatusBadge(status: string) {
-    let color = 'bg-gray-100 border-gray-300 text-gray-700';
-    if (!status) return <span className="inline-block px-2 py-1 rounded border text-xs bg-gray-100 border-gray-300 text-gray-700">-</span>;
-    switch (status.toLowerCase()) {
-      case 'approved':
-      case 'booked':
-        color = 'bg-green-100 border-green-300 text-green-800';
-        break;
-      case 'sent':
-      case 'updated':
-        color = 'bg-blue-100 border-blue-300 text-blue-800';
-        break;
-      case 'pending':
-        color = 'bg-yellow-100 border-yellow-300 text-yellow-800';
-        break;
-      case 'rejected':
-      case 'cancelled':
-        color = 'bg-red-100 border-red-300 text-red-800';
-        break;
-      case 'draft':
-        color = 'bg-gray-100 border-gray-300 text-gray-700';
-        break;
-      default:
-        color = 'bg-gray-100 border-gray-300 text-gray-700';
-    }
-    return (
-      <span className={`inline-block px-3 py-1 rounded border text-xs font-semibold ${color}`}>{status}</span>
-    );
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full p-4 max-h-[80vh] overflow-y-auto scrollbar-hide">
-        <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-2 ">
-          <h2 className="text-lg font-semibold text-gray-900">Quote Details</h2>
-          <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 focus:outline-none">
-            <XIcon className="w-5 h-5" />
-          </button>
-        </div>
-        {/* Details Section */}
-        <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
-          <div className="text-sm font-semibold text-gray-900 mb-3">Quote details</div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-xs">
-            {columns.filter(col => col.key !== 'notes').map(col => (
-              <div key={col.key}>
-                <div className="text-gray-500 mb-1">{col.label}</div>
-                {col.key === 'status' ? (
-                  <div>{renderStatusBadge(quote.status)}</div>
-                ) : (
-                  <div className="text-gray-900">{quote[col.key] || '-'}</div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-        {/* Notes Section */}
-        <div className="mb-4">
-          <div className="text-xs text-gray-500 mb-1">Notes</div>
-          <textarea
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            rows={3}
-            placeholder="Add notes..."
-            value={quote.notes || ''}
-            readOnly
-          />
-        </div>
-        <div className="flex justify-end gap-2 mt-6 border-t border-gray-200 pt-4">
-          <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-200">Close</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' | 'client' }) {
   // Forwarder store
   const forwarderStore = useQuoteRateStore();
@@ -362,10 +178,6 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [showManualModal, setShowManualModal] = useState(false);
-  const [editQuote, setEditQuote] = useState<any|null>(null);
-  const [showViewModal, setShowViewModal] = useState(false);
-  const [viewQuote, setViewQuote] = useState<any|null>(null);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const router = useRouter();
 
@@ -605,7 +417,7 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
           </button>
           {role === 'forwarder' && (
             <>
-              <button className="px-4 py-2 rounded-lg bg-white text-gray-900 text-sm font-medium border border-gray-300 hover:bg-gray-200 flex items-center gap-2" onClick={() => setShowManualModal(true)}>
+              <button className="px-4 py-2 rounded-lg bg-white text-gray-900 text-sm font-medium border border-gray-300 hover:bg-gray-200 flex items-center gap-2">
                 <Plus className="w-4 h-4" />
                 Manual Quotation
               </button>
@@ -655,21 +467,15 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
           </div>
           <div className="flex items-center gap-3">
             <button
-              onClick={() => { if (selectedQuotes.length === 1) { setViewQuote(selectedQuotes[0]); setShowViewModal(true); }}}
               className={`px-4 py-2 text-sm font-medium text-[#007bff] bg-white rounded hover:text-blue-700 focus:outline-none transition-colors ${selectedQuotes.length !== 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
-              disabled={selectedQuotes.length !== 1}
+              onClick={() => {
+                router.push(`/quotes/list/invoice?id=${selectedQuotes[0].id}`);
+              }}
             >
               View
             </button>
             {role === 'forwarder' ? (
               <>
-                <button
-                  onClick={() => { if (selectedQuotes.length === 1) { setEditQuote(selectedQuotes[0]); setShowManualModal(true); }}}
-                  className={`px-4 py-2 text-sm font-medium text-green-600 bg-white rounded hover:text-green-700 focus:outline-none transition-colors ${selectedQuotes.length !== 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  disabled={selectedQuotes.length !== 1}
-                >
-                  Edit
-                </button>
                 <button
                   onClick={() => setShowRemoveModal(true)}
                   className="px-4 py-2 text-sm font-medium text-red-600 bg-white hover:text-red-700 focus:outline-none"
@@ -747,14 +553,14 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
           </thead>
           <tbody>
             {paginatedQuotes.length === 0 ? (
-              <tr><td colSpan={columns.length+1} className="text-center py-8 text-gray-400">No quotes found.</td></tr>
+              <tr><td colSpan={columns.length+2} className="text-center py-8 text-gray-400">No quotes found.</td></tr>
             ) : paginatedQuotes.map(q => (
               <tr
                 key={q.id}
                 className={`${selected.includes(q.id) ? 'bg-blue-50' : 'hover:bg-gray-50'} border-b border-gray-200 cursor-pointer`}
                 onClick={e => {
-                  // Only toggle if not clicking the checkbox
-                  if ((e.target as HTMLElement).tagName === 'INPUT') return;
+                  // Only toggle if not clicking the checkbox or action button
+                  if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).closest('button')) return;
                   toggleRow(q.id);
                 }}
               >
@@ -909,18 +715,6 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
           </div>
         </div>
       )}
-      {/* View Modal */}
-      <ViewQuoteModal open={showViewModal} onClose={() => setShowViewModal(false)} quote={viewQuote} columns={MODE_COLUMN_CONFIGS[tab] || MODE_COLUMN_CONFIGS['all']} />
-      {/* Manual/Edit Modal */}
-      <ManualQuoteModal open={showManualModal} onClose={() => { setShowManualModal(false); setEditQuote(null); }} mode={tab} onSave={data => {
-        if (editQuote) {
-          setQuotes(quotes.map(q => q.id === editQuote.id ? { ...editQuote, ...data } : q));
-        } else {
-          setQuotes([...quotes, data]);
-        }
-        setShowManualModal(false);
-        setEditQuote(null);
-      }} initialData={editQuote} />
     </div>
   );
 }
