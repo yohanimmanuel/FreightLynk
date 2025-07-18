@@ -90,6 +90,7 @@ export interface QuoteRateStore {
   quotes: Quote[];
   selectedRate: Rate | null;
   selectedQuote: Quote | null;
+  currentDraftQuote: Quote | null;
   
   // Rate actions
   setRates: (rates: Rate[]) => void;
@@ -104,6 +105,9 @@ export interface QuoteRateStore {
   updateQuote: (updatedQuote: Quote) => void;
   deleteQuote: (id: string) => void;
   setSelectedQuote: (quote: Quote | null) => void;
+  setCurrentDraftQuote: (quote: Quote | null) => void;
+  updateCurrentDraftQuote: (updates: Partial<Quote>) => void;
+  clearCurrentDraftQuote: () => void;
   
   // Utility actions
   generateQuotesFromRates: () => void;
@@ -118,6 +122,7 @@ export const useQuoteRateStore = create<QuoteRateStore>()(
       quotes: [],
       selectedRate: null,
       selectedQuote: null,
+      currentDraftQuote: null,
       setRates: (rates) => set({ rates }),
       addRate: (rate) => set((state) => ({ rates: [...state.rates, rate] })),
       updateRate: (updatedRate) => set((state) => ({
@@ -136,6 +141,9 @@ export const useQuoteRateStore = create<QuoteRateStore>()(
         quotes: state.quotes.filter(quote => quote.id !== id)
       })),
       setSelectedQuote: (quote) => set({ selectedQuote: quote }),
+      setCurrentDraftQuote: (quote) => set({ currentDraftQuote: quote }),
+      updateCurrentDraftQuote: (updates) => set(state => ({ currentDraftQuote: { ...state.currentDraftQuote, ...updates } as Quote }) as Partial<QuoteRateStore>),
+      clearCurrentDraftQuote: () => set({ currentDraftQuote: null }),
       generateQuotesFromRates: () => set({ quotes: [] }),
       updateQuotesFromRates: () => set({ quotes: [] }),
     }),

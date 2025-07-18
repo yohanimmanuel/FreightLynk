@@ -24,6 +24,9 @@ const QuoteInvoice = () => {
   const quote = selectedQuoteDetails;
   const addQuote = useQuoteRateStore(state => state.addQuote);
   const quotes = useQuoteRateStore(state => state.quotes);
+  const currentDraftQuote = useQuoteRateStore(state => state.currentDraftQuote);
+  const setCurrentDraftQuote = useQuoteRateStore(state => state.setCurrentDraftQuote);
+  const clearCurrentDraftQuote = useQuoteRateStore(state => state.clearCurrentDraftQuote);
   
   // If no quote is selected, show a message
   if (!quote) return <div className="text-center text-gray-500 py-12">No quote selected. Please select a quote from the search results.</div>;
@@ -46,6 +49,17 @@ const QuoteInvoice = () => {
   });
   const [editRemark, setEditRemark] = useState(quote.remark);
   const [originalState, setOriginalState] = useState<any>(null);
+  const [loadingDraft, setLoadingDraft] = useState(true);
+
+  // Centralized empty form state for invoice
+  const emptyFormState = {
+    from: { company: '', address: '', phone: '', preparedBy: '', mobile: '', email: '' },
+    to: { company: '', address: '', phone: '', contact: '' },
+    remark: '',
+    // Add all other fields you use in the invoice form here, initialized to '' or default
+  };
+  const [formState, setFormState] = useState(emptyFormState);
+  const [showSubmitted, setShowSubmitted] = useState(false);
 
   // On mount, check for selected client/contact in localStorage and update To details
   useEffect(() => {
@@ -71,8 +85,8 @@ const QuoteInvoice = () => {
     // Optionally update editFrom/editTo if those fields are part of the quote in the future
   }, [quote]);
 
-  // Generate quoteId ONCE for both invoice and table
-  const [quoteId] = useState(() => typeof quote.id === 'string' ? quote.id : generateQuoteId());
+  // Generate quoteId ONCE for both invoice and table, using draft if available
+  const [quoteId] = useState(() => currentDraftQuote?.id || (typeof quote.id === 'string' ? quote.id : generateQuoteId()));
   const hasAddedQuote = useRef<string | null>(null);
 
   // --- Handlers ---
@@ -92,6 +106,13 @@ const QuoteInvoice = () => {
     // Here you would update the store or backend
     setIsEditing(false);
   };
+
+  // Reset form state after submission or when starting a new quote
+  useEffect(() => {
+    if (!currentDraftQuote) {
+      setFormState(emptyFormState);
+    }
+  }, [currentDraftQuote]);
 
   // Use tableRows from selectedQuoteDetails for the quote table
   const tableRows = selectedQuoteDetails?.tableRows || [];
@@ -145,10 +166,17 @@ const QuoteInvoice = () => {
     // Compute values for each mode
     const fclContainerTypes = getTypeQuantityString(tableRows, 'item');
     const ftlTruckTypes = getTypeQuantityString(tableRows, 'truckType');
-    const lclWeightVolume = tableRows
-      .filter((row: any) => row.weightVolume)
-      .map((row: any) => `${row.weightVolume}${row.qty ? ` x${row.qty}` : ''}`)
-      .join(', ');
+    // For LCL/AIR/LTL, show both weight and volume if present
+    const weight = additionalInfo?.lclWeight || selectedQuoteDetails?.lclWeight || '';
+    const volume = additionalInfo?.lclVolume || selectedQuoteDetails?.lclVolume || '';
+    let lclWeightVolume = '';
+    if (weight && volume) {
+      lclWeightVolume = `${weight} kg/${volume} cbm`;
+    } else if (weight) {
+      lclWeightVolume = `${weight} kg`;
+    } else if (volume) {
+      lclWeightVolume = `${volume} cbm`;
+    }
 
     // Details field for ALL tab
     const detailsField = [
@@ -193,9 +221,36 @@ const QuoteInvoice = () => {
       createdDate: quote.createdDate || '',
       notes: additionalInfo?.note || '',
     };
-    addQuote(mappedQuote);
+    setCurrentDraftQuote(mappedQuote);
     hasAddedQuote.current = quoteId;
   }, [quoteId, quote, editTo.company]);
+
+  // On final submission (e.g., when user clicks submit/finalize):
+  // addQuote(currentDraftQuote); clearCurrentDraftQuote();
+
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    if (!currentDraftQuote) {
+      setLoadingDraft(true);
+      timeout = setTimeout(() => {
+        if (!currentDraftQuote) {
+          router.replace('/quotes/list');
+        }
+      }, 1000); // Wait 1 second for draft to be set
+    } else {
+      setLoadingDraft(false);
+    }
+    return () => clearTimeout(timeout);
+  }, [currentDraftQuote]);
+
+  if (loadingDraft) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-500"></div>
+        <span className="ml-4 text-gray-500 text-lg">Loading invoice...</span>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -207,10 +262,16 @@ const QuoteInvoice = () => {
               <button className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium hover:bg-gray-100 transition-colors flex items-center gap-2" onClick={handleEdit}>
                 <Edit className="w-4 h-4" /> Edit
               </button>
-              <button className="px-4 py-2 rounded-lg bg-white text-gray-900 font-medium hover:bg-gray-200 border border-gray-300 transition-colors flex items-center gap-2" onClick={() => router.push('/quotes/list')}>
-                View All Quotes
+              <button className="px-4 py-2 rounded-lg bg-[#FFA726] text-white font-medium hover:bg-[#fb8c00] transition-colors flex items-center gap-2" onClick={() => {
+                if (currentDraftQuote) {
+                  addQuote(currentDraftQuote);
+                  clearCurrentDraftQuote();
+                  router.push('/quotes/list'); // Adjust path if needed
+                }
+              }}>
+                Submit
               </button>
-              <button className="px-4 py-2 rounded-lg bg-[#FFA726] text-white font-medium hover:bg-[#fb8c00] transition-colors flex items-center gap-2">
+              <button className="px-4 py-2 rounded-lg bg-green-500 text-white font-medium hover:bg-green-600 transition-colors flex items-center gap-2">
                 <Send className="w-4 h-4" /> Send
               </button>
             </>

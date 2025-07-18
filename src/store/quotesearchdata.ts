@@ -285,6 +285,7 @@ interface QuoteSearchStore {
   setShipmentType: (type: string) => void;
   shipmentTypeDescription: string;
   setShipmentTypeDescription: (desc: string) => void;
+  resetSearchAndAdditionalInfo: () => void;
 }
 
 // Create the store
@@ -334,6 +335,11 @@ export const useQuoteSearchStore = create<QuoteSearchStore>()(
       setShipmentType: (type: string) => set({ shipmentType: type }),
       shipmentTypeDescription: '',
       setShipmentTypeDescription: (desc: string) => set({ shipmentTypeDescription: desc }),
+      resetSearchAndAdditionalInfo: () => set({
+        searchCriteria: {},
+        additionalInfo: {},
+        selectedQuoteDetails: {},
+      }),
     }),
     {
       name: 'quote-search-storage'

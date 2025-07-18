@@ -4,6 +4,7 @@ import { useQuoteRateStore } from '../../../../store/forwarderquote';
 import { useClientQuoteStore } from '@/store/clientquotes';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '../../../../store/authStore';
+import { useQuoteSearchStore } from '../../../../store/quotesearchdata';
 
 const QUOTE_TABS = [
   { label: 'All', value: 'all', icon: <Menu className="w-4 h-4 mr-1" /> },
@@ -338,6 +339,7 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
   // Client store
   const clientStore = useClientQuoteStore();
   const { user } = useAuthStore();
+  const resetSearchAndAdditionalInfo = useQuoteSearchStore(state => state.resetSearchAndAdditionalInfo);
 
   // Choose the correct store based on role
   const quotes: any[] = role === 'forwarder' ? forwarderStore.quotes : clientStore.quotes;
@@ -609,7 +611,10 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
               </button>
               <button
                 className="px-4 py-2 rounded-lg bg-[#007bff] text-white text-sm font-semibold hover:bg-blue-700 flex items-center gap-2"
-                onClick={() => router.push('/quotes/list/new')}
+                onClick={() => {
+                  resetSearchAndAdditionalInfo();
+                  router.push('/quotes/list/new');
+                }}
               >
                 <Plus className="w-4 h-4" />
                 Quote
@@ -805,8 +810,9 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
                                 }
                               });
                             });
-                            const shown = typePills.slice(0, 3);
-                            const more = typePills.length > 3 ? typePills.length - 3 : 0;
+                            // Only show pills that do not match 'x Volume' (case-insensitive)
+                            const shown = typePills.filter(pill => !/x volume/i.test(pill)).slice(0, 3);
+                            const more = typePills.filter(pill => !/x volume/i.test(pill)).length > 3 ? typePills.filter(pill => !/x volume/i.test(pill)).length - 3 : 0;
                             return [
                               ...shown.map((pill, i) => (
                                 <span key={i} className="inline-block border border-blue-300 bg-blue-50 text-blue-800 rounded-full px-2 py-1 text-xs font-semibold mr-1 truncate">{pill}</span>
@@ -816,6 +822,23 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
                               )
                             ];
                           })()}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </td>
+                  ) : col.key === 'containertype' || col.key === 'truckType' ? (
+                    <td key={col.key} className="px-4 py-4 text-gray-900 whitespace-nowrap overflow-x-auto">
+                      {q[col.key] ? (
+                        <div className="flex flex-row items-center gap-1 overflow-x-auto whitespace-nowrap">
+                          {q[col.key].split(',').map((item: string, i: number) => {
+                            const [type, qty] = item.split(':').map((s: string) => s.trim());
+                            return qty && type ? (
+                              <span key={i} className="inline-block border border-blue-300 bg-blue-50 text-blue-800 rounded-full px-2 py-1 text-xs font-semibold mr-1 truncate">{`${qty} x ${type}`}</span>
+                            ) : (
+                              <span key={i} className="inline-block border border-blue-300 bg-blue-50 text-blue-800 rounded-full px-2 py-1 text-xs font-semibold mr-1 truncate">{item.trim()}</span>
+                            );
+                          })}
                         </div>
                       ) : (
                         <span className="text-gray-400">-</span>
