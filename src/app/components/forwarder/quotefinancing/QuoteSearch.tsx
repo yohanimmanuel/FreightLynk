@@ -12,7 +12,9 @@ const QuoteSearch = () => {
     searchResults,
     setSelectedQuoteId,
     setSearchCriteria,
-    setSelectedQuoteDetails
+    setSelectedQuoteDetails,
+    selectedClient,
+    selectedContact
   } = useQuoteSearchStore();
   const router = useRouter();
   
@@ -482,8 +484,17 @@ const QuoteSearch = () => {
         },
       ];
     }
-    setSelectedQuoteDetails({
+    // Build the quote object with client/contact, id, and validUntil
+    const quoteObj = {
       ...quoteResult,
+      to: selectedClient && selectedContact ? {
+        company: selectedClient.name,
+        address: selectedClient.address,
+        phone: selectedClient.phone,
+        contact: selectedContact.name,
+      } : {},
+      id: `QT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      validUntil: quoteResult.validUntil,
       transportMode: appliedTransportMode,
       cargoTab: appliedCargoTab,
       fclQuantities: appliedFclQuantities,
@@ -498,7 +509,8 @@ const QuoteSearch = () => {
       destinationType: appliedSearchParams.destinationType,
       serviceType: `${appliedSearchParams.originType || 'Port'} to ${appliedSearchParams.destinationType || 'Port'}`,
       transitPort: quoteResult.transitPort,
-    });
+    };
+    setSelectedQuoteDetails(quoteObj);
     router.push('/quotes/list/addinfo');
   };
 

@@ -294,6 +294,11 @@ interface QuoteSearchStore {
   shipmentTypeDescription: string;
   setShipmentTypeDescription: (desc: string) => void;
   resetSearchAndAdditionalInfo: () => void;
+  // Add for client/contact passing
+  selectedClient: any;
+  setSelectedClient: (client: any) => void;
+  selectedContact: any;
+  setSelectedContact: (contact: any) => void;
 }
 
 // Create the store
@@ -352,6 +357,11 @@ export const useQuoteSearchStore = create<QuoteSearchStore>()(
         additionalInfo: {},
         selectedQuoteDetails: {},
       }),
+      // Add for client/contact passing
+      selectedClient: null,
+      setSelectedClient: (client: any) => set({ selectedClient: client }),
+      selectedContact: null,
+      setSelectedContact: (contact: any) => set({ selectedContact: contact }),
     }),
     {
       name: 'quote-search-storage'

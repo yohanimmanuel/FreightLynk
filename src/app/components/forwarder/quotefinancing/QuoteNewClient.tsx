@@ -3,6 +3,7 @@ import { ChevronDown } from 'lucide-react';
 import { partnerDirectory } from '../../../../store/partnerCompanyData';
 import { useRouter } from 'next/navigation';
 import { useQuoteRateStore } from '../../../../store/forwarderquote';
+import { useQuoteSearchStore } from '../../../../store/quotesearchdata';
 
 // Filter only clients
 const clients = partnerDirectory;
@@ -21,6 +22,9 @@ export default function QuoteNewClient() {
   const clientDropdownRef = useRef<HTMLDivElement>(null);
   const contactDropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  const setSelectedClient = useQuoteSearchStore(state => state.setSelectedClient);
+  const setSelectedContact = useQuoteSearchStore(state => state.setSelectedContact);
 
   // Get selected client and contacts
   const selectedClient = clients.find(c => c.id === selectedClientId);
@@ -125,6 +129,9 @@ export default function QuoteNewClient() {
               // Save selected client/contact to localStorage for invoice to use
               localStorage.setItem('selectedClientId', selectedClientId.toString());
               localStorage.setItem('selectedContactId', selectedContactId.toString());
+              // Also set in global store for seamless data passing
+              if (selectedClient) setSelectedClient(selectedClient);
+              if (selectedContact) setSelectedContact(selectedContact);
               router.push('/quotes/list/search');
             }
           }}

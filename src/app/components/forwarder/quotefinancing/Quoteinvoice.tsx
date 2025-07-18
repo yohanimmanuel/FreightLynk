@@ -59,7 +59,6 @@ const QuoteInvoice = () => {
     // Add all other fields you use in the invoice form here, initialized to '' or default
   };
   const [formState, setFormState] = useState(emptyFormState);
-  const [showSubmitted, setShowSubmitted] = useState(false);
 
   // On mount, check for selected client/contact in localStorage and update To details
   useEffect(() => {
@@ -352,10 +351,10 @@ const QuoteInvoice = () => {
               <div className="font-semibold text-gray-900 text-md mb-1">To:</div>
               {!isEditing ? (
                 <>
-                  <div className="text-xs text-gray-700 font-bold">{editTo.company}</div>
-                  <div className="text-xs text-gray-700">Address: {editTo.address}</div>
-                  <div className="text-xs text-gray-700">Phone: {editTo.phone}</div>
-                  <div className="text-xs text-gray-700">Contact Person: {editTo.contact}</div>
+                  <div className="text-xs text-gray-700 font-bold">{quote.to?.company}</div>
+                  <div className="text-xs text-gray-700">Address: {quote.to?.address}</div>
+                  <div className="text-xs text-gray-700">Phone: {quote.to?.phone}</div>
+                  <div className="text-xs text-gray-700">Contact Person: {quote.to?.contact}</div>
                 </>
               ) : (
                 <>
@@ -375,8 +374,8 @@ const QuoteInvoice = () => {
             <div className="text-3xl text-gray-900 font-semibold uppercase mt-2 text-right w-full">Quotation</div>
             <div className="text-md text-gray-700 font-semibold mt-1 text-right w-full">{quote.provider}</div>
             <div className="text-xs text-gray-600 mt-2 text-right w-full">Created on: <span className="font-medium text-gray-900">{createdOn}</span></div>
-            <div className="text-xs text-gray-600 text-right w-full">Valid until: <span className="font-medium text-gray-900">{validUntil}</span></div>
-            <div className="text-xs text-gray-600 text-right w-full">Quote ID: <span className="font-medium text-gray-900">{quoteId}</span></div>
+            <div className="text-xs text-gray-600 text-right w-full">Valid until: <span className="font-medium text-gray-900">{quote.validUntil}</span></div>
+            <div className="text-xs text-gray-600 text-right w-full">Quote ID: <span className="font-medium text-gray-900">{quote.id}</span></div>
           </div>
         </div>
 
@@ -488,4 +487,5 @@ const QuoteInvoice = () => {
 };
 
 export default QuoteInvoice;
+
 
