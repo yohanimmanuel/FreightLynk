@@ -191,4 +191,76 @@ export const partnerDirectory: Partner[] = [
       }
     ]
   },
+  {
+    id: 4,
+    name: "Global Electronics Ltd.",
+    type: "Client",
+    status: "Active",
+    industry: "Consumer Electronics",
+    lastContact: "3 days ago",
+    avatar: "GE",
+    address: "789 Innovation Drive, Seoul, South Korea",
+    operatingRegions: ["Asia", "Europe"],
+    specializations: ["Smartphones", "Tablets"],
+    workingHours: "Mon-Fri: 9:00 AM - 6:00 PM",
+    website: "www.globalelectronics.com",
+    email: "info@globalelectronics.com",
+    phone: "+82 2-123-4567",
+    connectedSince: "Feb 2022",
+    activeBookings: 5,
+    latestShipment: {
+      id: "SHP-2024-0450",
+      date: "2024-04-22",
+      status: "Delivered"
+    },
+    paymentTerms: "Net 30",
+    rating: 4.6,
+    contactPersons: [
+      {
+        id: 1,
+        name: "Minji Kim",
+        initials: "MK",
+        role: "Procurement Manager",
+        isAdmin: true,
+        email: "minji.kim@globalelectronics.com",
+        phone: "+82 10-2345-6789"
+      }
+    ]
+  },
+  {
+    id: 5,
+    name: "Continental Textiles",
+    type: "Client",
+    status: "Active",
+    industry: "Textiles",
+    lastContact: "5 days ago",
+    avatar: "CT",
+    address: "321 Cotton Lane, Mumbai, India",
+    operatingRegions: ["Asia", "Europe", "Africa"],
+    specializations: ["Fabrics", "Garments"],
+    workingHours: "Mon-Sat: 8:00 AM - 6:00 PM",
+    website: "www.continentaltextiles.com",
+    email: "contact@continentaltextiles.com",
+    phone: "+91 22-3344-5566",
+    connectedSince: "May 2021",
+    activeBookings: 7,
+    latestShipment: {
+      id: "SHP-2024-0460",
+      date: "2024-04-25",
+      status: "In Transit"
+    },
+    paymentTerms: "Net 60",
+    rating: 4.4,
+    contactPersons: [
+      {
+        id: 1,
+        name: "Rajesh Kumar",
+        initials: "RK",
+        role: "Export Manager",
+        isAdmin: true,
+        email: "rajesh.kumar@continentaltextiles.com",
+        phone: "+91 90000 12345"
+      }
+    ]
+  },
 ];

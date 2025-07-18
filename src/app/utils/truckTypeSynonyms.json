@@ -1,0 +1,8 @@
+{
+  "Reefer": ["Reefer", "Reefer Truck", "Refrigerated", "Refrigerated Truck", "Reefer Container", "Reefer Van", "Reefer Trailer"],
+  "Flatbed": ["Flatbed", "Flat Bed", "Flat-bed", "Flatbed Truck", "Flatbed Trailer"],
+  "Lowbed": ["Lowbed", "Low Bed", "Low-bed", "Lowbed Truck", "Lowbed Trailer"],
+  "Box Truck": ["Box Truck", "Boxtruck", "Box-Truck", "Van Truck", "Box Van", "Box Trailer"],
+  "Wingbox": ["Wingbox", "Wing Box", "Wing-box", "Wingbox Truck", "Wingbox Trailer"],
+  "Container Chassis": ["Container Chassis", "Chassis", "Container Trailer", "Chassis Trailer", "Container Chassis Truck"]
+} 

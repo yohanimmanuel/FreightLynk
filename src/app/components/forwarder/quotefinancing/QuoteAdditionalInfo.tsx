@@ -28,6 +28,7 @@ export default function QuoteAdditionalInfo() {
     commodities: '',
     incoterm: '',
     freightTerm: '',
+    isTariff: 'No', // Add default value
     // ...add other fields as needed
   });
 
@@ -234,6 +235,17 @@ export default function QuoteAdditionalInfo() {
               </div>
             )}
           </div>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Is Tariff</label>
+          <select
+            className="w-full px-3 py-2 border border-gray-300 text-xs text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            value={formState.isTariff}
+            onChange={e => handleFormChange({ isTariff: e.target.value })}
+          >
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
         </div>
         <div className="md:col-span-2">
           <label className="block text-xs font-medium text-gray-500 mb-1">Note</label>

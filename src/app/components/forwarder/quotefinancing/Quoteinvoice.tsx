@@ -4,11 +4,12 @@ import { useAuthStore } from '../../../../store/authStore';
 import { Edit, Send, Plus, Download } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useQuoteRateStore } from '../../../../store/forwarderquote';
+import { partnerDirectory } from '../../../../store/partnerCompanyData';
 
 // Utility to generate a unique Quote ID
 function generateQuoteId() {
   const now = new Date();
-  return `QT-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${Math.floor(Math.random() * 10000)}`;
+  return `QT-${now.getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 }
 
 // Utility to format date as YYYY-MM-DD
@@ -46,6 +47,24 @@ const QuoteInvoice = () => {
   const [editRemark, setEditRemark] = useState(quote.remark);
   const [originalState, setOriginalState] = useState<any>(null);
 
+  // On mount, check for selected client/contact in localStorage and update To details
+  useEffect(() => {
+    const clientId = localStorage.getItem('selectedClientId');
+    const contactId = localStorage.getItem('selectedContactId');
+    if (clientId && contactId) {
+      const client = partnerDirectory.find(c => c.id === Number(clientId));
+      const contact = client?.contactPersons.find(p => p.id === Number(contactId));
+      if (client && contact) {
+        setEditTo({
+          company: client.name,
+          address: client.address,
+          phone: client.phone,
+          contact: contact.name,
+        });
+      }
+    }
+  }, []);
+
   // Update edit fields when selected quote changes
   useEffect(() => {
     setEditRemark(quote.remark);
@@ -77,6 +96,16 @@ const QuoteInvoice = () => {
   // Use tableRows from selectedQuoteDetails for the quote table
   const tableRows = selectedQuoteDetails?.tableRows || [];
 
+  // Build details from tableRows
+  const containerTypes = Array.from(new Set(tableRows.map((row: any) => row.item).filter(Boolean)));
+  const truckTypes = Array.from(new Set(tableRows.map((row: any) => row.truckType).filter(Boolean)));
+  const weightVolumes = Array.from(new Set(tableRows.map((row: any) => row.weightVolume).filter(Boolean)));
+  const details = [
+    ...containerTypes,
+    ...truckTypes,
+    ...weightVolumes
+  ].filter(Boolean).join(', ');
+
   const totalAmount = tableRows.reduce((sum: number, row: any) => sum + (typeof row.amount === 'number' ? row.amount : 0), 0);
   const currency = tableRows[0]?.currency || quote.currency;
 
@@ -100,6 +129,34 @@ const QuoteInvoice = () => {
   useEffect(() => {
     if (!quote) return;
     if (hasAddedQuote.current === quoteId) return;
+    if (!editTo.company || editTo.company === 'Sample Client Company') return;
+    // Helper functions to calculate type/quantity strings
+    function getTypeQuantityString(rows: any[], typeKey: string) {
+      const counts: Record<string, number> = {};
+      rows.forEach(row => {
+        const type = row[typeKey];
+        if (type) counts[type] = (counts[type] || 0) + (Number(row.qty) || 1);
+      });
+      return Object.entries(counts)
+        .map(([type, qty]) => `${type}: ${qty}`)
+        .join(', ');
+    }
+
+    // Compute values for each mode
+    const fclContainerTypes = getTypeQuantityString(tableRows, 'item');
+    const ftlTruckTypes = getTypeQuantityString(tableRows, 'truckType');
+    const lclWeightVolume = tableRows
+      .filter((row: any) => row.weightVolume)
+      .map((row: any) => `${row.weightVolume}${row.qty ? ` x${row.qty}` : ''}`)
+      .join(', ');
+
+    // Details field for ALL tab
+    const detailsField = [
+      fclContainerTypes,
+      ftlTruckTypes,
+      lclWeightVolume
+    ].filter(Boolean).join(' | ');
+
     const mappedQuote = {
       id: quoteId,
       lane: `${quote.origin} - ${quote.destination}`,
@@ -112,33 +169,33 @@ const QuoteInvoice = () => {
         if (label.includes('LAND') && label.includes('LTL')) return 'LTL';
         return 'FCL';
       })() as import('../../../../store/forwarderquote').Quote['mode'],
-      containertype: quote.containertype || '',
+      containertype: fclContainerTypes, // All container types and quantities for FCL
+      truckType: ftlTruckTypes,        // All truck types and quantities for FTL
+      weightVolume: lclWeightVolume,   // Weight/volume for LCL, AIR, LTL
+      details: detailsField,           // Summary for ALL tab
       currency: quote.currency || '',
       baseRate: Number(quote.tableRows?.[0]?.baseRate) || 0,
-      price: quote.tableRows?.[0]?.baseRate?.toString() || '',
+      price: totalAmount.toString(),
       transitTime: quote.transitTime || '',
-      provider: quote.provider || '',
+      provider: quote.provider || '-',
       validity: quote.validUntil || '',
       status: 'draft' as 'draft',
       origin: quote.origin || '',
       destination: quote.destination || '',
-      incoterms: quote.incoterms || '',
+      incoterms: additionalInfo?.incoterm || '',
       remark: quote.remark || '',
       serviceType: quote.serviceType || '',
       transitPort: quote.transitPort || '',
-      client: quote.client || '',
-      isTariff: quote.isTariff || false,
+      client: editTo.company || '',
+      isTariff: additionalInfo?.isTariff || 'No',
       profit: quote.profit || '',
       createdBy: quote.createdBy || '',
       createdDate: quote.createdDate || '',
-      notes: quote.notes || '',
-      details: quote.details || '',
-      truckType: quote.truckType || '',
-      weightVolume: quote.weightVolume || '',
+      notes: additionalInfo?.note || '',
     };
     addQuote(mappedQuote);
     hasAddedQuote.current = quoteId;
-  }, [quoteId, quote]);
+  }, [quoteId, quote, editTo.company]);
 
   return (
     <>
@@ -279,6 +336,7 @@ const QuoteInvoice = () => {
                 <div className="flex justify-between text-xs"><span className="text-gray-500">Note:</span><span className="font-semibold">{note}</span></div>
                 <div className="flex justify-between text-xs"><span className="text-gray-500">Company Branch:</span><span className="font-semibold">{companyBranch}</span></div>
                 <div className="flex justify-between text-xs"><span className="text-gray-500">Commodities:</span><span className="font-semibold">{commodities}</span></div>
+                <div className="flex justify-between text-xs"><span className="text-gray-500">Is Tariff:</span><span className="font-semibold">{additionalInfo?.isTariff || 'No'}</span></div>
               </div>
             </div>
           </div>

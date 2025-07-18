@@ -4,7 +4,7 @@ import { partnerDirectory } from '../../../../store/partnerCompanyData';
 import { useRouter } from 'next/navigation';
 
 // Filter only clients
-const clients = partnerDirectory.filter(p => p.type === 'Client');
+const clients = partnerDirectory;
 
 export default function QuoteNewClient() {
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
@@ -115,6 +115,9 @@ export default function QuoteNewClient() {
           disabled={!selectedClientId || !selectedContactId}
           onClick={() => {
             if (selectedClientId && selectedContactId) {
+              // Save selected client/contact to localStorage for invoice to use
+              localStorage.setItem('selectedClientId', selectedClientId.toString());
+              localStorage.setItem('selectedContactId', selectedContactId.toString());
               router.push('/quotes/list/search');
             }
           }}

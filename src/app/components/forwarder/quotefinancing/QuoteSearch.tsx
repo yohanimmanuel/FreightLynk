@@ -4,6 +4,8 @@ import React, { useState, useRef } from 'react';
 import { Search, Calendar, MapPin, Package, Filter, ChevronDown, Check, CheckSquare, Square, Ship, Truck, Plane, Plus, Minus } from 'lucide-react';
 import { useQuoteSearchStore, QuoteSearchResult } from '../../../../store/quotesearchdata';
 import { useRouter } from 'next/navigation';
+import truckTypeSynonymsRaw from '../../../utils/truckTypeSynonyms.json';
+const truckTypeSynonyms: Record<string, string[]> = truckTypeSynonymsRaw as Record<string, string[]>;
 
 const QuoteSearch = () => {
   const {
@@ -65,6 +67,9 @@ const QuoteSearch = () => {
   const [appliedLclWeight, setAppliedLclWeight] = useState(lclWeight);
   const [appliedLclVolume, setAppliedLclVolume] = useState(lclVolume);
   const [appliedSearchParams, setAppliedSearchParams] = useState(searchParams);
+
+  // Add state for multiple truck types in FTL
+  const [ftlTrucks, setFtlTrucks] = useState<{ truckType: string; truckQuantity: number }[]>([{ truckType: '', truckQuantity: 1 }]);
 
   const handleSearch = () => {
     setShowResults(false);
@@ -157,7 +162,8 @@ const QuoteSearch = () => {
     fclQuantities: { [key: string]: number },
     lclWeight: string,
     lclVolume: string,
-    searchParams: any
+    searchParams: any,
+    ftlTrucks: { truckType: string; truckQuantity: number }[]
   ): DetailCostRow[] {
     const rows: DetailCostRow[] = [];
     if (transportMode === 'Sea' && cargoTab === 'FCL') {
@@ -201,23 +207,24 @@ const QuoteSearch = () => {
         currency,
       });
     } else if (transportMode === 'Land' && cargoTab === 'FTL') {
-      // FTL: one row for selected truck type and quantity
-      const truckType = searchParams.truckType;
-      const qty = parseInt(searchParams.truckQuantity) || 0;
-      if (truckType && qty > 0 && result.ftlRates[truckType]) {
-        const baseRate = result.ftlRates[truckType].price;
+      // FTL: one row per truck type/quantity
+      ftlTrucks.filter(t => t.truckType && t.truckQuantity > 0).forEach(t => {
+        const availableTypes = Object.keys(result.ftlRates || {});
+        const canonicalType = getCanonicalTruckType(t.truckType || '', availableTypes);
+        const baseRate = canonicalType ? result.ftlRates[canonicalType]?.price || 0 : 0;
+        const currency = canonicalType ? result.ftlRates[canonicalType]?.currency || 'USD' : 'USD';
         rows.push({
           type: 'Road Freight',
-          item: truckType,
+          item: canonicalType || t.truckType,
           description: 'Truck Cost',
           calculation: 'By truck type',
-          truckType,
-          qty,
+          truckType: canonicalType || t.truckType,
+          qty: t.truckQuantity,
           baseRate,
-          amount: baseRate * qty,
-          currency: result.ftlRates[truckType].currency,
+          amount: baseRate * t.truckQuantity,
+          currency,
         });
-      }
+      });
     } else if (transportMode === 'Land' && cargoTab === 'LTL') {
       // LTL: same as LCL
       const weight = parseFloat(lclWeight) || 0;
@@ -247,16 +254,40 @@ const QuoteSearch = () => {
   function isSearchFormValid(transportMode: string, cargoTab: string, searchParams: any, fclQuantities: { [key: string]: number }, lclWeight: string, lclVolume: string) {
     if (!searchParams.origin || !searchParams.destination) return false;
     if (transportMode === 'Sea' && cargoTab === 'FCL') {
-      // At least one container type with qty > 0
       return Object.values(fclQuantities).some(qty => qty > 0);
     } else if ((transportMode === 'Sea' && cargoTab === 'LCL') || transportMode === 'Air') {
       return parseFloat(lclWeight) > 0 && parseFloat(lclVolume) > 0;
     } else if (transportMode === 'Land' && cargoTab === 'FTL') {
-      return searchParams.truckType && parseInt(searchParams.truckQuantity) > 0;
+      return ftlTrucks.some(t => t.truckType && t.truckQuantity > 0);
     } else if (transportMode === 'Land' && cargoTab === 'LTL') {
       return parseFloat(lclWeight) > 0 && parseFloat(lclVolume) > 0;
     }
     return false;
+  }
+
+  // Helper to map user input to canonical truck type using synonyms
+  function getCanonicalTruckType(input: string, availableTypes: string[]): string | null {
+    if (!input) return null;
+    const normalizedInput = input.trim().toLowerCase();
+    // Try direct match to available types
+    for (const type of availableTypes) {
+      if (type.toLowerCase() === normalizedInput) return type;
+    }
+    // Try synonym match using truckTypeSynonyms
+    for (const canonicalType in truckTypeSynonyms) {
+      const synonyms = truckTypeSynonyms[canonicalType];
+      if (Array.isArray(synonyms)) {
+        for (const syn of synonyms) {
+          if (syn.toLowerCase() === normalizedInput) {
+            // Return the canonical type if a synonym matches
+            if (availableTypes.some(t => t.toLowerCase() === canonicalType.toLowerCase())) {
+              return canonicalType;
+            }
+          }
+        }
+      }
+    }
+    return null;
   }
 
   // When a quote is selected (example: in your select button handler)
@@ -385,20 +416,30 @@ const QuoteSearch = () => {
       ];
     } else if (appliedTransportMode === 'Land' && appliedCargoTab === 'FTL') {
       modeLabel = 'Land FTL';
-      cargoLabel = `${appliedSearchParams.truckQuantity || 1} x ${appliedSearchParams.truckType}`;
-      tableRows = [
-        {
+      cargoLabel = normalizedFtlTrucks.filter(t => t.truckType && t.truckQuantity > 0).map(t => `${t.truckQuantity} x ${t.truckType}`).join(', ');
+      tableRows = normalizedFtlTrucks.filter(t => t.truckType && t.truckQuantity > 0).map(t => {
+        const availableTypes = Object.keys(quoteResult.ftlRates || {});
+        const canonicalType = getCanonicalTruckType(t.truckType || '', availableTypes);
+        console.log('FTL DEBUG:', {
+          userInput: t.truckType,
+          canonicalType,
+          availableTypes,
+          ftlRates: quoteResult.ftlRates
+        });
+        const baseRate = canonicalType ? quoteResult.ftlRates[canonicalType]?.price || 0 : 0;
+        const currency = canonicalType ? quoteResult.ftlRates[canonicalType]?.currency || 'USD' : 'USD';
+        return {
           chargeType: 'Road Freight',
-          item: appliedSearchParams.truckType,
+          item: canonicalType || t.truckType,
           description: 'Truck Cost',
           calculation: 'By truck type',
-          containerType: appliedSearchParams.truckType,
-          qty: Number(appliedSearchParams.truckQuantity) || 1,
-          baseRate: quoteResult.ftlRates?.[appliedSearchParams.truckType]?.price || 0,
-          amount: (quoteResult.ftlRates?.[appliedSearchParams.truckType]?.price || 0) * (Number(appliedSearchParams.truckQuantity) || 1),
-          currency: quoteResult.ftlRates?.[appliedSearchParams.truckType]?.currency || 'USD',
-        },
-      ];
+          truckType: canonicalType || t.truckType,
+          qty: t.truckQuantity,
+          baseRate,
+          amount: baseRate * t.truckQuantity,
+          currency,
+        };
+      });
     } else if (appliedTransportMode === 'Land' && appliedCargoTab === 'LTL') {
       modeLabel = 'Land LTL';
       // Use the same logic and values as displayed in the QuoteSearch result
@@ -460,6 +501,29 @@ const QuoteSearch = () => {
     });
     router.push('/quotes/list/addinfo');
   };
+
+  // Normalize ftlTrucks to canonical types using all available truck types from searchResults
+  const allAvailableTruckTypes = Array.from(new Set(searchResults.flatMap(result => Object.keys(result.ftlRates || {}))));
+  const normalizedFtlTrucks = ftlTrucks.map(t => ({
+    ...t,
+    truckType: getCanonicalTruckType(t.truckType || '', allAvailableTruckTypes) || t.truckType
+  }));
+
+  // Filter searchResults for FTL mode using canonical truck type
+  const filteredSearchResults = React.useMemo(() => {
+    if (transportMode === 'Land' && cargoTab === 'FTL' && normalizedFtlTrucks.length > 0) {
+      // Only show results that have all requested truck types (canonicalized)
+      return searchResults.filter(result => {
+        const availableTruckTypes = Object.keys(result.ftlRates || {});
+        return normalizedFtlTrucks.every(truck => {
+          const canonicalType = getCanonicalTruckType(truck.truckType, availableTruckTypes);
+          return canonicalType && result.ftlRates[canonicalType];
+        });
+      });
+    }
+    // Default: return all results
+    return searchResults;
+  }, [searchResults, transportMode, cargoTab, normalizedFtlTrucks]);
 
   return (
     <div>
@@ -644,27 +708,42 @@ const QuoteSearch = () => {
                     {/* FTL: truck type and quantity */}
                     {cargoTab === 'FTL' && (
                       <div className="flex flex-col gap-4">
-                        <div className="flex items-center gap-2">
-                          <span className="w-30 text-xs font-medium text-gray-700">Truck Type:</span>
-                          <input
-                            type="text"
-                            value={searchParams.truckType || ''}
-                            onChange={e => setSearchParams(params => ({ ...params, truckType: e.target.value }))}
-                            className="w-40 px-2 py-2 border border-gray-300 rounded-lg text-xs text-left text-gray-900"
-                            placeholder="e.g. 40ft Flatbed"
-                          />
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="w-30 text-xs font-medium text-gray-700">Quantity:</span>
-                          <input
-                            type="number"
-                            min="1"
-                            value={searchParams.truckQuantity || ''}
-                            onChange={e => setSearchParams(params => ({ ...params, truckQuantity: e.target.value }))}
-                            className="w-32 px-2 py-2 border border-gray-300 rounded-lg text-xs text-left text-gray-900"
-                            placeholder="e.g. 2"
-                          />
-                        </div>
+                        {ftlTrucks.map((truck, idx) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <span className="w-30 text-xs font-medium text-gray-700">Truck Type:</span>
+                            <input
+                              type="text"
+                              value={truck.truckType}
+                              onChange={e => setFtlTrucks(trucks => trucks.map((t, i) => i === idx ? { ...t, truckType: e.target.value } : t))}
+                              className="w-40 px-2 py-2 border border-gray-300 rounded-lg text-xs text-left text-gray-900"
+                              placeholder="e.g. 40ft Flatbed"
+                            />
+                            <span className="w-30 text-xs font-medium text-gray-700">Quantity:</span>
+                            <input
+                              type="number"
+                              min="1"
+                              value={truck.truckQuantity}
+                              onChange={e => setFtlTrucks(trucks => trucks.map((t, i) => i === idx ? { ...t, truckQuantity: Number(e.target.value) } : t))}
+                              className="w-24 px-2 py-2 border border-gray-300 rounded-lg text-xs text-left text-gray-900"
+                              placeholder="e.g. 2"
+                            />
+                            <button
+                              className="px-2 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-gray-500 rounded-lg"
+                              onClick={() => setFtlTrucks(trucks => trucks.filter((_, i) => i !== idx))}
+                              disabled={ftlTrucks.length === 1}
+                              type="button"
+                            >
+                              <Minus className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          className="w-fit px-4 py-2 bg-[#007bff] text-white border border-[#007bff] hover:bg-blue-700 rounded-lg text-xs font-semibold mt-2"
+                          onClick={() => setFtlTrucks(trucks => [...trucks, { truckType: '', truckQuantity: 1 }])}
+                          type="button"
+                        >
+                          <Plus className="w-4 h-4 inline mr-1" /> Add Truck
+                        </button>
                       </div>
                     )}
                     {/* LTL: same as LCL */}
@@ -708,7 +787,7 @@ const QuoteSearch = () => {
                           setSearchParams(params => ({
                             ...params,
                             containerType: cargoTab === 'FTL'
-                              ? (searchParams.truckType && searchParams.truckQuantity ? `${searchParams.truckQuantity} x ${searchParams.truckType}` : '')
+                              ? ftlTrucks.map(t => `${t.truckQuantity} x ${t.truckType}`).join(', ')
                               : lclWeight && lclVolume ? `LTL: ${lclWeight}kg, ${lclVolume}cbm` : '',
                             cargoType: cargoTab
                           }));
@@ -821,7 +900,7 @@ const QuoteSearch = () => {
           <>
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-md font-semibold text-gray-900">
-            Results Found: {searchResults.length}
+            Results Found: {filteredSearchResults.length}
           </h2>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
@@ -856,7 +935,7 @@ const QuoteSearch = () => {
         </div>
         {/* Results */}
         <div className="space-y-4">
-              {searchResults.map((result, idx) => {
+              {filteredSearchResults.map((result, idx) => {
                 const isDetailOpen = openDetailCost === result.id;
                 // Remove Remark button and openRemark state
 
@@ -890,8 +969,8 @@ const QuoteSearch = () => {
                     {/* TT and Validity */}
                     <div className="flex flex-col items-end ml-auto">
                       <span className="text-xs text-gray-500">Transit Time: <span className="text-gray-900 font-medium">{result.transitTime}</span></span>
-                      <span className="text-xs text-gray-500">Valid From: <span className="text-gray-900 font-medium">{result.validFrom}</span></span>
-                      <span className="text-xs text-gray-500">Valid Until: <span className="text-gray-900 font-medium">{result.validUntil}</span></span>
+                            <span className="text-xs text-gray-500">Valid From: <span className="text-gray-900 font-medium">{result.validFrom}</span></span>
+                            <span className="text-xs text-gray-500">Valid Until: <span className="text-gray-900 font-medium">{result.validUntil}</span></span>
                     </div>
                   </div>
                   {result.transitPort && (
@@ -910,7 +989,7 @@ const QuoteSearch = () => {
                   <div>
                           <span className="text-xs font-medium text-gray-700">Price:</span>
                           {(() => {
-                            const detailRows = buildDetailCostRows(result, appliedTransportMode, appliedCargoTab, appliedFclQuantities, appliedLclWeight, appliedLclVolume, appliedSearchParams);
+                            const detailRows = buildDetailCostRows(result, appliedTransportMode, appliedCargoTab, appliedFclQuantities, appliedLclWeight, appliedLclVolume, appliedSearchParams, ftlTrucks);
                             const totalAmount = detailRows.reduce((sum, row) => sum + (typeof row.amount === 'number' ? row.amount : 0), 0);
                             const currency = detailRows[0]?.currency || result.currency;
                             return (
@@ -959,7 +1038,7 @@ const QuoteSearch = () => {
                               </tr>
                             </thead>
                             <tbody className="text-gray-900">
-                              {buildDetailCostRows(result, appliedTransportMode, appliedCargoTab, appliedFclQuantities, appliedLclWeight, appliedLclVolume, appliedSearchParams).map((row, idx) => (
+                              {buildDetailCostRows(result, appliedTransportMode, appliedCargoTab, appliedFclQuantities, appliedLclWeight, appliedLclVolume, appliedSearchParams, ftlTrucks).map((row, idx) => (
                                 <tr key={idx}>
                                   <td className="px-4 py-4">{row.type}</td>
                                   <td className="px-4 py-4">{row.item}</td>

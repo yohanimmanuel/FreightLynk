@@ -3,6 +3,7 @@ import { Plus, Search, ChevronDown, Ship, Box, Plane, Truck, ChevronLeft, Chevro
 import { useQuoteRateStore } from '../../../../store/forwarderquote';
 import { useClientQuoteStore } from '@/store/clientquotes';
 import { useRouter } from 'next/navigation';
+import { useAuthStore } from '../../../../store/authStore';
 
 const QUOTE_TABS = [
   { label: 'All', value: 'all', icon: <Menu className="w-4 h-4 mr-1" /> },
@@ -12,8 +13,6 @@ const QUOTE_TABS = [
   { label: 'FTL', value: 'ftl', icon: <Truck className="w-4 h-4 mr-1" /> },
   { label: 'LTL', value: 'ltl', icon: <Truck className="w-4 h-4 mr-1" /> },
 ];
-
-const VALID_MODES = ['ocean', 'air', 'road'];
 
 const FILTERS = [
   { label: 'All', value: 'all' },
@@ -43,7 +42,7 @@ const MODE_COLUMN_CONFIGS: Record<string, { key: string; label: string }[]> = {
     { key: 'origin', label: 'Origin' },
     { key: 'destination', label: 'Destination' },
     { key: 'status', label: 'Status' },
-    { key: 'profit', label: 'Total profit' },
+    { key: 'price', label: 'Price' },
     { key: 'createdBy', label: 'Created by' },
     { key: 'createdDate', label: 'Created date' },
     { key: 'incoterms', label: 'Incoterms' },
@@ -59,7 +58,7 @@ const MODE_COLUMN_CONFIGS: Record<string, { key: string; label: string }[]> = {
     { key: 'origin', label: 'Origin' },
     { key: 'destination', label: 'Destination' },
     { key: 'status', label: 'Status' },
-    { key: 'profit', label: 'Total profit' },
+    { key: 'price', label: 'Price' },
     { key: 'createdBy', label: 'Created by' },
     { key: 'createdDate', label: 'Created date' },
     { key: 'incoterms', label: 'Incoterms' },
@@ -75,7 +74,7 @@ const MODE_COLUMN_CONFIGS: Record<string, { key: string; label: string }[]> = {
     { key: 'origin', label: 'Origin' },
     { key: 'destination', label: 'Destination' },
     { key: 'status', label: 'Status' },
-    { key: 'profit', label: 'Total profit' },
+    { key: 'price', label: 'Price' },
     { key: 'createdBy', label: 'Created by' },
     { key: 'createdDate', label: 'Created date' },
     { key: 'incoterms', label: 'Incoterms' },
@@ -91,7 +90,7 @@ const MODE_COLUMN_CONFIGS: Record<string, { key: string; label: string }[]> = {
     { key: 'origin', label: 'Origin' },
     { key: 'destination', label: 'Destination' },
     { key: 'status', label: 'Status' },
-    { key: 'profit', label: 'Total profit' },
+    { key: 'price', label: 'Price' },
     { key: 'createdBy', label: 'Created by' },
     { key: 'createdDate', label: 'Created date' },
     { key: 'incoterms', label: 'Incoterms' },
@@ -107,7 +106,7 @@ const MODE_COLUMN_CONFIGS: Record<string, { key: string; label: string }[]> = {
     { key: 'origin', label: 'Origin' },
     { key: 'destination', label: 'Destination' },
     { key: 'status', label: 'Status' },
-    { key: 'profit', label: 'Total profit' },
+    { key: 'price', label: 'Price' },
     { key: 'createdBy', label: 'Created by' },
     { key: 'createdDate', label: 'Created date' },
     { key: 'incoterms', label: 'Incoterms' },
@@ -123,7 +122,7 @@ const MODE_COLUMN_CONFIGS: Record<string, { key: string; label: string }[]> = {
     { key: 'origin', label: 'Origin' },
     { key: 'destination', label: 'Destination' },
     { key: 'status', label: 'Status' },
-    { key: 'profit', label: 'Total profit' },
+    { key: 'price', label: 'Price' },
     { key: 'createdBy', label: 'Created by' },
     { key: 'createdDate', label: 'Created date' },
     { key: 'incoterms', label: 'Incoterms' },
@@ -170,7 +169,7 @@ function ManualQuoteModal({ open, onClose, mode, onSave, initialData }: { open: 
     // eslint-disable-next-line
   }, [selectedMode]);
   if (!open) return null;
-  const quoteId = form.id || `QT-${new Date().getFullYear()}-${Math.floor(Math.random()*10000).toString().padStart(4,'0')}`;
+  const quoteId = form.id || `QT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
     return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full p-4 max-h-[80vh] overflow-y-auto scrollbar-hide">
@@ -338,6 +337,7 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
   const forwarderStore = useQuoteRateStore();
   // Client store
   const clientStore = useClientQuoteStore();
+  const { user } = useAuthStore();
 
   // Choose the correct store based on role
   const quotes: any[] = role === 'forwarder' ? forwarderStore.quotes : clientStore.quotes;
@@ -419,13 +419,18 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
       case 'id': return q.id;
       case 'client': return q.client;
       case 'isTariff': return q.isTariff ? 'Yes' : 'No';
+      case 'provider': return q.provider;
+      case 'details': return q.details;
       case 'containertype': return q.containertype;
       case 'origin': return q.origin;
       case 'destination': return q.destination;
       case 'status': return q.status;
-      case 'profit': return q.profit;
-      case 'createdBy': return q.createdBy;
-      case 'createdDate': return q.createdDate;
+      case 'price': return q.price;
+      case 'createdBy': return q.createdBy || user?.fullName || q.accountName || '—';
+      case 'createdDate': return q.createdDate || (q.createdAt ? new Date(q.createdAt).toLocaleDateString() : new Date().toLocaleDateString());
+      case 'incoterms': return q.incoterms || q.invoiceIncoterms || '—';
+      case 'remark': return q.remark || q.invoiceRemark || '—';
+      case 'notes': return q.notes || q.invoiceNotes || '—';
       case 'weightVolume': return q.weightVolume;
       case 'truckType': return q.truckType;
       default: return '';
@@ -487,6 +492,7 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
 
   // Bulk action bar logic
   const selectedQuotes = quotes.filter((q: any) => selected.includes(q.id));
+  const [showAllSelected, setShowAllSelected] = useState(false);
 
   // UI
   return (
@@ -616,7 +622,7 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
       {selected.length > 0 && (
         <div className="p-3 mb-2 bg-white border border-blue-200 rounded-lg flex items-center justify-between">
           <div className="flex items-center gap-2 flex-wrap">
-            {selectedQuotes.slice(0, 3).map((q: any) => {
+            {(showAllSelected ? selectedQuotes : selectedQuotes.slice(0, 3)).map((q: any) => {
               const origin = q['origin'] || q['originAirport'] || '';
               const destination = q['destination'] || q['destinationAirport'] || '';
               return (
@@ -636,7 +642,7 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
                 </span>
               );
             })}
-            {selectedQuotes.length > 3 && (
+            {selectedQuotes.length > 3 && !showAllSelected && (
               <span key="selected-quotes-more" className="flex items-center bg-blue-100 text-blue-800 text-xs font-medium px-3 py-2 rounded-full">
                 +{selectedQuotes.length - 3} more
               </span>
@@ -730,7 +736,7 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
                 </div>
               </th>
               {columns.map(col => (
-                <th key={col.key} className="px-2 py-2 text-left font-medium uppercase text-gray-500 whitespace-nowrap">{col.label}</th>
+                <th key={col.key} className="px-4 py-2 text-left font-medium uppercase text-gray-500 whitespace-nowrap">{col.label}</th>
               ))}
             </tr>
           </thead>
@@ -747,7 +753,7 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
                   toggleRow(q.id);
                 }}
               >
-                <td className="sticky left-0 z-10 bg-white w-12 px-0 py-0 border-r border-gray-200">
+                <td className="sticky left-0 z-10 bg-white w-12 px-4 py-4 border-r border-gray-200">
                   <div className="flex justify-center items-center h-full">
                     <input
                       type="checkbox"
@@ -760,7 +766,7 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
                 </td>
                 {columns.map(col => (
                   col.key === 'status' ? (
-                    <td key={col.key} className="px-2 py-2">
+                    <td key={col.key} className="px-4 py-4">
                       <span className={`px-2 py-1 rounded text-xs font-semibold ${
                         q.status === 'draft' ? 'bg-gray-100 text-gray-700' :
                         q.status === 'sent' ? 'bg-blue-100 text-blue-700' :
@@ -770,19 +776,53 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
                       }`}>{q.status}</span>
                     </td>
                   ) : col.key === 'id' ? (
-                    <td key={col.key} className="px-4 py-4 text-gray-900 font-mono flex items-center gap-1">
+                    <td key={col.key} className="px-4 py-4 text-gray-900 whitespace-nowrap overflow-x-auto">
                       {getModeIcon(q.mode)}{getValue(q, col.key)}
                     </td>
                   ) : col.key === 'details' ? (
-                    <td key={col.key} className="px-4 py-4 text-gray-900">
-                      {[
-                        q.containertype,
-                        q.weightVolume,
-                        q.truckType
-                      ].filter(Boolean).join(', ') || '-'}
+                    <td key={col.key} className="px-4 py-4 text-gray-900 whitespace-nowrap overflow-x-auto">
+                      {q.details ? (
+                        <div className="flex flex-row items-center gap-1 overflow-x-auto whitespace-nowrap">
+                          {(() => {
+                            // Parse details into unique type-quantity pairs
+                            const typePills: string[] = [];
+                            const typeSet = new Set<string>();
+                            q.details.split('|').forEach((part: string) => {
+                              part.split(',').forEach((item: string) => {
+                                const trimmed = item.trim();
+                                if (trimmed && trimmed.includes(':')) {
+                                  const [type, qty] = trimmed.split(':').map((s: string) => s.trim());
+                                  if (!typeSet.has(type)) {
+                                    typeSet.add(type);
+                                    typePills.push(`${qty} x ${type}`);
+                                  }
+                                } else if (trimmed) {
+                                  // fallback for legacy or malformed data
+                                  if (!typeSet.has(trimmed)) {
+                                    typeSet.add(trimmed);
+                                    typePills.push(trimmed);
+                                  }
+                                }
+                              });
+                            });
+                            const shown = typePills.slice(0, 3);
+                            const more = typePills.length > 3 ? typePills.length - 3 : 0;
+                            return [
+                              ...shown.map((pill, i) => (
+                                <span key={i} className="inline-block border border-blue-300 bg-blue-50 text-blue-800 rounded-full px-2 py-1 text-xs font-semibold mr-1 truncate">{pill}</span>
+                              )),
+                              more > 0 && (
+                                <span key="more" className="inline-block border border-gray-300 bg-gray-100 text-gray-700 rounded-full px-3 py-1 text-xs font-semibold mr-1 truncate">+{more} more</span>
+                              )
+                            ];
+                          })()}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
                     </td>
                   ) : (
-                    <td key={col.key} className="px-4 py-4 text-gray-900">{getValue(q, col.key)}</td>
+                    <td key={col.key} className="px-4 py-4 text-gray-900 whitespace-nowrap overflow-x-auto">{getValue(q, col.key)}</td>
                   )
                 ))}
               </tr>
