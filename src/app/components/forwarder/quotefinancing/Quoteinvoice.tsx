@@ -17,6 +17,58 @@ function formatDate(date: Date) {
   return date.toISOString().split('T')[0];
 }
 
+// Helper to format quote for table badge columns
+function formatQuoteForTable(
+  quote: any,
+  user: any,
+  selectedQuoteDetails: any,
+  editAdditionalInfo: any,
+  editFrom: any,
+  editTo: any,
+  editRemark: any,
+  totalAmount: any
+) {
+  function getTypeQuantityString(rows: any, typeKey: any) {
+    const counts: Record<string, number> = {};
+    rows.forEach((row: any) => {
+      const type = row[typeKey];
+      if (type) counts[type] = (counts[type] || 0) + (Number(row.qty) || 1);
+    });
+    return Object.entries(counts).map(([type, qty]) => `${qty} x ${type}`);
+  }
+  let tableRows = quote.tableRows;
+  if (!Array.isArray(tableRows) || typeof tableRows[0] !== 'object') {
+    tableRows = Array.isArray(selectedQuoteDetails?.tableRows) && typeof selectedQuoteDetails.tableRows[0] === 'object'
+      ? selectedQuoteDetails.tableRows
+      : [];
+  }
+  const containerTypeBadges = getTypeQuantityString(tableRows, 'item');
+  const truckTypeBadges = getTypeQuantityString(tableRows, 'truckType');
+  const weight = editAdditionalInfo?.lclWeight || quote.lclWeight || '';
+  const volume = editAdditionalInfo?.lclVolume || quote.lclVolume || '';
+  let weightVolumeBadge = '';
+  if (weight && volume) weightVolumeBadge = `${weight} kg / ${volume} cbm`;
+  else if (weight) weightVolumeBadge = `${weight} kg`;
+  else if (volume) weightVolumeBadge = `${volume} cbm`;
+  const detailsBadges = [
+    ...containerTypeBadges,
+    ...truckTypeBadges,
+    ...(weightVolumeBadge ? [weightVolumeBadge] : [])
+  ];
+  return {
+    ...quote,
+    from: editFrom ? { ...editFrom } : quote.from,
+    to: editTo ? { ...editTo } : quote.to,
+    remark: editRemark !== undefined ? editRemark : quote.remark,
+    containertype: containerTypeBadges,
+    truckType: truckTypeBadges,
+    weightVolume: weightVolumeBadge ? [weightVolumeBadge] : [],
+    details: detailsBadges,
+    price: totalAmount !== undefined ? totalAmount?.toString() : quote.price,
+    tableRows,
+  };
+}
+
 const QuoteInvoice = () => {
   const { selectedQuoteDetails, additionalInfo, shipmentType, shipmentTypeDescription, setSelectedQuoteDetails } = useQuoteSearchStore();
   const { user } = useAuthStore();
@@ -139,7 +191,7 @@ const QuoteInvoice = () => {
       ...editAdditionalInfo,
       shipmentTypeDescription,
     };
-    // Compute details string for table
+    // Compute details and other table fields
     const containerTypes = Array.from(new Set((quote.tableRows || []).map((row: any) => row.item).filter(Boolean)));
     const truckTypes = Array.from(new Set((quote.tableRows || []).map((row: any) => row.truckType).filter(Boolean)));
     const weightVolumes = Array.from(new Set((quote.tableRows || []).map((row: any) => row.weightVolume).filter(Boolean)));
@@ -148,6 +200,40 @@ const QuoteInvoice = () => {
       ...truckTypes,
       ...weightVolumes
     ].filter(Boolean).join(', ');
+    const totalAmount = (quote.tableRows || []).reduce((sum: number, row: any) => sum + (typeof row.amount === 'number' ? row.amount : 0), 0);
+    // Compute container/truck type as 'qty x type' and weight/volume as 'weight kg / volume cbm'
+    function getTypeQuantityString(rows: any[], typeKey: string) {
+      const counts: Record<string, number> = {};
+      rows.forEach(row => {
+        const type = row[typeKey];
+        if (type) counts[type] = (counts[type] || 0) + (Number(row.qty) || 1);
+      });
+      return Object.entries(counts)
+        .map(([type, qty]) => `${type}: ${qty}`)
+        .join(', ');
+    }
+    // Ensure tableRows is always an array of objects
+    let tableRows = quote.tableRows;
+    if (!Array.isArray(tableRows) || typeof tableRows[0] !== 'object') {
+      tableRows = Array.isArray(selectedQuoteDetails?.tableRows) && typeof selectedQuoteDetails.tableRows[0] === 'object'
+        ? selectedQuoteDetails.tableRows
+        : [];
+    }
+    const containerTypeBadges = getTypeQuantityString(tableRows, 'item'); // array
+    const truckTypeBadges = getTypeQuantityString(tableRows, 'truckType'); // array
+    // Weight/volume badge
+    const weight = editAdditionalInfo.lclWeight || quote.lclWeight || '';
+    const volume = editAdditionalInfo.lclVolume || quote.lclVolume || '';
+    let weightVolumeBadge = '';
+    if (weight && volume) weightVolumeBadge = `${weight} kg / ${volume} cbm`;
+    else if (weight) weightVolumeBadge = `${weight} kg`;
+    else if (volume) weightVolumeBadge = `${volume} cbm`;
+    // Details: always an array of badges
+    const detailsBadges = [
+      ...containerTypeBadges,
+      ...truckTypeBadges,
+      ...(weightVolumeBadge ? [weightVolumeBadge] : [])
+    ];
     const updatedQuote = {
       ...quote,
       from: { ...safeFrom },
@@ -156,33 +242,36 @@ const QuoteInvoice = () => {
       additionalInfo: cleanedAdditionalInfo,
       shipmentType: cleanedAdditionalInfo.shipmentType || quote.shipmentType || '',
       shipmentTypeDescription,
-      // Set short mode for table/icon logic
       mode: (() => {
         const m = (selectedQuoteDetails?.modeLabel || quote.mode || '').toUpperCase();
-        if (m.includes('FCL')) return 'FCL';
-        if (m.includes('LCL')) return 'LCL';
+        if (m.includes('SEA') && m.includes('FCL')) return 'SEA FCL';
+        if (m.includes('SEA') && m.includes('LCL')) return 'SEA LCL';
+        if (m.includes('AIR') && m.includes('LCL')) return 'AIR LCL';
         if (m.includes('AIR')) return 'AIR';
-        if (m.includes('FTL')) return 'FTL';
-        if (m.includes('LTL')) return 'LTL';
+        if (m.includes('LAND') && m.includes('FTL')) return 'LAND FTL';
+        if (m.includes('LAND') && m.includes('LTL')) return 'LAND LTL';
         return m;
       })(),
-      details,
+      details: [
+        ...containerTypeBadges,
+        ...truckTypeBadges,
+        ...(weightVolumeBadge ? [weightVolumeBadge] : [])
+      ],
       isTariff: cleanedAdditionalInfo.isTariff ?? quote.isTariff ?? false,
       provider: quote.provider || '',
+      client: safeTo.company || quote.client || '',
+      containertype: containerTypeBadges,
+      truckType: truckTypeBadges,
+      weightVolume: weightVolumeBadge ? [weightVolumeBadge] : [],
+      status: quote.status || 'draft',
+      price: totalAmount?.toString() || quote.price || '',
+      createdBy: user?.fullName || quote.createdBy || '',
+      incoterms: cleanedAdditionalInfo.incoterm || quote.incoterms || '',
+      notes: cleanedAdditionalInfo.note || quote.notes || '',
+      tableRows: tableRows,
     };
     setCurrentDraftQuote(updatedQuote);
-    const updatedQuotes = quotes.map(q => q.id === quote.id ? updatedQuote : q);
-    setQuotes(updatedQuotes);
-    const storedQuotes = JSON.parse(localStorage.getItem('quote-rate-storage') || '{}');
-    if (storedQuotes && storedQuotes.state) {
-      if (storedQuotes.state.currentDraftQuote && storedQuotes.state.currentDraftQuote.id === updatedQuote.id) {
-        storedQuotes.state.currentDraftQuote = updatedQuote;
-      }
-      if (storedQuotes.state.quotes) {
-        storedQuotes.state.quotes = storedQuotes.state.quotes.map((q: any) => q.id === quote.id ? updatedQuote : q);
-      }
-      localStorage.setItem('quote-rate-storage', JSON.stringify(storedQuotes));
-    }
+    addQuote(updatedQuote);
     setIsEditing(false);
     setSelectedQuoteDetails(updatedQuote);
   };
@@ -367,8 +456,17 @@ const QuoteInvoice = () => {
                 className="px-4 py-2 rounded-lg bg-[#FFA726] text-white font-medium hover:bg-[#fb8c00] transition-colors flex items-center gap-2"
                 onClick={() => {
                   if (!isAlreadySubmitted && currentDraftQuote) {
-                    addQuote(currentDraftQuote);
-                    // Do NOT clearCurrentDraftQuote here!
+                    const formattedQuote = formatQuoteForTable(
+                      currentDraftQuote,
+                      user,
+                      selectedQuoteDetails,
+                      editAdditionalInfo,
+                      editFrom,
+                      editTo,
+                      editRemark,
+                      totalAmount
+                    );
+                    addQuote(formattedQuote);
                   }
                   router.push('/quotes/list');
                 }}

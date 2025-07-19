@@ -600,69 +600,18 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
                     <td key={col.key} className="px-4 py-4 text-gray-900 whitespace-nowrap overflow-x-auto">
                       {getModeIcon(q.mode)}{getValue(q, col.key)}
                     </td>
-                  ) : col.key === 'details' ? (
+                  ) : col.key === 'details' || col.key === 'containertype' || col.key === 'truckType' || col.key === 'weightVolume' ? (
                     <td key={col.key} className="px-4 py-4 text-gray-900 whitespace-nowrap overflow-x-auto">
-                      {q.details ? (
-                        <div className="flex flex-row items-center gap-1 overflow-x-auto whitespace-nowrap">
-                          {(() => {
-                            // Parse details into unique type-quantity pairs
-                            const typePills: string[] = [];
-                            const typeSet = new Set<string>();
-                            q.details.split('|').forEach((part: string) => {
-                              part.split(',').forEach((item: string) => {
-                                const trimmed = item.trim();
-                                if (trimmed && trimmed.includes(':')) {
-                                  const [type, qty] = trimmed.split(':').map((s: string) => s.trim());
-                                  if (!typeSet.has(type)) {
-                                    typeSet.add(type);
-                                    typePills.push(`${qty} x ${type}`);
-                                  }
-                                } else if (trimmed) {
-                                  // fallback for legacy or malformed data
-                                  if (!typeSet.has(trimmed)) {
-                                    typeSet.add(trimmed);
-                                    typePills.push(trimmed);
-                                  }
-                                }
-                              });
-                            });
-                            // Only show pills that do not match 'x Volume' (case-insensitive)
-                            const shown = typePills.filter(pill => !/x volume/i.test(pill)).slice(0, 3);
-                            const more = typePills.filter(pill => !/x volume/i.test(pill)).length > 3 ? typePills.filter(pill => !/x volume/i.test(pill)).length - 3 : 0;
-                            return [
-                              ...shown.map((pill, i) => (
-                                <span key={i} className="inline-block border border-blue-300 bg-blue-50 text-blue-800 rounded-full px-2 py-1 text-xs font-semibold mr-1 truncate">{pill}</span>
-                              )),
-                              more > 0 && (
-                                <span key="more" className="inline-block border border-gray-300 bg-gray-100 text-gray-700 rounded-full px-3 py-1 text-xs font-semibold mr-1 truncate">+{more} more</span>
-                              )
-                            ];
-                          })()}
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </td>
-                  ) : col.key === 'containertype' || col.key === 'truckType' ? (
-                    <td key={col.key} className="px-4 py-4 text-gray-900 whitespace-nowrap overflow-x-auto">
-                      {q[col.key] ? (
-                        <div className="flex flex-row items-center gap-1 overflow-x-auto whitespace-nowrap">
-                          {q[col.key].split(',').map((item: string, i: number) => {
-                            const [type, qty] = item.split(':').map((s: string) => s.trim());
-                            return qty && type ? (
-                              <span key={i} className="inline-block border border-blue-300 bg-blue-50 text-blue-800 rounded-full px-2 py-1 text-xs font-semibold mr-1 truncate">{`${qty} x ${type}`}</span>
-                            ) : (
-                              <span key={i} className="inline-block border border-blue-300 bg-blue-50 text-blue-800 rounded-full px-2 py-1 text-xs font-semibold mr-1 truncate">{item.trim()}</span>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </td>
-                  ) : col.key === 'weightVolume' ? (
-                    <td key={col.key} className="px-4 py-4">
-                      <span className="inline-block border border-blue-300 bg-blue-50 text-blue-800 rounded-full px-2 py-1 text-xs font-semibold mr-1 truncate">{getValue(q, col.key)}</span>
+                      {Array.isArray(q[col.key])
+                        ? q[col.key].map((badge: string, i: number) => (
+                            <span key={i} className="inline-block border border-blue-300 bg-blue-50 text-blue-800 rounded-full px-2 py-1 text-xs font-semibold mr-1 truncate">{badge}</span>
+                          ))
+                        : typeof q[col.key] === 'string'
+                          ? q[col.key].split('  ').filter(Boolean).map((badge: string, i: number) => (
+                              <span key={i} className="inline-block border border-blue-300 bg-blue-50 text-blue-800 rounded-full px-2 py-1 text-xs font-semibold mr-1 truncate">{badge}</span>
+                            ))
+                          : <span className="text-gray-400">-</span>
+                      }
                     </td>
                   ) : (
                     <td key={col.key} className="px-4 py-4 text-gray-900 whitespace-nowrap overflow-x-auto">{getValue(q, col.key)}</td>
