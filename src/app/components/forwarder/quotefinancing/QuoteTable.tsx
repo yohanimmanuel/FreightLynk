@@ -660,6 +660,10 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
                         <span className="text-gray-400">-</span>
                       )}
                     </td>
+                  ) : col.key === 'weightVolume' ? (
+                    <td key={col.key} className="px-4 py-4">
+                      <span className="inline-block border border-blue-300 bg-blue-50 text-blue-800 rounded-full px-2 py-1 text-xs font-semibold mr-1 truncate">{getValue(q, col.key)}</span>
+                    </td>
                   ) : (
                     <td key={col.key} className="px-4 py-4 text-gray-900 whitespace-nowrap overflow-x-auto">{getValue(q, col.key)}</td>
                   )
