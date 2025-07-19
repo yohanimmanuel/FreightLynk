@@ -18,7 +18,7 @@ function formatDate(date: Date) {
 }
 
 const QuoteInvoice = () => {
-  const { selectedQuoteDetails, additionalInfo, shipmentType, shipmentTypeDescription } = useQuoteSearchStore();
+  const { selectedQuoteDetails, additionalInfo, shipmentType, shipmentTypeDescription, setSelectedQuoteDetails } = useQuoteSearchStore();
   const { user } = useAuthStore();
   const router = useRouter();
   const quote = selectedQuoteDetails;
@@ -139,16 +139,36 @@ const QuoteInvoice = () => {
       ...editAdditionalInfo,
       shipmentTypeDescription,
     };
+    // Compute details string for table
+    const containerTypes = Array.from(new Set((quote.tableRows || []).map((row: any) => row.item).filter(Boolean)));
+    const truckTypes = Array.from(new Set((quote.tableRows || []).map((row: any) => row.truckType).filter(Boolean)));
+    const weightVolumes = Array.from(new Set((quote.tableRows || []).map((row: any) => row.weightVolume).filter(Boolean)));
+    const details = [
+      ...containerTypes,
+      ...truckTypes,
+      ...weightVolumes
+    ].filter(Boolean).join(', ');
     const updatedQuote = {
       ...quote,
       from: { ...safeFrom },
       to: { ...safeTo },
       remark: editRemark,
       additionalInfo: cleanedAdditionalInfo,
-      // Always update these top-level fields for table and invoice display
       shipmentType: cleanedAdditionalInfo.shipmentType || quote.shipmentType || '',
       shipmentTypeDescription,
-      mode: selectedQuoteDetails?.modeLabel || quote.mode || '',
+      // Set short mode for table/icon logic
+      mode: (() => {
+        const m = (selectedQuoteDetails?.modeLabel || quote.mode || '').toUpperCase();
+        if (m.includes('FCL')) return 'FCL';
+        if (m.includes('LCL')) return 'LCL';
+        if (m.includes('AIR')) return 'AIR';
+        if (m.includes('FTL')) return 'FTL';
+        if (m.includes('LTL')) return 'LTL';
+        return m;
+      })(),
+      details,
+      isTariff: cleanedAdditionalInfo.isTariff ?? quote.isTariff ?? false,
+      provider: quote.provider || '',
     };
     setCurrentDraftQuote(updatedQuote);
     const updatedQuotes = quotes.map(q => q.id === quote.id ? updatedQuote : q);
@@ -164,6 +184,7 @@ const QuoteInvoice = () => {
       localStorage.setItem('quote-rate-storage', JSON.stringify(storedQuotes));
     }
     setIsEditing(false);
+    setSelectedQuoteDetails(updatedQuote);
   };
 
   // Reset form state after submission or when starting a new quote
@@ -191,7 +212,6 @@ const QuoteInvoice = () => {
 
   // Dates
   const createdOn = formatDate(new Date());
-  const validUntil = quote.validUntil;
 
   // Extract additional info fields - prioritize quote's own additionalInfo over global store
   const quoteAdditionalInfo = quote.additionalInfo || {};
@@ -200,17 +220,6 @@ const QuoteInvoice = () => {
   // For existing quotes, use the quote's additionalInfo; for new quotes, use global store
   const isExistingQuote = quotes.some(q => q.id === quote.id);
   const effectiveAdditionalInfo = isExistingQuote ? quoteAdditionalInfo : globalAdditionalInfo;
-  
-  const etd = effectiveAdditionalInfo.etd || selectedQuoteDetails?.etd || '-';
-  const cargoReadyDate = effectiveAdditionalInfo.cargoReadyDate || selectedQuoteDetails?.cargoReadyDate || '-';
-  const incoterms = effectiveAdditionalInfo.incoterm || selectedQuoteDetails?.incoterms || '-';
-  const schedule = effectiveAdditionalInfo.schedule || '-';
-  const note = effectiveAdditionalInfo.note || '-';
-  const freightTerms = effectiveAdditionalInfo.freightTerm || '-';
-  const ofPriceFeedback = effectiveAdditionalInfo.ofPriceFeedback || '-';
-  const companyBranch = effectiveAdditionalInfo.companyBranch || '-';
-  const shipmentMode = effectiveAdditionalInfo.shipmentMode || selectedQuoteDetails?.shipmentMode || '-';
-  const commodities = effectiveAdditionalInfo.commodities || '-';
 
   // Auto-map and send main invoice data to QuoteTable on mount or when quote changes
   useEffect(() => {
@@ -519,11 +528,11 @@ const QuoteInvoice = () => {
                 <div className="flex justify-between text-xs items-center">
                   <span className="text-gray-500">Shipment Type:</span>
                   {!isEditing ? (
-                    <span className="font-semibold">{currentDraftQuote?.shipmentType || '-'}</span>
+                    <span className="font-semibold">{quote.shipmentType || '-'}</span>
                   ) : (
                     <select
                       className="border rounded px-2 py-1 text-xs"
-                      value={editAdditionalInfo.shipmentType || ''}
+                      value={editAdditionalInfo.shipmentType || quote.shipmentType || ''}
                       onChange={e => {
                         const value = e.target.value;
                         setEditAdditionalInfo((info: any) => ({
@@ -542,11 +551,11 @@ const QuoteInvoice = () => {
                   )}
                 </div>
                 {/* Description (if Other) */}
-                {((!isEditing && ((isExistingQuote ? quote.shipmentType : currentDraftQuote?.shipmentType || editAdditionalInfo.shipmentType) === 'Other')) || (isEditing && (editAdditionalInfo.shipmentType === 'Other'))) && (
+                {((!isEditing && (quote.shipmentType === 'Other')) || (isEditing && (editAdditionalInfo.shipmentType === 'Other'))) && (
                   <div className="flex justify-between text-xs items-center">
                     <span className="text-gray-500">Description:</span>
                     {!isEditing ? (
-                      <span className="font-semibold">{(isExistingQuote ? quote.shipmentTypeDescription : currentDraftQuote?.shipmentTypeDescription || editAdditionalInfo.shipmentTypeDescription) || '-'}</span>
+                      <span className="font-semibold">{quote.shipmentTypeDescription || '-'}</span>
                     ) : (
                       <input
                         className="border rounded px-2 py-1 text-xs"
@@ -564,15 +573,7 @@ const QuoteInvoice = () => {
                 {/* Transit Time */}
                 <div className="flex justify-between text-xs items-center">
                   <span className="text-gray-500">Transit Time:</span>
-                  {!isEditing ? (
-                    <span className="font-semibold">{quote.transitTime}</span>
-                  ) : (
-                    <input
-                      className="border rounded px-2 py-1 text-xs"
-                      value={editAdditionalInfo.transitTime || ''}
-                      onChange={e => setEditAdditionalInfo((info: any) => ({ ...info, transitTime: e.target.value }))}
-                    />
-                  )}
+                  <span className="font-semibold">{quote.transitTime || '-'}</span>
                 </div>
                 {/* Remark */}
                 <div className="flex justify-between text-xs items-center">

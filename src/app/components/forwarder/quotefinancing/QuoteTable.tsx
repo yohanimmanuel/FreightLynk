@@ -134,19 +134,13 @@ const MODE_COLUMN_CONFIGS: Record<string, { key: string; label: string }[]> = {
 
 // Helper to get the icon for a mode
 function getModeIcon(mode: string) {
-  switch (mode?.toUpperCase()) {
-    case 'FCL':
-      return <Ship className="inline w-4 h-4 mr-1 align-text-bottom" />;
-    case 'LCL':
-      return <Box className="inline w-4 h-4 mr-1 align-text-bottom" />;
-    case 'AIR':
-      return <Plane className="inline w-4 h-4 mr-1 align-text-bottom" />;
-    case 'FTL':
-    case 'LTL':
-      return <Truck className="inline w-4 h-4 mr-1 align-text-bottom" />;
-    default:
-      return null;
-  }
+  if (!mode) return null;
+  const m = mode.toUpperCase();
+  if (m.includes('FCL')) return <Ship className="inline w-4 h-4 mr-1 align-text-bottom" />;
+  if (m.includes('LCL')) return <Box className="inline w-4 h-4 mr-1 align-text-bottom" />;
+  if (m.includes('AIR')) return <Plane className="inline w-4 h-4 mr-1 align-text-bottom" />;
+  if (m.includes('FTL') || m.includes('LTL') || m.includes('TRUCK')) return <Truck className="inline w-4 h-4 mr-1 align-text-bottom" />;
+  return null;
 }
 
 export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' | 'client' }) {
@@ -262,9 +256,17 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
   // Filtered quotes based on tab, filter, search, and status
   const filteredQuotes = quotes.filter(q => {
     // Tab filter (mode)
-    const tabMatch = tab === 'all'
-      ? true // Show all quotes in ALL tab
-      : (q.mode && q.mode.toLowerCase() === tab);
+    const tabMatch = (() => {
+      if (tab === 'all') return true;
+      if (!q.mode) return false;
+      const m = q.mode.toLowerCase().trim();
+      if (tab === 'fcl') return m.endsWith('fcl');
+      if (tab === 'lcl') return m.endsWith('lcl') && !m.startsWith('air');
+      if (tab === 'air') return m === 'air' || m.startsWith('air ');
+      if (tab === 'ftl') return m.endsWith('ftl');
+      if (tab === 'ltl') return m.endsWith('ltl');
+      return false;
+    })();
     // Filter (not implemented, placeholder)
     const filterMatch = filter === 'all';
     // Search (by id, lane, provider) with type checks
