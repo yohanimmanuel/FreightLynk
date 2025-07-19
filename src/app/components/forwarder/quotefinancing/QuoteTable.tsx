@@ -253,6 +253,8 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
       case 'notes': return q.notes || q.invoiceNotes || '—';
       case 'weightVolume': return q.weightVolume;
       case 'truckType': return q.truckType;
+      case 'shipmentType': return q.shipmentType || q.additionalInfo?.shipmentType || '-';
+      case 'mode': return q.mode || q.additionalInfo?.shipmentMode || q.modeLabel || '-';
       default: return '';
     }
   };

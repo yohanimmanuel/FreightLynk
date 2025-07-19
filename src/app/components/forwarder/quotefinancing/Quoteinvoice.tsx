@@ -18,16 +18,15 @@ function formatDate(date: Date) {
 }
 
 const QuoteInvoice = () => {
-  const { searchCriteria, selectedQuoteDetails, additionalInfo, shipmentType, shipmentTypeDescription } = useQuoteSearchStore();
+  const { selectedQuoteDetails, additionalInfo, shipmentType, shipmentTypeDescription } = useQuoteSearchStore();
   const { user } = useAuthStore();
   const router = useRouter();
   const quote = selectedQuoteDetails;
   const addQuote = useQuoteRateStore(state => state.addQuote);
   const quotes = useQuoteRateStore(state => state.quotes);
+  const setQuotes = useQuoteRateStore(state => state.setQuotes);
   const currentDraftQuote = useQuoteRateStore(state => state.currentDraftQuote);
   const setCurrentDraftQuote = useQuoteRateStore(state => state.setCurrentDraftQuote);
-  const clearCurrentDraftQuote = useQuoteRateStore(state => state.clearCurrentDraftQuote);
-  
   // If no quote is selected, show a message
   if (!quote) return <div className="text-center text-gray-500 py-12">No quote selected. Please select a quote from the search results.</div>;
 
@@ -42,12 +41,13 @@ const QuoteInvoice = () => {
     email: user?.email || 'demo123@gmail.com',
   });
   const [editTo, setEditTo] = useState({
-    company: 'Sample Client Company',
-    address: '123 Client St, City, Country',
-    phone: '(028) 39105532',
-    contact: 'THUY NGUYEN',
+    company: '',
+    address: '',
+    phone: '',
+    contact: '',
   });
   const [editRemark, setEditRemark] = useState(quote.remark);
+  const [editAdditionalInfo, setEditAdditionalInfo] = useState({ ...quote.additionalInfo });
   const [originalState, setOriginalState] = useState<any>(null);
   const [loadingDraft, setLoadingDraft] = useState(true);
 
@@ -78,10 +78,19 @@ const QuoteInvoice = () => {
     }
   }, []);
 
-  // Update edit fields when selected quote changes
+  // On mount, initialize edit fields from quote, but always use defaults if missing
   useEffect(() => {
-    setEditRemark(quote.remark);
-    // Optionally update editFrom/editTo if those fields are part of the quote in the future
+    setEditFrom({
+      company: quote.from?.company || user?.companyName || 'Demo Company (FreightLynk LLC)',
+      address: quote.from?.address || '1000 20th Street NW, Suite 400, Washington D.C. 20036',
+      phone: quote.from?.phone || '(028) 1208 281055',
+      preparedBy: quote.from?.preparedBy || user?.fullName || 'Demo User',
+      mobile: quote.from?.mobile || '(028) 1208 281055',
+      email: quote.from?.email || user?.email || 'demo123@gmail.com',
+    });
+    setEditTo(quote.to || editTo);
+    setEditRemark(quote.remark || '');
+    setEditAdditionalInfo({ ...quote.additionalInfo });
   }, [quote]);
 
   // Generate quoteId ONCE for both invoice and table, using draft if available
@@ -90,7 +99,12 @@ const QuoteInvoice = () => {
 
   // --- Handlers ---
   const handleEdit = () => {
-    setOriginalState({ from: { ...editFrom }, to: { ...editTo }, remark: editRemark });
+    setOriginalState({
+      from: { ...editFrom },
+      to: { ...editTo },
+      remark: editRemark,
+      additionalInfo: { ...editAdditionalInfo },
+    });
     setIsEditing(true);
   };
   const handleCancel = () => {
@@ -98,11 +112,57 @@ const QuoteInvoice = () => {
       setEditFrom(originalState.from);
       setEditTo(originalState.to);
       setEditRemark(originalState.remark);
+      setEditAdditionalInfo(originalState.additionalInfo);
     }
     setIsEditing(false);
   };
+  // In handleSave, do not allow empty 'from' fields; always use defaults if missing
   const handleSave = () => {
-    // Here you would update the store or backend
+    const safeFrom = {
+      company: editFrom.company || user?.companyName || 'Demo Company (FreightLynk LLC)',
+      address: editFrom.address || '1000 20th Street NW, Suite 400, Washington D.C. 20036',
+      phone: editFrom.phone || '(028) 1208 281055',
+      preparedBy: editFrom.preparedBy || user?.fullName || 'Demo User',
+      mobile: editFrom.mobile || '(028) 1208 281055',
+      email: editFrom.email || user?.email || 'demo123@gmail.com',
+    };
+    const safeTo = {
+      company: editTo.company || '',
+      address: editTo.address || '',
+      phone: editTo.phone || '',
+      contact: editTo.contact || '',
+    };
+    // Always clear shipmentTypeDescription if not 'Other', set both top-level and in additionalInfo
+    const isOther = editAdditionalInfo.shipmentType === 'Other';
+    const shipmentTypeDescription = isOther ? editAdditionalInfo.shipmentTypeDescription : '';
+    const cleanedAdditionalInfo = {
+      ...editAdditionalInfo,
+      shipmentTypeDescription,
+    };
+    const updatedQuote = {
+      ...quote,
+      from: { ...safeFrom },
+      to: { ...safeTo },
+      remark: editRemark,
+      additionalInfo: cleanedAdditionalInfo,
+      // Always update these top-level fields for table and invoice display
+      shipmentType: cleanedAdditionalInfo.shipmentType || quote.shipmentType || '',
+      shipmentTypeDescription,
+      mode: selectedQuoteDetails?.modeLabel || quote.mode || '',
+    };
+    setCurrentDraftQuote(updatedQuote);
+    const updatedQuotes = quotes.map(q => q.id === quote.id ? updatedQuote : q);
+    setQuotes(updatedQuotes);
+    const storedQuotes = JSON.parse(localStorage.getItem('quote-rate-storage') || '{}');
+    if (storedQuotes && storedQuotes.state) {
+      if (storedQuotes.state.currentDraftQuote && storedQuotes.state.currentDraftQuote.id === updatedQuote.id) {
+        storedQuotes.state.currentDraftQuote = updatedQuote;
+      }
+      if (storedQuotes.state.quotes) {
+        storedQuotes.state.quotes = storedQuotes.state.quotes.map((q: any) => q.id === quote.id ? updatedQuote : q);
+      }
+      localStorage.setItem('quote-rate-storage', JSON.stringify(storedQuotes));
+    }
     setIsEditing(false);
   };
 
@@ -350,12 +410,30 @@ const QuoteInvoice = () => {
                 </>
               ) : (
                 <>
-                  <input className="text-xs text-gray-700 font-bold border rounded px-2 py-1 mb-1" value={editFrom.company} onChange={e => setEditFrom(f => ({ ...f, company: e.target.value }))} />
-                  <input className="text-xs text-gray-700 border rounded px-2 py-1 mb-1" value={editFrom.address} onChange={e => setEditFrom(f => ({ ...f, address: e.target.value }))} />
-                  <input className="text-xs text-gray-700 border rounded px-2 py-1 mb-1" value={editFrom.phone} onChange={e => setEditFrom(f => ({ ...f, phone: e.target.value }))} />
-                  <input className="text-xs text-gray-700 border rounded px-2 py-1 mb-1" value={editFrom.preparedBy} onChange={e => setEditFrom(f => ({ ...f, preparedBy: e.target.value }))} />
-                  <input className="text-xs text-gray-700 border rounded px-2 py-1 mb-1" value={editFrom.mobile} onChange={e => setEditFrom(f => ({ ...f, mobile: e.target.value }))} />
-                  <input className="text-xs text-gray-700 border rounded px-2 py-1 mb-1" value={editFrom.email} onChange={e => setEditFrom(f => ({ ...f, email: e.target.value }))} />
+                  <div className="flex items-center gap-2 mb-1">
+                    <label className="text-xs text-gray-500 w-28">Company Name</label>
+                    <input className="text-xs text-gray-700 font-bold border rounded px-2 py-1 flex-1" value={editFrom.company} onChange={e => setEditFrom(f => ({ ...f, company: e.target.value }))} />
+                  </div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <label className="text-xs text-gray-500 w-28">Address</label>
+                    <input className="text-xs text-gray-700 border rounded px-2 py-1 flex-1" value={editFrom.address} onChange={e => setEditFrom(f => ({ ...f, address: e.target.value }))} />
+                  </div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <label className="text-xs text-gray-500 w-28">Phone</label>
+                    <input className="text-xs text-gray-700 border rounded px-2 py-1 flex-1" value={editFrom.phone} onChange={e => setEditFrom(f => ({ ...f, phone: e.target.value }))} />
+                  </div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <label className="text-xs text-gray-500 w-28">Prepared By</label>
+                    <input className="text-xs text-gray-700 border rounded px-2 py-1 flex-1" value={editFrom.preparedBy} onChange={e => setEditFrom(f => ({ ...f, preparedBy: e.target.value }))} />
+                  </div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <label className="text-xs text-gray-500 w-28">Mobile</label>
+                    <input className="text-xs text-gray-700 border rounded px-2 py-1 flex-1" value={editFrom.mobile} onChange={e => setEditFrom(f => ({ ...f, mobile: e.target.value }))} />
+                  </div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <label className="text-xs text-gray-500 w-28">Email</label>
+                    <input className="text-xs text-gray-700 border rounded px-2 py-1 flex-1" value={editFrom.email} onChange={e => setEditFrom(f => ({ ...f, email: e.target.value }))} />
+                  </div>
                 </>
               )}
             </div>
@@ -363,17 +441,29 @@ const QuoteInvoice = () => {
               <div className="font-semibold text-gray-900 text-md mb-1">To:</div>
               {!isEditing ? (
                 <>
-                  <div className="text-xs text-gray-700 font-bold">{quote.to?.company}</div>
-                  <div className="text-xs text-gray-700">Address: {quote.to?.address}</div>
-                  <div className="text-xs text-gray-700">Phone: {quote.to?.phone}</div>
-                  <div className="text-xs text-gray-700">Contact Person: {quote.to?.contact}</div>
+                  <div className="text-xs text-gray-700 font-bold">{editTo.company}</div>
+                  <div className="text-xs text-gray-700">Address: {editTo.address}</div>
+                  <div className="text-xs text-gray-700">Phone: {editTo.phone}</div>
+                  <div className="text-xs text-gray-700">Contact Person: {editTo.contact}</div>
                 </>
               ) : (
                 <>
-                  <input className="text-xs text-gray-700 font-bold border rounded px-2 py-1 mb-1" value={editTo.company} onChange={e => setEditTo(t => ({ ...t, company: e.target.value }))} />
-                  <input className="text-xs text-gray-700 border rounded px-2 py-1 mb-1" value={editTo.address} onChange={e => setEditTo(t => ({ ...t, address: e.target.value }))} />
-                  <input className="text-xs text-gray-700 border rounded px-2 py-1 mb-1" value={editTo.phone} onChange={e => setEditTo(t => ({ ...t, phone: e.target.value }))} />
-                  <input className="text-xs text-gray-700 border rounded px-2 py-1 mb-1" value={editTo.contact} onChange={e => setEditTo(t => ({ ...t, contact: e.target.value }))} />
+                  <div className="flex items-center gap-2 mb-1">
+                    <label className="text-xs text-gray-500 w-28">Company Name</label>
+                    <input className="text-xs text-gray-700 font-bold border rounded px-2 py-1 flex-1" value={editTo.company} onChange={e => setEditTo(t => ({ ...t, company: e.target.value }))} />
+                  </div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <label className="text-xs text-gray-500 w-28">Address</label>
+                    <input className="text-xs text-gray-700 border rounded px-2 py-1 flex-1" value={editTo.address} onChange={e => setEditTo(t => ({ ...t, address: e.target.value }))} />
+                  </div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <label className="text-xs text-gray-500 w-28">Phone</label>
+                    <input className="text-xs text-gray-700 border rounded px-2 py-1 flex-1" value={editTo.phone} onChange={e => setEditTo(t => ({ ...t, phone: e.target.value }))} />
+                  </div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <label className="text-xs text-gray-500 w-28">Contact Person</label>
+                    <input className="text-xs text-gray-700 border rounded px-2 py-1 flex-1" value={editTo.contact} onChange={e => setEditTo(t => ({ ...t, contact: e.target.value }))} />
+                  </div>
                 </>
               )}
             </div>
@@ -384,7 +474,7 @@ const QuoteInvoice = () => {
               {quote.companyLogo ? (
                 <img src={quote.companyLogo} alt="Logo" className="w-32 h-16 object-contain mx-auto" />
               ) : quote.logo ? (
-                <img src={quote.logo} alt="Logo" className="w-32 h-16 object-contain mx-auto" />
+              <img src={quote.logo} alt="Logo" className="w-32 h-16 object-contain mx-auto" />
               ) : (
                 <div className="w-32 h-16 flex items-center justify-center text-gray-400 text-xs">
                   <div className="text-center">
@@ -425,28 +515,212 @@ const QuoteInvoice = () => {
             <div>
               <div className="font-semibold text-gray-900 mb-2 text-xs uppercase tracking-wider">Additional Information</div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-gray-900">
-                <div className="flex justify-between text-xs">
+                {/* Shipment Type */}
+                <div className="flex justify-between text-xs items-center">
                   <span className="text-gray-500">Shipment Type:</span>
-                  <span className="font-semibold">{isExistingQuote ? (quote.shipmentType || '-') : (shipmentType || quote.shipmentType || '-')}</span>
+                  {!isEditing ? (
+                    <span className="font-semibold">{currentDraftQuote?.shipmentType || '-'}</span>
+                  ) : (
+                    <select
+                      className="border rounded px-2 py-1 text-xs"
+                      value={editAdditionalInfo.shipmentType || ''}
+                      onChange={e => {
+                        const value = e.target.value;
+                        setEditAdditionalInfo((info: any) => ({
+                          ...info,
+                          shipmentType: value,
+                          shipmentTypeDescription: value === 'Other' ? info.shipmentTypeDescription : '',
+                        }));
+                      }}
+                    >
+                      <option value="">Select</option>
+                      <option value="Export">Export</option>
+                      <option value="Import">Import</option>
+                      <option value="Domestic">Domestic</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  )}
                 </div>
-                {(isExistingQuote ? quote.shipmentType : shipmentType) === 'Other' && (isExistingQuote ? quote.shipmentTypeDescription : shipmentTypeDescription) && (
-                  <div className="flex justify-between text-xs">
+                {/* Description (if Other) */}
+                {((!isEditing && ((isExistingQuote ? quote.shipmentType : currentDraftQuote?.shipmentType || editAdditionalInfo.shipmentType) === 'Other')) || (isEditing && (editAdditionalInfo.shipmentType === 'Other'))) && (
+                  <div className="flex justify-between text-xs items-center">
                     <span className="text-gray-500">Description:</span>
-                    <span className="font-semibold">{isExistingQuote ? quote.shipmentTypeDescription : shipmentTypeDescription}</span>
+                    {!isEditing ? (
+                      <span className="font-semibold">{(isExistingQuote ? quote.shipmentTypeDescription : currentDraftQuote?.shipmentTypeDescription || editAdditionalInfo.shipmentTypeDescription) || '-'}</span>
+                    ) : (
+                      <input
+                        className="border rounded px-2 py-1 text-xs"
+                        value={editAdditionalInfo.shipmentTypeDescription || ''}
+                        onChange={e => setEditAdditionalInfo((info: any) => ({ ...info, shipmentTypeDescription: e.target.value }))}
+                      />
+                    )}
                   </div>
                 )}
-                <div className="flex justify-between text-xs"><span className="text-gray-500">Mode:</span><span className="font-semibold">{isExistingQuote ? (quote.mode || '-') : (selectedQuoteDetails?.modeLabel || quote.mode || '-')}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-gray-500">Transit Time:</span><span className="font-semibold">{quote.transitTime}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-gray-500">Remark:</span><span className="font-semibold">{editRemark}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-gray-500">Cargo Ready Date:</span><span className="font-semibold">{cargoReadyDate}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-gray-500">ETD:</span><span className="font-semibold">{etd}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-gray-500">Incoterms:</span><span className="font-semibold">{incoterms}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-gray-500">Freight Terms:</span><span className="font-semibold">{freightTerms}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-gray-500">OF Price Feedback:</span><span className="font-semibold">{ofPriceFeedback}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-gray-500">Note:</span><span className="font-semibold">{note}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-gray-500">Company Branch:</span><span className="font-semibold">{companyBranch}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-gray-500">Commodities:</span><span className="font-semibold">{commodities}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-gray-500">Is Tariff:</span><span className="font-semibold">{effectiveAdditionalInfo.isTariff || 'No'}</span></div>
+                {/* Mode (read-only) */}
+                <div className="flex justify-between text-xs items-center">
+                  <span className="text-gray-500">Mode:</span>
+                  <span className="font-semibold">{quote.mode || quote.additionalInfo?.shipmentMode || quote.modeLabel || '-'}</span>
+                </div>
+                {/* Transit Time */}
+                <div className="flex justify-between text-xs items-center">
+                  <span className="text-gray-500">Transit Time:</span>
+                  {!isEditing ? (
+                    <span className="font-semibold">{quote.transitTime}</span>
+                  ) : (
+                    <input
+                      className="border rounded px-2 py-1 text-xs"
+                      value={editAdditionalInfo.transitTime || ''}
+                      onChange={e => setEditAdditionalInfo((info: any) => ({ ...info, transitTime: e.target.value }))}
+                    />
+                  )}
+                </div>
+                {/* Remark */}
+                <div className="flex justify-between text-xs items-center">
+                  <span className="text-gray-500">Remark:</span>
+                  {!isEditing ? (
+                    <span className="font-semibold">{editRemark}</span>
+                  ) : (
+                    <input
+                      className="border rounded px-2 py-1 text-xs"
+                      value={editRemark || ''}
+                      onChange={e => setEditRemark(e.target.value)}
+                    />
+                  )}
+                </div>
+                {/* Cargo Ready Date */}
+                <div className="flex justify-between text-xs items-center">
+                  <span className="text-gray-500">Cargo Ready Date:</span>
+                  {!isEditing ? (
+                    <span className="font-semibold">{editAdditionalInfo.cargoReadyDate || '-'}</span>
+                  ) : (
+                    <input
+                      type="date"
+                      className="border rounded px-2 py-1 text-xs"
+                      value={editAdditionalInfo.cargoReadyDate || ''}
+                      onChange={e => setEditAdditionalInfo((info: any) => ({ ...info, cargoReadyDate: e.target.value }))}
+                    />
+                  )}
+                </div>
+                {/* ETD */}
+                <div className="flex justify-between text-xs items-center">
+                  <span className="text-gray-500">ETD:</span>
+                  {!isEditing ? (
+                    <span className="font-semibold">{editAdditionalInfo.etd || '-'}</span>
+                  ) : (
+                    <input
+                      type="date"
+                      className="border rounded px-2 py-1 text-xs"
+                      value={editAdditionalInfo.etd || ''}
+                      onChange={e => setEditAdditionalInfo((info: any) => ({ ...info, etd: e.target.value }))}
+                    />
+                  )}
+                </div>
+                {/* Incoterms */}
+                <div className="flex justify-between text-xs items-center">
+                  <span className="text-gray-500">Incoterms:</span>
+                  {!isEditing ? (
+                    <span className="font-semibold">{editAdditionalInfo.incoterm || '-'}</span>
+                  ) : (
+                    <select
+                      className="border rounded px-2 py-1 text-xs"
+                      value={editAdditionalInfo.incoterm || ''}
+                      onChange={e => setEditAdditionalInfo((info: any) => ({ ...info, incoterm: e.target.value }))}
+                    >
+                      <option value="">Select</option>
+                      <option value="FOB">FOB</option>
+                      <option value="CIF">CIF</option>
+                      <option value="EXW">EXW</option>
+                      <option value="DAP">DAP</option>
+                      <option value="DDP">DDP</option>
+                    </select>
+                  )}
+                </div>
+                {/* Freight Terms */}
+                <div className="flex justify-between text-xs items-center">
+                  <span className="text-gray-500">Freight Terms:</span>
+                  {!isEditing ? (
+                    <span className="font-semibold">{editAdditionalInfo.freightTerm || '-'}</span>
+                  ) : (
+                    <select
+                      className="border rounded px-2 py-1 text-xs"
+                      value={editAdditionalInfo.freightTerm || ''}
+                      onChange={e => setEditAdditionalInfo((info: any) => ({ ...info, freightTerm: e.target.value }))}
+                    >
+                      <option value="">Select</option>
+                      <option value="Prepaid">Prepaid</option>
+                      <option value="Collect">Collect</option>
+                      <option value="Third Party">Third Party</option>
+                    </select>
+                  )}
+                </div>
+                {/* OF Price Feedback */}
+                <div className="flex justify-between text-xs items-center">
+                  <span className="text-gray-500">OF Price Feedback:</span>
+                  {!isEditing ? (
+                    <span className="font-semibold">{editAdditionalInfo.ofPriceFeedback || '-'}</span>
+                  ) : (
+                    <input
+                      className="border rounded px-2 py-1 text-xs"
+                      value={editAdditionalInfo.ofPriceFeedback || ''}
+                      onChange={e => setEditAdditionalInfo((info: any) => ({ ...info, ofPriceFeedback: e.target.value }))}
+                    />
+                  )}
+                </div>
+                {/* Note */}
+                <div className="flex justify-between text-xs items-center">
+                  <span className="text-gray-500">Note:</span>
+                  {!isEditing ? (
+                    <span className="font-semibold">{editAdditionalInfo.note || '-'}</span>
+                  ) : (
+                    <input
+                      className="border rounded px-2 py-1 text-xs"
+                      value={editAdditionalInfo.note || ''}
+                      onChange={e => setEditAdditionalInfo((info: any) => ({ ...info, note: e.target.value }))}
+                    />
+                  )}
+                </div>
+                {/* Company Branch */}
+                <div className="flex justify-between text-xs items-center">
+                  <span className="text-gray-500">Company Branch:</span>
+                  {!isEditing ? (
+                    <span className="font-semibold">{editAdditionalInfo.companyBranch || '-'}</span>
+                  ) : (
+                    <input
+                      className="border rounded px-2 py-1 text-xs"
+                      value={editAdditionalInfo.companyBranch || ''}
+                      onChange={e => setEditAdditionalInfo((info: any) => ({ ...info, companyBranch: e.target.value }))}
+                    />
+                  )}
+                </div>
+                {/* Commodities */}
+                <div className="flex justify-between text-xs items-center">
+                  <span className="text-gray-500">Commodities:</span>
+                  {!isEditing ? (
+                    <span className="font-semibold">{editAdditionalInfo.commodities || '-'}</span>
+                  ) : (
+                    <input
+                      className="border rounded px-2 py-1 text-xs"
+                      value={editAdditionalInfo.commodities || ''}
+                      onChange={e => setEditAdditionalInfo((info: any) => ({ ...info, commodities: e.target.value }))}
+                    />
+                  )}
+                </div>
+                {/* Is Tariff */}
+                <div className="flex justify-between text-xs items-center">
+                  <span className="text-gray-500">Is Tariff:</span>
+                  {!isEditing ? (
+                    <span className="font-semibold">{editAdditionalInfo.isTariff === true || editAdditionalInfo.isTariff === 'Yes' ? 'Yes' : 'No'}</span>
+                  ) : (
+                    <select
+                      className="border rounded px-2 py-1 text-xs"
+                      value={editAdditionalInfo.isTariff === true || editAdditionalInfo.isTariff === 'Yes' ? 'Yes' : 'No'}
+                      onChange={e => setEditAdditionalInfo((info: any) => ({ ...info, isTariff: e.target.value === 'Yes' ? true : false }))}
+                    >
+                      <option value="No">No</option>
+                      <option value="Yes">Yes</option>
+                    </select>
+                  )}
+                </div>
               </div>
             </div>
           </div>

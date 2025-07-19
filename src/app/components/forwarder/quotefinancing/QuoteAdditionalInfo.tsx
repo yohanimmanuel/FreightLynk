@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useQuoteSearchStore } from '../../../../store/quotesearchdata';
 
 const TABS = ['Export', 'Import', 'Domestic', 'Other'];
-const SHIPMENT_MODES = ['Freehand', 'Nominated', 'Spot', 'Contract'];
+const SHIPMENT_MODES = ['SEA FCL', 'SEA LCL', 'AIR LCL', 'LAND FTL', 'LAND LTL'];
 const INCOTERMS = ['FOB', 'CIF', 'EXW', 'DAP', 'DDP'];
 const FREIGHT_TERMS = ['Prepaid', 'Collect', 'Third Party'];
 
@@ -142,36 +142,12 @@ export default function QuoteAdditionalInfo() {
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-1">Shipment Mode</label>
-          <div className="relative" ref={shipmentModeRef}>
-            <button
-              type="button"
-              className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 text-xs text-gray-900 rounded-lg bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left"
-              onClick={() => setShowShipmentModeDropdown(v => !v)}
-            >
-              {shipmentMode}
-              <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${showShipmentModeDropdown ? 'rotate-180' : ''}`} />
-            </button>
-            {showShipmentModeDropdown && (
-              <div className="absolute left-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 w-full z-50">
-                <div className="p-2">
-                  {SHIPMENT_MODES.map(opt => (
-                    <button
-                      key={opt}
-                      type="button"
-                      onClick={() => { 
-                        setShipmentMode(opt); 
-                        setShowShipmentModeDropdown(false); 
-                        handleFormChange({ shipmentMode: opt });
-                      }}
-                      className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${shipmentMode === opt ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
-                    >
-                      {opt}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          <input
+            type="text"
+            className="w-full px-3 py-2 border border-gray-300 text-xs text-gray-900 rounded-lg bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            value={selectedQuoteDetails?.modeLabel || selectedQuoteDetails?.mode || ''}
+            readOnly
+          />
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-1">Cargo ready date</label>
@@ -300,7 +276,22 @@ export default function QuoteAdditionalInfo() {
           Back
         </button>
         <button 
-          onClick={() => router.push('/quotes/list/invoice')}
+          onClick={() => {
+            // Ensure shipmentType and shipmentTypeDescription are set on both the quote and additionalInfo
+            if (selectedQuoteDetails) {
+              setSelectedQuoteDetails({
+                ...selectedQuoteDetails,
+                shipmentType: tab,
+                shipmentTypeDescription: tab === 'Other' ? shipmentTypeDescription : '',
+                additionalInfo: {
+                  ...formState,
+                  shipmentType: tab,
+                  shipmentTypeDescription: tab === 'Other' ? shipmentTypeDescription : '',
+                }
+              });
+            }
+            router.push('/quotes/list/invoice');
+          }}
           type="button" 
           className="px-4 py-2 text-sm text-white bg-[#007bff] rounded-lg hover:bg-blue-700">
           Next
