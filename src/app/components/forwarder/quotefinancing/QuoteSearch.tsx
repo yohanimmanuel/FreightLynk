@@ -55,6 +55,9 @@ const QuoteSearch = () => {
   const originTypeDropdownRef = useRef<HTMLDivElement>(null);
   const destinationTypeDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Remove autocomplete state and logic for origin/destination
+  // (delete showOriginAutocomplete, showDestinationAutocomplete, originAutocompleteRef, destinationAutocompleteRef, uniqueOrigins, uniqueDestinations, filteredOrigins, filteredDestinations, and all related dropdown rendering)
+
   // Add state to track open detail cost and remark
   const [openDetailCost, setOpenDetailCost] = useState<number | null>(null);
   // Remove Remark button and openRemark state
@@ -97,6 +100,12 @@ const QuoteSearch = () => {
     }, 800);
     // Simulate search functionality
     console.log('Searching with params:', searchParams);
+  };
+
+  // When any search input changes, reset showResults to false
+  const handleInputChange = (field: string, value: string) => {
+    setSearchParams(prev => ({ ...prev, [field]: value }));
+    setShowResults(false);
   };
 
   React.useEffect(() => {
@@ -509,6 +518,11 @@ const QuoteSearch = () => {
       destinationType: appliedSearchParams.destinationType,
       serviceType: `${appliedSearchParams.originType || 'Port'} to ${appliedSearchParams.destinationType || 'Port'}`,
       transitPort: quoteResult.transitPort,
+      // Ensure logo is properly set from the search result
+      logo: quoteResult.logo,
+      companyLogo: quoteResult.logo, // Also set companyLogo for consistency
+      // Initialize additionalInfo as empty object - will be populated in QuoteAdditionalInfo step
+      additionalInfo: {},
     };
     setSelectedQuoteDetails(quoteObj);
     router.push('/quotes/list/addinfo');
@@ -521,21 +535,18 @@ const QuoteSearch = () => {
     truckType: getCanonicalTruckType(t.truckType || '', allAvailableTruckTypes) || t.truckType
   }));
 
-  // Filter searchResults for FTL mode using canonical truck type
+  // Update filteredSearchResults to filter by origin and destination
   const filteredSearchResults = React.useMemo(() => {
-    if (transportMode === 'Land' && cargoTab === 'FTL' && normalizedFtlTrucks.length > 0) {
-      // Only show results that have all requested truck types (canonicalized)
-      return searchResults.filter(result => {
-        const availableTruckTypes = Object.keys(result.ftlRates || {});
-        return normalizedFtlTrucks.every(truck => {
-          const canonicalType = getCanonicalTruckType(truck.truckType, availableTruckTypes);
-          return canonicalType && result.ftlRates[canonicalType];
-        });
-      });
-    }
-    // Default: return all results
-    return searchResults;
-  }, [searchResults, transportMode, cargoTab, normalizedFtlTrucks]);
+    // Only filter if showResults is true (after Search is clicked)
+    if (!showResults) return [];
+    return searchResults.filter(result => {
+      // Origin filter: allow partial, case-insensitive match
+      const originMatch = searchParams.origin.trim() === '' || result.origin.toLowerCase().includes(searchParams.origin.trim().toLowerCase());
+      // Destination filter: allow partial, case-insensitive match
+      const destinationMatch = searchParams.destination.trim() === '' || result.destination.toLowerCase().includes(searchParams.destination.trim().toLowerCase());
+      return originMatch && destinationMatch;
+    });
+  }, [searchResults, searchParams.origin, searchParams.destination, showResults]);
 
   return (
     <div>
@@ -562,7 +573,7 @@ const QuoteSearch = () => {
                 <input
                   type="text"
                   value={searchParams.origin}
-                  onChange={(e) => setSearchParams({...searchParams, origin: e.target.value})}
+                  onChange={(e) => handleInputChange('origin', e.target.value)}
                   placeholder="Enter Origin here..."
                   className="w-full px-3 py-2.5 border border-gray-300 text-xs text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
@@ -599,7 +610,7 @@ const QuoteSearch = () => {
                 <input
                   type="text"
                   value={searchParams.destination}
-                  onChange={(e) => setSearchParams({...searchParams, destination: e.target.value})}
+                  onChange={(e) => handleInputChange('destination', e.target.value)}
                   placeholder="Enter Destination here..."
                   className="w-full px-3 py-2.5 border border-gray-300 text-xs text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
@@ -909,7 +920,7 @@ const QuoteSearch = () => {
           </div>
         )}
         {showResults && !loading && (
-          <>
+        <>
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-md font-semibold text-gray-900">
             Results Found: {filteredSearchResults.length}
@@ -947,9 +958,16 @@ const QuoteSearch = () => {
         </div>
         {/* Results */}
         <div className="space-y-4">
-              {filteredSearchResults.map((result, idx) => {
-                const isDetailOpen = openDetailCost === result.id;
-                // Remove Remark button and openRemark state
+              
+        {filteredSearchResults.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-gray-500">
+              <Search className="w-12 h-12 mb-4 text-gray-300" />
+              <div className="text-lg font-medium">No results found</div>
+              <div className="text-sm mt-1">Try adjusting your search criteria.</div>
+            </div>
+          ) : filteredSearchResults.map((result, idx) => {
+              const isDetailOpen = openDetailCost === result.id;
+              // Remove Remark button and openRemark state
 
                 return (
                   <div key={result.id} className={`bg-white rounded-lg shadow-sm border border-gray-200 transition-all`}>

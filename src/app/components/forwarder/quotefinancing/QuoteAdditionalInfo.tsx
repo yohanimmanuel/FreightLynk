@@ -9,7 +9,7 @@ const INCOTERMS = ['FOB', 'CIF', 'EXW', 'DAP', 'DDP'];
 const FREIGHT_TERMS = ['Prepaid', 'Collect', 'Third Party'];
 
 export default function QuoteAdditionalInfo() {
-  const { setAdditionalInfo, shipmentType, setShipmentType, shipmentTypeDescription, setShipmentTypeDescription } = useQuoteSearchStore();
+  const { setAdditionalInfo, shipmentType, setShipmentType, shipmentTypeDescription, setShipmentTypeDescription, selectedQuoteDetails, setSelectedQuoteDetails } = useQuoteSearchStore();
   const [tab, setTab] = useState('Export');
   const [showShipmentModeDropdown, setShowShipmentModeDropdown] = useState(false);
   const [shipmentMode, setShipmentMode] = useState(SHIPMENT_MODES[0]);
@@ -17,6 +17,16 @@ export default function QuoteAdditionalInfo() {
   const [incoterm, setIncoterm] = useState('');
   const [showFreightTermDropdown, setShowFreightTermDropdown] = useState(false);
   const [freightTerm, setFreightTerm] = useState('');
+
+  // Initialize dropdown states with existing values
+  React.useEffect(() => {
+    if (selectedQuoteDetails?.additionalInfo) {
+      const info = selectedQuoteDetails.additionalInfo;
+      if (info.shipmentMode) setShipmentMode(info.shipmentMode);
+      if (info.incoterm) setIncoterm(info.incoterm);
+      if (info.freightTerm) setFreightTerm(info.freightTerm);
+    }
+  }, [selectedQuoteDetails]);
 
   // Define formState to hold all form values
   const [formState, setFormState] = useState({
@@ -29,8 +39,19 @@ export default function QuoteAdditionalInfo() {
     incoterm: '',
     freightTerm: '',
     isTariff: 'No', // Add default value
+    shipmentMode: SHIPMENT_MODES[0],
     // ...add other fields as needed
   });
+
+  // Initialize form state with existing additional info when component mounts
+  React.useEffect(() => {
+    if (selectedQuoteDetails?.additionalInfo) {
+      setFormState(prevState => ({
+        ...prevState,
+        ...selectedQuoteDetails.additionalInfo
+      }));
+    }
+  }, [selectedQuoteDetails]);
 
   // Dropdown close on outside click
   const shipmentModeRef = useRef<HTMLDivElement>(null);
@@ -65,6 +86,14 @@ export default function QuoteAdditionalInfo() {
     const newState = { ...formState, ...updatedFields };
     setFormState(newState);
     setAdditionalInfo(newState);
+    
+    // Also update the quote's additionalInfo field
+    if (selectedQuoteDetails) {
+      setSelectedQuoteDetails({
+        ...selectedQuoteDetails,
+        additionalInfo: newState
+      });
+    }
   };
 
   return (
@@ -129,7 +158,11 @@ export default function QuoteAdditionalInfo() {
                     <button
                       key={opt}
                       type="button"
-                      onClick={() => { setShipmentMode(opt); setShowShipmentModeDropdown(false); }}
+                      onClick={() => { 
+                        setShipmentMode(opt); 
+                        setShowShipmentModeDropdown(false); 
+                        handleFormChange({ shipmentMode: opt });
+                      }}
                       className={`w-full text-left p-2 hover:bg-gray-50 rounded cursor-pointer text-xs transition-colors ${shipmentMode === opt ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
                     >
                       {opt}

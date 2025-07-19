@@ -232,7 +232,13 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
     switch (key) {
       case 'id': return q.id;
       case 'client': return q.client;
-      case 'isTariff': return q.isTariff ? 'Yes' : 'No';
+      case 'isTariff': {
+        const isTariffValue = q.additionalInfo?.isTariff || q.isTariff;
+        if (typeof isTariffValue === 'string') {
+          return isTariffValue === 'Yes' ? 'Yes' : 'No';
+        }
+        return isTariffValue ? 'Yes' : 'No';
+      }
       case 'provider': return q.provider;
       case 'details': return q.details;
       case 'containertype': return q.containertype;

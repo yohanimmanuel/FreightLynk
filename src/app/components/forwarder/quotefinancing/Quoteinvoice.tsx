@@ -133,17 +133,24 @@ const QuoteInvoice = () => {
   const createdOn = formatDate(new Date());
   const validUntil = quote.validUntil;
 
-  // Extract additional info fields
-  const etd = additionalInfo?.etd || selectedQuoteDetails?.etd || '-';
-  const cargoReadyDate = additionalInfo?.cargoReadyDate || selectedQuoteDetails?.cargoReadyDate || '-';
-  const incoterms = additionalInfo?.incoterm || selectedQuoteDetails?.incoterms || '-';
-  const schedule = additionalInfo?.schedule || '-';
-  const note = additionalInfo?.note || '-';
-  const freightTerms = additionalInfo?.freightTerm || '-';
-  const ofPriceFeedback = additionalInfo?.ofPriceFeedback || '-';
-  const companyBranch = additionalInfo?.companyBranch || '-';
-  const shipmentMode = additionalInfo?.shipmentMode || selectedQuoteDetails?.shipmentMode || '-';
-  const commodities = additionalInfo?.commodities || '-';
+  // Extract additional info fields - prioritize quote's own additionalInfo over global store
+  const quoteAdditionalInfo = quote.additionalInfo || {};
+  const globalAdditionalInfo = additionalInfo || {};
+  
+  // For existing quotes, use the quote's additionalInfo; for new quotes, use global store
+  const isExistingQuote = quotes.some(q => q.id === quote.id);
+  const effectiveAdditionalInfo = isExistingQuote ? quoteAdditionalInfo : globalAdditionalInfo;
+  
+  const etd = effectiveAdditionalInfo.etd || selectedQuoteDetails?.etd || '-';
+  const cargoReadyDate = effectiveAdditionalInfo.cargoReadyDate || selectedQuoteDetails?.cargoReadyDate || '-';
+  const incoterms = effectiveAdditionalInfo.incoterm || selectedQuoteDetails?.incoterms || '-';
+  const schedule = effectiveAdditionalInfo.schedule || '-';
+  const note = effectiveAdditionalInfo.note || '-';
+  const freightTerms = effectiveAdditionalInfo.freightTerm || '-';
+  const ofPriceFeedback = effectiveAdditionalInfo.ofPriceFeedback || '-';
+  const companyBranch = effectiveAdditionalInfo.companyBranch || '-';
+  const shipmentMode = effectiveAdditionalInfo.shipmentMode || selectedQuoteDetails?.shipmentMode || '-';
+  const commodities = effectiveAdditionalInfo.commodities || '-';
 
   // Auto-map and send main invoice data to QuoteTable on mount or when quote changes
   useEffect(() => {
@@ -166,8 +173,8 @@ const QuoteInvoice = () => {
     const fclContainerTypes = getTypeQuantityString(tableRows, 'item');
     const ftlTruckTypes = getTypeQuantityString(tableRows, 'truckType');
     // For LCL/AIR/LTL, show both weight and volume if present
-    const weight = additionalInfo?.lclWeight || selectedQuoteDetails?.lclWeight || '';
-    const volume = additionalInfo?.lclVolume || selectedQuoteDetails?.lclVolume || '';
+    const weight = effectiveAdditionalInfo.lclWeight || selectedQuoteDetails?.lclWeight || '';
+    const volume = effectiveAdditionalInfo.lclVolume || selectedQuoteDetails?.lclVolume || '';
     let lclWeightVolume = '';
     if (weight && volume) {
       lclWeightVolume = `${weight} kg/${volume} cbm`;
@@ -188,13 +195,18 @@ const QuoteInvoice = () => {
       id: quoteId,
       lane: `${quote.origin} - ${quote.destination}`,
       mode: (() => {
-        const label = (quote.modeLabel || '').toUpperCase();
-        if (label.includes('SEA') && label.includes('FCL')) return 'FCL';
-        if (label.includes('SEA') && label.includes('LCL')) return 'LCL';
-        if (label.includes('AIR')) return 'AIR';
-        if (label.includes('LAND') && label.includes('FTL')) return 'FTL';
-        if (label.includes('LAND') && label.includes('LTL')) return 'LTL';
-        return 'FCL';
+        // Use the full modeLabel format (e.g., "SEA FCL", "AIR LCL")
+        const label = quote.modeLabel || '';
+        if (label) return label.toUpperCase();
+        
+        // Fallback logic if modeLabel is not available
+        const fallbackLabel = (quote.mode || '').toUpperCase();
+        if (fallbackLabel.includes('SEA') && fallbackLabel.includes('FCL')) return 'SEA FCL';
+        if (fallbackLabel.includes('SEA') && fallbackLabel.includes('LCL')) return 'SEA LCL';
+        if (fallbackLabel.includes('AIR')) return 'AIR LCL';
+        if (fallbackLabel.includes('LAND') && fallbackLabel.includes('FTL')) return 'LAND FTL';
+        if (fallbackLabel.includes('LAND') && fallbackLabel.includes('LTL')) return 'LAND LTL';
+        return fallbackLabel || 'FCL';
       })() as import('../../../../store/forwarderquote').Quote['mode'],
       containertype: fclContainerTypes, // All container types and quantities for FCL
       truckType: ftlTruckTypes,        // All truck types and quantities for FTL
@@ -208,16 +220,16 @@ const QuoteInvoice = () => {
       status: 'draft' as 'draft',
       origin: quote.origin || '',
       destination: quote.destination || '',
-      incoterms: additionalInfo?.incoterm || quote.incoterms || '',
+      incoterms: effectiveAdditionalInfo.incoterm || quote.incoterms || '',
       remark: quote.remark || '',
       serviceType: quote.serviceType || '',
       transitPort: quote.transitPort || '',
       client: editTo.company || quote.client || '',
-      isTariff: additionalInfo?.isTariff ?? quote.isTariff ?? false,
+      isTariff: effectiveAdditionalInfo.isTariff ?? quote.isTariff ?? false,
       profit: quote.profit || '',
       createdBy: quote.createdBy || '',
       createdDate: quote.createdDate || '',
-      notes: additionalInfo?.note || quote.notes || '',
+      notes: effectiveAdditionalInfo.note || quote.notes || '',
       details: detailsField || quote.details || '',
       // Expanded fields for invoice:
       from: quote.from || {
@@ -228,12 +240,12 @@ const QuoteInvoice = () => {
         company: editTo.company || '', address: editTo.address || '', phone: editTo.phone || '', contact: editTo.contact || ''
       },
       tableRows: quote.tableRows || [],
-      additionalInfo: quote.additionalInfo || additionalInfo || {},
+      additionalInfo: effectiveAdditionalInfo,
       companyBranch: quote.companyBranch || '',
       companyName: quote.companyName || user?.companyName || '',
-      companyLogo: quote.companyLogo || '',
-      shipmentType: quote.shipmentType || '',
-      shipmentTypeDescription: quote.shipmentTypeDescription || '',
+      companyLogo: quote.companyLogo || quote.logo || '',
+      shipmentType: shipmentType || quote.shipmentType || '',
+      shipmentTypeDescription: shipmentTypeDescription || quote.shipmentTypeDescription || '',
       validUntil: quote.validUntil || '',
       originAirport: quote.originAirport || '',
       destinationAirport: quote.destinationAirport || ''
@@ -369,7 +381,20 @@ const QuoteInvoice = () => {
           {/* Right: Logo and Quotation */}
           <div className="flex flex-col gap-3 items-end">
             <div className="p-8 border border-gray-200 rounded-lg shadow-xs flex flex-col items-center justify-center w-full mt-8">
-              <img src={quote.logo} alt="Logo" className="w-32 h-16 object-contain mx-auto" />
+              {quote.companyLogo ? (
+                <img src={quote.companyLogo} alt="Logo" className="w-32 h-16 object-contain mx-auto" />
+              ) : quote.logo ? (
+                <img src={quote.logo} alt="Logo" className="w-32 h-16 object-contain mx-auto" />
+              ) : (
+                <div className="w-32 h-16 flex items-center justify-center text-gray-400 text-xs">
+                  <div className="text-center">
+                    <div className="w-8 h-8 mx-auto mb-1 bg-gray-200 rounded flex items-center justify-center">
+                      <span className="text-gray-500 text-xs">Logo</span>
+                    </div>
+                    <span className="text-gray-500 text-xs">Logo</span>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="text-3xl text-gray-900 font-semibold uppercase mt-2 text-right w-full">Quotation</div>
             <div className="text-md text-gray-700 font-semibold mt-1 text-right w-full">{quote.provider}</div>
@@ -402,15 +427,15 @@ const QuoteInvoice = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-gray-900">
                 <div className="flex justify-between text-xs">
                   <span className="text-gray-500">Shipment Type:</span>
-                  <span className="font-semibold">{shipmentType}</span>
+                  <span className="font-semibold">{isExistingQuote ? (quote.shipmentType || '-') : (shipmentType || quote.shipmentType || '-')}</span>
                 </div>
-                {shipmentType === 'Other' && shipmentTypeDescription && (
+                {(isExistingQuote ? quote.shipmentType : shipmentType) === 'Other' && (isExistingQuote ? quote.shipmentTypeDescription : shipmentTypeDescription) && (
                   <div className="flex justify-between text-xs">
                     <span className="text-gray-500">Description:</span>
-                    <span className="font-semibold">{shipmentTypeDescription}</span>
+                    <span className="font-semibold">{isExistingQuote ? quote.shipmentTypeDescription : shipmentTypeDescription}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-xs"><span className="text-gray-500">Mode:</span><span className="font-semibold">{selectedQuoteDetails?.modeLabel || '-'}</span></div>
+                <div className="flex justify-between text-xs"><span className="text-gray-500">Mode:</span><span className="font-semibold">{isExistingQuote ? (quote.mode || '-') : (selectedQuoteDetails?.modeLabel || quote.mode || '-')}</span></div>
                 <div className="flex justify-between text-xs"><span className="text-gray-500">Transit Time:</span><span className="font-semibold">{quote.transitTime}</span></div>
                 <div className="flex justify-between text-xs"><span className="text-gray-500">Remark:</span><span className="font-semibold">{editRemark}</span></div>
                 <div className="flex justify-between text-xs"><span className="text-gray-500">Cargo Ready Date:</span><span className="font-semibold">{cargoReadyDate}</span></div>
@@ -421,7 +446,7 @@ const QuoteInvoice = () => {
                 <div className="flex justify-between text-xs"><span className="text-gray-500">Note:</span><span className="font-semibold">{note}</span></div>
                 <div className="flex justify-between text-xs"><span className="text-gray-500">Company Branch:</span><span className="font-semibold">{companyBranch}</span></div>
                 <div className="flex justify-between text-xs"><span className="text-gray-500">Commodities:</span><span className="font-semibold">{commodities}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-gray-500">Is Tariff:</span><span className="font-semibold">{additionalInfo?.isTariff || 'No'}</span></div>
+                <div className="flex justify-between text-xs"><span className="text-gray-500">Is Tariff:</span><span className="font-semibold">{effectiveAdditionalInfo.isTariff || 'No'}</span></div>
               </div>
             </div>
           </div>
