@@ -157,8 +157,6 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
   // For client: Accept/Reject actions
   const updateQuoteStatus = role === 'client' ? clientStore.updateQuoteStatus : undefined;
 
-  console.log('All quotes in store:', quotes);
-
   const [tab, setTab] = useState('all');
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
@@ -234,8 +232,8 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
         return isTariffValue ? 'Yes' : 'No';
       }
       case 'provider': return q.provider;
-      case 'details': return q.details || '';
-      case 'containertype': return q.containertype || '';
+      case 'details': return q.details;
+      case 'containertype': return q.containertype;
       case 'origin': return q.origin;
       case 'destination': return q.destination;
       case 'status': return q.status;
@@ -245,10 +243,23 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
       case 'incoterms': return q.incoterms || q.invoiceIncoterms || '—';
       case 'remark': return q.remark || q.invoiceRemark || '—';
       case 'notes': return q.notes || q.invoiceNotes || '—';
-      case 'weightVolume': return q.weightVolume || '';
-      case 'truckType': return q.truckType || '';
+      case 'weightVolume': {
+        // For LCL, AIR, LTL quotes, construct weight/volume from multiple possible sources
+        const weight = q.lclWeight || q.additionalInfo?.lclWeight || '';
+        const volume = q.lclVolume || q.additionalInfo?.lclVolume || '';
+        if (weight && volume) {
+          return [`${weight} kg / ${volume} cbm`];
+        } else if (weight) {
+          return [`${weight} kg`];
+        } else if (volume) {
+          return [`${volume} cbm`];
+        }
+        // Fallback to weightVolume field if it exists
+        return q.weightVolume || [];
+      }
+      case 'truckType': return q.truckType;
       case 'shipmentType': return q.shipmentType || q.additionalInfo?.shipmentType || '-';
-      case 'mode': return q.mode || q.additionalInfo?.shipmentMode || q.modeLabel || '-';
+      case 'mode': return q.mode || q.modeLabel || q.additionalInfo?.shipmentMode || '-';
       default: return '';
     }
   };
@@ -258,13 +269,16 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
     // Tab filter (mode)
     const tabMatch = (() => {
       if (tab === 'all') return true;
-      if (!q.mode) return false;
-      const m = q.mode.toLowerCase().trim();
-      if (tab === 'fcl') return m.endsWith('fcl');
-      if (tab === 'lcl') return m.endsWith('lcl') && !m.startsWith('air');
-      if (tab === 'air') return m === 'air' || m.startsWith('air ');
-      if (tab === 'ftl') return m.endsWith('ftl');
-      if (tab === 'ltl') return m.endsWith('ltl');
+      
+      // Check both mode and modeLabel properties
+      const mode = (q.mode || q.modeLabel || '').toLowerCase().trim();
+      if (!mode) return false;
+      
+      if (tab === 'fcl') return mode.includes('fcl');
+      if (tab === 'lcl') return mode.includes('lcl') && !mode.includes('air');
+      if (tab === 'air') return mode.includes('air');
+      if (tab === 'ftl') return mode.includes('ftl');
+      if (tab === 'ltl') return mode.includes('ltl');
       return false;
     })();
     // Filter (not implemented, placeholder)
@@ -598,7 +612,7 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
                     </td>
                   ) : col.key === 'id' ? (
                     <td key={col.key} className="px-4 py-4 text-gray-900 whitespace-nowrap overflow-x-auto">
-                      {getModeIcon(q.mode)}{getValue(q, col.key)}
+                      {getModeIcon(q.mode || q.modeLabel)}{getValue(q, col.key)}
                     </td>
                   ) : col.key === 'details' || col.key === 'containertype' || col.key === 'truckType' || col.key === 'weightVolume' ? (
                     <td key={col.key} className="px-4 py-4 text-gray-900 whitespace-nowrap overflow-x-auto">
@@ -606,13 +620,10 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
                         ? q[col.key].map((badge: string, i: number) => (
                             <span key={i} className="inline-block border border-blue-300 bg-blue-50 text-blue-800 rounded-full px-2 py-1 text-xs font-semibold mr-1 truncate">{badge}</span>
                           ))
-                        : typeof q[col.key] === 'string' && q[col.key]
-                          ? q[col.key].split(',').map((badge: string, i: number) => {
-                              const trimmedBadge = badge.trim();
-                              return trimmedBadge ? (
-                                <span key={i} className="inline-block border border-blue-300 bg-blue-50 text-blue-800 rounded-full px-2 py-1 text-xs font-semibold mr-1 truncate">{trimmedBadge}</span>
-                              ) : null;
-                            }).filter(Boolean)
+                        : typeof q[col.key] === 'string'
+                          ? q[col.key].split('  ').filter(Boolean).map((badge: string, i: number) => (
+                              <span key={i} className="inline-block border border-blue-300 bg-blue-50 text-blue-800 rounded-full px-2 py-1 text-xs font-semibold mr-1 truncate">{badge}</span>
+                            ))
                           : <span className="text-gray-400">-</span>
                       }
                     </td>

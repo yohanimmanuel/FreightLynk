@@ -96,7 +96,7 @@ export interface Quote {
   id: string;
   lane: string;
   mode: 'ocean' | 'air' | 'road';
-  containertype: string;
+  containertype: string | string[];
   currency: string;
   baseRate: number;
   price: string;
@@ -116,9 +116,9 @@ export interface Quote {
   createdBy?: string;
   createdDate?: string;
   notes?: string;
-  details?: string;
-  truckType?: string;
-  weightVolume?: string;
+  details?: string | string[];
+  truckType?: string | string[];
+  weightVolume?: string | string[];
 
   // Expanded fields for invoice
   from: QuoteParty;
