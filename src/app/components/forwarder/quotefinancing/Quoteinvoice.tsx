@@ -108,7 +108,7 @@ function formatQuoteForTable(
   };
 }
 
-const QuoteInvoice = () => {
+const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boolean }) => {
   const { selectedQuoteDetails, additionalInfo, shipmentType, shipmentTypeDescription, setSelectedQuoteDetails } = useQuoteSearchStore();
   const { user } = useAuthStore();
   const router = useRouter();
@@ -122,7 +122,7 @@ const QuoteInvoice = () => {
   if (!quote) return <div className="text-center text-gray-500 py-12">No quote selected. Please select a quote from the search results.</div>;
 
   // --- Edit mode state ---
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(isManualQuotation);
   const [editFrom, setEditFrom] = useState({
     company: user?.companyName || 'Demo Company (FreightLynk LLC)',
     address: '1000 20th Street NW, Suite 400, Washington D.C. 20036',
@@ -141,6 +141,55 @@ const QuoteInvoice = () => {
   const [editAdditionalInfo, setEditAdditionalInfo] = useState({ ...quote.additionalInfo });
   const [originalState, setOriginalState] = useState<any>(null);
   const [loadingDraft, setLoadingDraft] = useState(true);
+
+  // Additional state for manual quotations
+  const [additionalCost, setAdditionalCost] = useState(0);
+  const [additionalCostDescription, setAdditionalCostDescription] = useState('');
+
+  // Functions for manual quotation table management
+  const addTableRow = () => {
+    const newRow = {
+      chargeType: '',
+      item: '',
+      description: '',
+      calculation: '',
+      qty: 1,
+      baseRate: 0,
+      currency: 'USD',
+      amount: 0,
+    };
+    
+    const updatedTableRows = [...tableRows, newRow];
+    setSelectedQuoteDetails({
+      ...selectedQuoteDetails,
+      tableRows: updatedTableRows,
+    });
+  };
+
+  const removeTableRow = (index: number) => {
+    const updatedTableRows = tableRows.filter((_: any, i: number) => i !== index);
+    setSelectedQuoteDetails({
+      ...selectedQuoteDetails,
+      tableRows: updatedTableRows,
+    });
+  };
+
+  const updateTableRow = (index: number, field: string, value: any) => {
+    const updatedTableRows = [...tableRows];
+    updatedTableRows[index] = { ...updatedTableRows[index], [field]: value };
+    
+    // Recalculate amount if qty or baseRate changed
+    if (field === 'qty' || field === 'baseRate') {
+      const qty = field === 'qty' ? value : updatedTableRows[index].qty;
+      const baseRate = field === 'baseRate' ? value : updatedTableRows[index].baseRate;
+      updatedTableRows[index].amount = qty * baseRate;
+    }
+    
+    setSelectedQuoteDetails({
+      ...selectedQuoteDetails,
+      tableRows: updatedTableRows,
+    });
+  };
 
   // Centralized empty form state for invoice
   const emptyFormState = {
@@ -240,6 +289,7 @@ const QuoteInvoice = () => {
       ...weightVolumes
     ].filter(Boolean).join(', ');
     const totalAmount = (quote.tableRows || []).reduce((sum: number, row: any) => sum + (typeof row.amount === 'number' ? row.amount : 0), 0);
+    const finalTotalAmount = totalAmount + (isManualQuotation ? additionalCost : 0);
     // Compute container/truck type as 'qty x type' and weight/volume as 'weight kg / volume cbm'
     function getTypeQuantityString(rows: any[], typeKey: string) {
       const counts: Record<string, number> = {};
@@ -336,7 +386,7 @@ const QuoteInvoice = () => {
       truckType: truckTypeBadges,
       weightVolume: weightVolumeBadge ? [weightVolumeBadge] : [],
       status: quote.status || 'draft',
-      price: totalAmount?.toString() || quote.price || '',
+      price: finalTotalAmount?.toString() || quote.price || '',
       createdBy: user?.fullName || quote.createdBy || '',
       incoterms: cleanedAdditionalInfo.incoterm || quote.incoterms || '',
       notes: cleanedAdditionalInfo.note || quote.notes || '',
@@ -935,6 +985,17 @@ const QuoteInvoice = () => {
         {/* Quote Details Table - Redesigned with border and new columns */}
         <div className="mt-8 bg-white">
           <div className="font-semibold text-gray-900 mb-2 text-md">Quote detail</div>
+          {isManualQuotation && (
+            <div className="mb-4 flex justify-between items-center">
+              <button
+                onClick={addTableRow}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600 flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add Row
+              </button>
+            </div>
+          )}
           <div className="overflow-x-auto rounded-lg px-0 pb-2 border border-gray-200 rounded-lg">
             <table className="min-w-full text-xs text-left border-0">
               <thead className="bg-gray-50 text-gray-700 border-b border-gray-200">
@@ -947,23 +1008,143 @@ const QuoteInvoice = () => {
                   <th className="px-4 py-3 font-semibold text-right">Price</th>
                   <th className="px-4 py-3 font-semibold text-right">Currency</th>
                   <th className="px-4 py-3 font-semibold text-right">Amount</th>
+                  {isManualQuotation && <th className="px-4 py-3 font-semibold text-center">Actions</th>}
                 </tr>
               </thead>
               <tbody className="text-gray-900">
                 {tableRows.map((row: any, idx: number) => (
                   <tr key={row.item + idx} className="border-b border-gray-200">
-                    <td className="px-4 py-3">{row.chargeType}</td>
-                    <td className="px-4 py-3">{row.item}</td>
-                    <td className="px-4 py-3">{row.description}</td>
-                    <td className="px-4 py-3">{row.calculation}</td>
-                    <td className="px-4 py-3 text-right">{row.qty}</td>
-                    <td className="px-4 py-3 text-right">{row.baseRate}</td>
-                    <td className="px-4 py-3 text-right">{row.currency}</td>
-                    <td className="px-4 py-3 text-right">{row.amount}</td>
+                    <td className="px-4 py-3">
+                      {isManualQuotation ? (
+                        <input
+                          type="text"
+                          className="w-full border rounded px-2 py-1 text-xs"
+                          value={row.chargeType || ''}
+                          onChange={(e) => updateTableRow(idx, 'chargeType', e.target.value)}
+                        />
+                      ) : (
+                        row.chargeType
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {isManualQuotation ? (
+                        <input
+                          type="text"
+                          className="w-full border rounded px-2 py-1 text-xs"
+                          value={row.item || ''}
+                          onChange={(e) => updateTableRow(idx, 'item', e.target.value)}
+                        />
+                      ) : (
+                        row.item
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {isManualQuotation ? (
+                        <input
+                          type="text"
+                          className="w-full border rounded px-2 py-1 text-xs"
+                          value={row.description || ''}
+                          onChange={(e) => updateTableRow(idx, 'description', e.target.value)}
+                        />
+                      ) : (
+                        row.description
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {isManualQuotation ? (
+                        <input
+                          type="text"
+                          className="w-full border rounded px-2 py-1 text-xs"
+                          value={row.calculation || ''}
+                          onChange={(e) => updateTableRow(idx, 'calculation', e.target.value)}
+                        />
+                      ) : (
+                        row.calculation
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {isManualQuotation ? (
+                        <input
+                          type="number"
+                          className="w-20 border rounded px-2 py-1 text-xs text-right"
+                          value={row.qty || 1}
+                          onChange={(e) => updateTableRow(idx, 'qty', parseFloat(e.target.value) || 0)}
+                        />
+                      ) : (
+                        row.qty
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {isManualQuotation ? (
+                        <input
+                          type="number"
+                          step="0.01"
+                          className="w-20 border rounded px-2 py-1 text-xs text-right"
+                          value={row.baseRate || 0}
+                          onChange={(e) => updateTableRow(idx, 'baseRate', parseFloat(e.target.value) || 0)}
+                        />
+                      ) : (
+                        row.baseRate
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {isManualQuotation ? (
+                        <select
+                          className="w-20 border rounded px-2 py-1 text-xs text-right"
+                          value={row.currency || 'USD'}
+                          onChange={(e) => updateTableRow(idx, 'currency', e.target.value)}
+                        >
+                          <option value="USD">USD</option>
+                          <option value="EUR">EUR</option>
+                          <option value="GBP">GBP</option>
+                          <option value="SGD">SGD</option>
+                        </select>
+                      ) : (
+                        row.currency
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {(row.qty * row.baseRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                    {isManualQuotation && (
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          onClick={() => removeTableRow(idx)}
+                          className="text-red-500 hover:text-red-700 text-xs"
+                        >
+                          Remove
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
             </table>
+            
+            {/* Additional Cost Section for Manual Quotations */}
+            {isManualQuotation && (
+              <div className="mt-4 px-4 py-3 border-t border-gray-200">
+                <div className="flex items-center gap-4 mb-3">
+                  <span className="text-sm font-medium text-gray-700">Additional Cost:</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="w-32 border rounded px-2 py-1 text-xs"
+                    placeholder="0.00"
+                    value={additionalCost}
+                    onChange={(e) => setAdditionalCost(parseFloat(e.target.value) || 0)}
+                  />
+                  <input
+                    type="text"
+                    className="flex-1 border rounded px-2 py-1 text-xs"
+                    placeholder="Description (optional)"
+                    value={additionalCostDescription}
+                    onChange={(e) => setAdditionalCostDescription(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+            
             {/* Subtotal and Total Rows */}
             <div className="flex flex-col items-end mt-2 px-4 text-sm">
               <div className="flex w-full justify-end mb-2">
@@ -971,10 +1152,17 @@ const QuoteInvoice = () => {
                 <div className="w-16 text-right font-semibold text-gray-700">{currency}</div>
                 <div className="w-24 text-right font-semibold text-gray-900">{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</div>
               </div>
+              {isManualQuotation && additionalCost > 0 && (
+                <div className="flex w-full justify-end mb-2">
+                  <div className="w-32 text-right font-semibold text-gray-700">ADDITIONAL :</div>
+                  <div className="w-16 text-right font-semibold text-gray-700">{currency}</div>
+                  <div className="w-24 text-right font-semibold text-gray-900">{additionalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                </div>
+              )}
               <div className="flex w-full justify-end border-t border-gray-200 pt-2">
                 <div className="w-32 text-right font-bold text-gray-900">TOTAL :</div>
                 <div className="w-16 text-right font-bold text-gray-900">{currency}</div>
-                <div className="w-24 text-right font-bold text-gray-900">{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</div>
+                <div className="w-24 text-right font-bold text-gray-900">{(totalAmount + additionalCost).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</div>
               </div>
             </div>
           </div>

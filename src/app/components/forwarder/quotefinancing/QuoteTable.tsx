@@ -441,7 +441,13 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
           </button>
           {role === 'forwarder' && (
             <>
-              <button className="px-4 py-2 rounded-lg bg-white text-gray-900 text-sm font-medium border border-gray-300 hover:bg-gray-200 flex items-center gap-2">
+              <button 
+                className="px-4 py-2 rounded-lg bg-white text-gray-900 text-sm font-medium border border-gray-300 hover:bg-gray-200 flex items-center gap-2"
+                onClick={() => {
+                  resetSearchAndAdditionalInfo();
+                  router.push('/quotes/list/manual');
+                }}
+              >
                 <Plus className="w-4 h-4" />
                 Manual Quotation
               </button>
