@@ -146,6 +146,18 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
   const [additionalCost, setAdditionalCost] = useState(0);
   const [additionalCostDescription, setAdditionalCostDescription] = useState('');
 
+  // State for editable quote fields
+  const [editQuote, setEditQuote] = useState({
+    origin: quote.origin || '',
+    destination: quote.destination || '',
+    transitPort: quote.transitPort || '',
+    serviceType: quote.serviceType || '',
+    mode: quote.mode || '',
+    transitTime: quote.transitTime || '',
+    validUntil: quote.validUntil || '',
+    provider: quote.provider || '',
+  });
+
   // Functions for manual quotation table management
   const addTableRow = () => {
     const newRow = {
@@ -232,6 +244,26 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
     setEditRemark(quote.remark || '');
     setEditAdditionalInfo({ ...quote.additionalInfo });
   }, [quote]);
+
+  // Initialize table with default row for manual quotations
+  useEffect(() => {
+    if (isManualQuotation && (!selectedQuoteDetails?.tableRows || selectedQuoteDetails.tableRows.length === 0)) {
+      const defaultRow = {
+        chargeType: '',
+        item: '',
+        description: '',
+        calculation: '',
+        qty: 1,
+        baseRate: 0,
+        currency: 'USD',
+        amount: 0,
+      };
+      setSelectedQuoteDetails({
+        ...selectedQuoteDetails,
+        tableRows: [defaultRow],
+      });
+    }
+  }, [isManualQuotation, selectedQuoteDetails]);
 
   // Generate quoteId ONCE for both invoice and table, using draft if available
   const [quoteId] = useState(() => currentDraftQuote?.id || (typeof quote.id === 'string' ? quote.id : generateQuoteId()));
@@ -368,6 +400,13 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       // Preserve weight/volume data
       lclWeight: editAdditionalInfo.lclWeight || quote.lclWeight || '',
       lclVolume: editAdditionalInfo.lclVolume || quote.lclVolume || '',
+      // Update quote fields from editQuote state
+      origin: editQuote.origin,
+      destination: editQuote.destination,
+      transitPort: editQuote.transitPort,
+      serviceType: editQuote.serviceType,
+      transitTime: editQuote.transitTime,
+      validUntil: editQuote.validUntil,
       mode: (() => {
         const m = (selectedQuoteDetails?.modeLabel || quote.mode || '').toUpperCase();
         if (m.includes('SEA') && m.includes('FCL')) return 'SEA FCL';
@@ -380,7 +419,6 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       })(),
       details: detailsBadges,
       isTariff: cleanedAdditionalInfo.isTariff ?? quote.isTariff ?? false,
-      provider: quote.provider || '',
       client: safeTo.company || quote.client || '',
       containertype: containerTypeBadges,
       truckType: truckTypeBadges,
@@ -753,7 +791,17 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
             <div className="text-3xl text-gray-900 font-semibold uppercase mt-2 text-right w-full">Quotation</div>
             <div className="text-md text-gray-700 font-semibold mt-1 text-right w-full">{quote.provider}</div>
             <div className="text-xs text-gray-600 mt-2 text-right w-full">Created on: <span className="font-medium text-gray-900">{createdOn}</span></div>
-            <div className="text-xs text-gray-600 text-right w-full">Valid until: <span className="font-medium text-gray-900">{quote.validUntil}</span></div>
+            <div className="text-xs text-gray-600 text-right w-full">Valid until: {!isEditing && !isManualQuotation ? (
+              <span className="font-medium text-gray-900">{quote.validUntil}</span>
+            ) : (
+              <input
+                type="date"
+                className="border rounded px-2 py-1 text-xs"
+                value={editQuote.validUntil}
+                onChange={e => setEditQuote(prev => ({ ...prev, validUntil: e.target.value }))}
+              />
+            )}
+            </div>
             <div className="text-xs text-gray-600 text-right w-full">Quote ID: <span className="font-medium text-gray-900">{quote.id}</span></div>
           </div>
         </div>
@@ -766,13 +814,97 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
             <div className="pb-4 mb-4 border-b">
               <div className="font-semibold text-gray-900 mb-2 text-xs uppercase tracking-wider mb-2">Location Details</div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-gray-900">
-                <div className="flex justify-between text-xs"><span className="text-gray-500">Origin:</span><span className="font-semibold">{quote.origin}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-gray-500">Destination:</span><span className="font-semibold">{quote.destination}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-gray-500">Port of Loading:</span><span className="font-semibold">{quote.origin}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-gray-500">Port of Discharge:</span><span className="font-semibold">{quote.destination}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-gray-500">Port of Delivery:</span><span className="font-semibold">{quote.destination}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-gray-500">Transit Port:</span><span className="font-semibold">{quote.transitPort || '-'}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-gray-500">Location Type:</span><span className="font-semibold">{quote.serviceType || '-'}</span></div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Origin:</span>
+                  {!isEditing && !isManualQuotation ? (
+                    <span className="font-semibold">{quote.origin}</span>
+                  ) : (
+                    <input
+                      className="border rounded px-2 py-1 text-xs w-32"
+                      value={editQuote.origin}
+                      onChange={e => setEditQuote(prev => ({ ...prev, origin: e.target.value }))}
+                      placeholder="e.g. Singapore"
+                    />
+                  )}
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Destination:</span>
+                  {!isEditing && !isManualQuotation ? (
+                    <span className="font-semibold">{quote.destination}</span>
+                  ) : (
+                    <input
+                      className="border rounded px-2 py-1 text-xs w-32"
+                      value={editQuote.destination}
+                      onChange={e => setEditQuote(prev => ({ ...prev, destination: e.target.value }))}
+                      placeholder="e.g. Los Angeles"
+                    />
+                  )}
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Port of Loading:</span>
+                  {!isEditing && !isManualQuotation ? (
+                    <span className="font-semibold">{quote.origin}</span>
+                  ) : (
+                    <input
+                      className="border rounded px-2 py-1 text-xs w-32"
+                      value={editQuote.origin}
+                      onChange={e => setEditQuote(prev => ({ ...prev, origin: e.target.value }))}
+                      placeholder="e.g. Singapore Port"
+                    />
+                  )}
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Port of Discharge:</span>
+                  {!isEditing && !isManualQuotation ? (
+                    <span className="font-semibold">{quote.destination}</span>
+                  ) : (
+                    <input
+                      className="border rounded px-2 py-1 text-xs w-32"
+                      value={editQuote.destination}
+                      onChange={e => setEditQuote(prev => ({ ...prev, destination: e.target.value }))}
+                      placeholder="e.g. Los Angeles Port"
+                    />
+                  )}
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Port of Delivery:</span>
+                  {!isEditing && !isManualQuotation ? (
+                    <span className="font-semibold">{quote.destination}</span>
+                  ) : (
+                    <input
+                      className="border rounded px-2 py-1 text-xs w-32"
+                      value={editQuote.destination}
+                      onChange={e => setEditQuote(prev => ({ ...prev, destination: e.target.value }))}
+                      placeholder="e.g. Los Angeles Port"
+                    />
+                  )}
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Transit Port:</span>
+                  {!isEditing && !isManualQuotation ? (
+                    <span className="font-semibold">{quote.transitPort || '-'}</span>
+                  ) : (
+                    <input
+                      className="border rounded px-2 py-1 text-xs w-32"
+                      value={editQuote.transitPort}
+                      onChange={e => setEditQuote(prev => ({ ...prev, transitPort: e.target.value }))}
+                      placeholder="e.g. Yokohama"
+                    />
+                  )}
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Location Type:</span>
+                  {!isEditing && !isManualQuotation ? (
+                    <span className="font-semibold">{quote.serviceType || '-'}</span>
+                  ) : (
+                    <input
+                      className="border rounded px-2 py-1 text-xs w-32"
+                      value={editQuote.serviceType}
+                      onChange={e => setEditQuote(prev => ({ ...prev, serviceType: e.target.value }))}
+                      placeholder="e.g. Port to Port"
+                    />
+                  )}
+                </div>
               </div>
             </div>
             {/* Additional Information */}
@@ -823,12 +955,70 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                 {/* Mode (read-only) */}
                 <div className="flex justify-between text-xs items-center">
                   <span className="text-gray-500">Mode:</span>
-                  <span className="font-semibold">{quote.mode || quote.additionalInfo?.shipmentMode || quote.modeLabel || '-'}</span>
+                  {!isEditing && !isManualQuotation ? (
+                    <span className="font-semibold">{quote.mode || quote.additionalInfo?.shipmentMode || quote.modeLabel || '-'}</span>
+                  ) : (
+                    <select
+                      className="border rounded px-2 py-1 text-xs"
+                      value={editQuote.mode}
+                      onChange={e => {
+                        const newModeLabel = e.target.value;
+                        let newModeType: 'ocean' | 'air' | 'road' = 'ocean';
+                        if (newModeLabel.includes('AIR')) newModeType = 'air';
+                        else if (newModeLabel.includes('LAND')) newModeType = 'road';
+                        else newModeType = 'ocean';
+                        setEditQuote(prev => ({ ...prev, mode: newModeLabel }));
+                        setSelectedQuoteDetails((details: any) => ({ ...details, mode: newModeType, modeLabel: newModeLabel }));
+                        setCurrentDraftQuote({
+                          ...currentDraftQuote,
+                          mode: newModeType,
+                          id: currentDraftQuote?.id || '',
+                          lane: currentDraftQuote?.lane || '',
+                          containertype: currentDraftQuote?.containertype || [],
+                          truckType: currentDraftQuote?.truckType || [],
+                          weightVolume: currentDraftQuote?.weightVolume || [],
+                          currency: currentDraftQuote?.currency || '',
+                          baseRate: currentDraftQuote?.baseRate || 0,
+                          price: currentDraftQuote?.price || '',
+                          transitTime: currentDraftQuote?.transitTime || '',
+                          provider: currentDraftQuote?.provider || '',
+                          validity: currentDraftQuote?.validity || '',
+                          status: currentDraftQuote?.status || 'draft',
+                          origin: currentDraftQuote?.origin || '',
+                          destination: currentDraftQuote?.destination || '',
+                          transitPort: currentDraftQuote?.transitPort || '',
+                          serviceType: currentDraftQuote?.serviceType || '',
+                          incoterms: currentDraftQuote?.incoterms || '',
+                          remark: currentDraftQuote?.remark || '',
+                          from: currentDraftQuote?.from || { company: '', address: '', phone: '', preparedBy: '', mobile: '', email: '' },
+                          to: currentDraftQuote?.to || { company: '', address: '', phone: '', contact: '' },
+                          tableRows: currentDraftQuote?.tableRows || [],
+                          additionalInfo: currentDraftQuote?.additionalInfo || { shipmentType: '', cargoReadyDate: '', etd: '', incoterms: '', freightTerms: '', ofPriceFeedback: '', notes: '', companyBranch: '', commodities: '', isTariff: false },
+                        });
+                      }}
+                    >
+                      <option value="">Select</option>
+                      <option value="SEA FCL">SEA FCL</option>
+                      <option value="SEA LCL">SEA LCL</option>
+                      <option value="AIR LCL">AIR LCL</option>
+                      <option value="LAND FTL">LAND FTL</option>
+                      <option value="LAND LTL">LAND LTL</option>
+                    </select>
+                  )}
                 </div>
                 {/* Transit Time */}
                 <div className="flex justify-between text-xs items-center">
                   <span className="text-gray-500">Transit Time:</span>
-                  <span className="font-semibold">{quote.transitTime || '-'}</span>
+                  {!isEditing && !isManualQuotation ? (
+                    <span className="font-semibold">{quote.transitTime || '-'}</span>
+                  ) : (
+                    <input
+                      className="border rounded px-2 py-1 text-xs"
+                      value={editQuote.transitTime}
+                      onChange={e => setEditQuote(prev => ({ ...prev, transitTime: e.target.value }))}
+                      placeholder="e.g. 25 days"
+                    />
+                  )}
                 </div>
                 {/* Remark */}
                 <div className="flex justify-between text-xs items-center">
@@ -985,7 +1175,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
         {/* Quote Details Table - Redesigned with border and new columns */}
         <div className="mt-8 bg-white">
           <div className="font-semibold text-gray-900 mb-2 text-md">Quote detail</div>
-          {isManualQuotation && (
+          {(isManualQuotation || isEditing) && (
             <div className="mb-4 flex justify-between items-center">
               <button
                 onClick={addTableRow}
@@ -1008,14 +1198,14 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                   <th className="px-4 py-3 font-semibold text-right">Price</th>
                   <th className="px-4 py-3 font-semibold text-right">Currency</th>
                   <th className="px-4 py-3 font-semibold text-right">Amount</th>
-                  {isManualQuotation && <th className="px-4 py-3 font-semibold text-center">Actions</th>}
+                  {(isManualQuotation || isEditing) && <th className="px-4 py-3 font-semibold text-center">Actions</th>}
                 </tr>
               </thead>
               <tbody className="text-gray-900">
                 {tableRows.map((row: any, idx: number) => (
                   <tr key={row.item + idx} className="border-b border-gray-200">
                     <td className="px-4 py-3">
-                      {isManualQuotation ? (
+                      {(isManualQuotation || isEditing) ? (
                         <input
                           type="text"
                           className="w-full border rounded px-2 py-1 text-xs"
@@ -1027,7 +1217,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      {isManualQuotation ? (
+                      {(isManualQuotation || isEditing) ? (
                         <input
                           type="text"
                           className="w-full border rounded px-2 py-1 text-xs"
@@ -1039,7 +1229,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      {isManualQuotation ? (
+                      {(isManualQuotation || isEditing) ? (
                         <input
                           type="text"
                           className="w-full border rounded px-2 py-1 text-xs"
@@ -1051,7 +1241,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      {isManualQuotation ? (
+                      {(isManualQuotation || isEditing) ? (
                         <input
                           type="text"
                           className="w-full border rounded px-2 py-1 text-xs"
@@ -1063,7 +1253,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      {isManualQuotation ? (
+                      {(isManualQuotation || isEditing) ? (
                         <input
                           type="number"
                           className="w-20 border rounded px-2 py-1 text-xs text-right"
@@ -1075,7 +1265,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      {isManualQuotation ? (
+                      {(isManualQuotation || isEditing) ? (
                         <input
                           type="number"
                           step="0.01"
@@ -1088,11 +1278,46 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      {isManualQuotation ? (
+                      {(isManualQuotation || isEditing) ? (
                         <select
                           className="w-20 border rounded px-2 py-1 text-xs text-right"
                           value={row.currency || 'USD'}
-                          onChange={(e) => updateTableRow(idx, 'currency', e.target.value)}
+                          onChange={(e) => {
+                            const newCurrency = e.target.value;
+                            // Update currency for all rows
+                            const updatedTableRows = tableRows.map((r: any) => ({ ...r, currency: newCurrency }));
+                            setSelectedQuoteDetails({
+                              ...selectedQuoteDetails,
+                              tableRows: updatedTableRows,
+                              currency: newCurrency,
+                            });
+                            setCurrentDraftQuote({
+                              ...currentDraftQuote,
+                              currency: newCurrency,
+                              id: currentDraftQuote?.id || '',
+                              lane: currentDraftQuote?.lane || '',
+                              mode: currentDraftQuote?.mode || 'ocean',
+                              containertype: currentDraftQuote?.containertype || [],
+                              truckType: currentDraftQuote?.truckType || [],
+                              weightVolume: currentDraftQuote?.weightVolume || [],
+                              baseRate: currentDraftQuote?.baseRate || 0,
+                              price: currentDraftQuote?.price || '',
+                              transitTime: currentDraftQuote?.transitTime || '',
+                              provider: currentDraftQuote?.provider || '',
+                              validity: currentDraftQuote?.validity || '',
+                              status: currentDraftQuote?.status || 'draft',
+                              origin: currentDraftQuote?.origin || '',
+                              destination: currentDraftQuote?.destination || '',
+                              transitPort: currentDraftQuote?.transitPort || '',
+                              serviceType: currentDraftQuote?.serviceType || '',
+                              incoterms: currentDraftQuote?.incoterms || '',
+                              remark: currentDraftQuote?.remark || '',
+                              from: currentDraftQuote?.from || { company: '', address: '', phone: '', preparedBy: '', mobile: '', email: '' },
+                              to: currentDraftQuote?.to || { company: '', address: '', phone: '', contact: '' },
+                              tableRows: currentDraftQuote?.tableRows || [],
+                              additionalInfo: currentDraftQuote?.additionalInfo || { shipmentType: '', cargoReadyDate: '', etd: '', incoterms: '', freightTerms: '', ofPriceFeedback: '', notes: '', companyBranch: '', commodities: '', isTariff: false },
+                            });
+                          }}
                         >
                           <option value="USD">USD</option>
                           <option value="EUR">EUR</option>
@@ -1106,7 +1331,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                     <td className="px-4 py-3 text-right">
                       {(row.qty * row.baseRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    {isManualQuotation && (
+                    {(isManualQuotation || isEditing) && (
                       <td className="px-4 py-3 text-center">
                         <button
                           onClick={() => removeTableRow(idx)}
@@ -1122,7 +1347,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
             </table>
             
             {/* Additional Cost Section for Manual Quotations */}
-            {isManualQuotation && (
+            {(isManualQuotation || isEditing) && (
               <div className="mt-4 px-4 py-3 border-t border-gray-200">
                 <div className="flex items-center gap-4 mb-3">
                   <span className="text-sm font-medium text-gray-700">Additional Cost:</span>
@@ -1152,7 +1377,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                 <div className="w-16 text-right font-semibold text-gray-700">{currency}</div>
                 <div className="w-24 text-right font-semibold text-gray-900">{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</div>
               </div>
-              {isManualQuotation && additionalCost > 0 && (
+              {(isManualQuotation || isEditing) && additionalCost > 0 && (
                 <div className="flex w-full justify-end mb-2">
                   <div className="w-32 text-right font-semibold text-gray-700">ADDITIONAL :</div>
                   <div className="w-16 text-right font-semibold text-gray-700">{currency}</div>

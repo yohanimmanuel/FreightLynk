@@ -44,6 +44,7 @@ const MODE_COLUMN_CONFIGS: Record<string, { key: string; label: string }[]> = {
     { key: 'destination', label: 'Destination' },
     { key: 'status', label: 'Status' },
     { key: 'price', label: 'Price' },
+    { key: 'currency', label: 'Currency' },
     { key: 'createdBy', label: 'Created by' },
     { key: 'createdDate', label: 'Created date' },
     { key: 'incoterms', label: 'Incoterms' },
@@ -60,6 +61,7 @@ const MODE_COLUMN_CONFIGS: Record<string, { key: string; label: string }[]> = {
     { key: 'destination', label: 'Destination' },
     { key: 'status', label: 'Status' },
     { key: 'price', label: 'Price' },
+    { key: 'currency', label: 'Currency' },
     { key: 'createdBy', label: 'Created by' },
     { key: 'createdDate', label: 'Created date' },
     { key: 'incoterms', label: 'Incoterms' },
@@ -76,6 +78,7 @@ const MODE_COLUMN_CONFIGS: Record<string, { key: string; label: string }[]> = {
     { key: 'destination', label: 'Destination' },
     { key: 'status', label: 'Status' },
     { key: 'price', label: 'Price' },
+    { key: 'currency', label: 'Currency' },
     { key: 'createdBy', label: 'Created by' },
     { key: 'createdDate', label: 'Created date' },
     { key: 'incoterms', label: 'Incoterms' },
@@ -92,6 +95,7 @@ const MODE_COLUMN_CONFIGS: Record<string, { key: string; label: string }[]> = {
     { key: 'destination', label: 'Destination' },
     { key: 'status', label: 'Status' },
     { key: 'price', label: 'Price' },
+    { key: 'currency', label: 'Currency' },
     { key: 'createdBy', label: 'Created by' },
     { key: 'createdDate', label: 'Created date' },
     { key: 'incoterms', label: 'Incoterms' },
@@ -108,6 +112,7 @@ const MODE_COLUMN_CONFIGS: Record<string, { key: string; label: string }[]> = {
     { key: 'destination', label: 'Destination' },
     { key: 'status', label: 'Status' },
     { key: 'price', label: 'Price' },
+    { key: 'currency', label: 'Currency' },
     { key: 'createdBy', label: 'Created by' },
     { key: 'createdDate', label: 'Created date' },
     { key: 'incoterms', label: 'Incoterms' },
@@ -124,6 +129,7 @@ const MODE_COLUMN_CONFIGS: Record<string, { key: string; label: string }[]> = {
     { key: 'destination', label: 'Destination' },
     { key: 'status', label: 'Status' },
     { key: 'price', label: 'Price' },
+    { key: 'currency', label: 'Currency' },
     { key: 'createdBy', label: 'Created by' },
     { key: 'createdDate', label: 'Created date' },
     { key: 'incoterms', label: 'Incoterms' },
@@ -238,6 +244,7 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
       case 'destination': return q.destination;
       case 'status': return q.status;
       case 'price': return q.price;
+      case 'currency': return q.currency || 'USD';
       case 'createdBy': return q.createdBy || user?.fullName || q.accountName || '—';
       case 'createdDate': return q.createdDate || (q.createdAt ? new Date(q.createdAt).toLocaleDateString() : new Date().toLocaleDateString());
       case 'incoterms': return q.incoterms || q.invoiceIncoterms || '—';
