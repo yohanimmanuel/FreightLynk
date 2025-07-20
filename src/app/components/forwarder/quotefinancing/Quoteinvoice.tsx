@@ -36,25 +36,49 @@ function formatQuoteForTable(
     });
     return Object.entries(counts).map(([type, qty]) => `${qty} x ${type}`);
   }
+  
   let tableRows = quote.tableRows;
   if (!Array.isArray(tableRows) || typeof tableRows[0] !== 'object') {
     tableRows = Array.isArray(selectedQuoteDetails?.tableRows) && typeof selectedQuoteDetails.tableRows[0] === 'object'
       ? selectedQuoteDetails.tableRows
       : [];
   }
-  const containerTypeBadges = getTypeQuantityString(tableRows, 'item');
-  const truckTypeBadges = getTypeQuantityString(tableRows, 'truckType');
+  
+  // Determine mode for proper formatting
+  const mode = (quote.mode || quote.modeLabel || '').toUpperCase();
+  const isSeaFCL = mode.includes('SEA') && mode.includes('FCL');
+  const isSeaLCL = mode.includes('SEA') && mode.includes('LCL');
+  const isAirLCL = mode.includes('AIR') && mode.includes('LCL');
+  const isLandFTL = mode.includes('LAND') && mode.includes('FTL');
+  const isLandLTL = mode.includes('LAND') && mode.includes('LTL');
+  
+  // Format container types for FCL
+  const containerTypeBadges = isSeaFCL ? getTypeQuantityString(tableRows, 'item') : [];
+  
+  // Format truck types for FTL
+  const truckTypeBadges = isLandFTL ? getTypeQuantityString(tableRows, 'truckType') : [];
+  
+  // Format weight/volume for LCL, AIR, LTL
   const weight = editAdditionalInfo?.lclWeight || quote.lclWeight || '';
   const volume = editAdditionalInfo?.lclVolume || quote.lclVolume || '';
   let weightVolumeBadge = '';
-  if (weight && volume) weightVolumeBadge = `${weight} kg / ${volume} cbm`;
-  else if (weight) weightVolumeBadge = `${weight} kg`;
-  else if (volume) weightVolumeBadge = `${volume} cbm`;
+  if ((isSeaLCL || isAirLCL || isLandLTL) && (weight || volume)) {
+    if (weight && volume) {
+      weightVolumeBadge = `${weight} kg / ${volume} cbm`;
+    } else if (weight) {
+      weightVolumeBadge = `${weight} kg`;
+    } else if (volume) {
+      weightVolumeBadge = `${volume} cbm`;
+    }
+  }
+  
+  // Create details badges for ALL tab - combine all relevant information
   const detailsBadges = [
     ...containerTypeBadges,
     ...truckTypeBadges,
     ...(weightVolumeBadge ? [weightVolumeBadge] : [])
   ];
+  
   return {
     ...quote,
     from: editFrom ? { ...editFrom } : quote.from,
@@ -208,9 +232,7 @@ const QuoteInvoice = () => {
         const type = row[typeKey];
         if (type) counts[type] = (counts[type] || 0) + (Number(row.qty) || 1);
       });
-      return Object.entries(counts)
-        .map(([type, qty]) => `${type}: ${qty}`)
-        .join(', ');
+      return Object.entries(counts).map(([type, qty]) => `${qty} x ${type}`);
     }
     // Ensure tableRows is always an array of objects
     let tableRows = quote.tableRows;
@@ -219,15 +241,35 @@ const QuoteInvoice = () => {
         ? selectedQuoteDetails.tableRows
         : [];
     }
-    const containerTypeBadges = getTypeQuantityString(tableRows, 'item'); // array
-    const truckTypeBadges = getTypeQuantityString(tableRows, 'truckType'); // array
-    // Weight/volume badge
+    
+    // Determine mode for proper formatting
+    const mode = (selectedQuoteDetails?.modeLabel || quote.mode || '').toUpperCase();
+    const isSeaFCL = mode.includes('SEA') && mode.includes('FCL');
+    const isSeaLCL = mode.includes('SEA') && mode.includes('LCL');
+    const isAirLCL = mode.includes('AIR') && mode.includes('LCL');
+    const isLandFTL = mode.includes('LAND') && mode.includes('FTL');
+    const isLandLTL = mode.includes('LAND') && mode.includes('LTL');
+    
+    // Format container types for FCL
+    const containerTypeBadges = isSeaFCL ? getTypeQuantityString(tableRows, 'item') : [];
+    
+    // Format truck types for FTL
+    const truckTypeBadges = isLandFTL ? getTypeQuantityString(tableRows, 'truckType') : [];
+    
+    // Weight/volume badge for LCL, AIR, LTL
     const weight = editAdditionalInfo.lclWeight || quote.lclWeight || '';
     const volume = editAdditionalInfo.lclVolume || quote.lclVolume || '';
     let weightVolumeBadge = '';
-    if (weight && volume) weightVolumeBadge = `${weight} kg / ${volume} cbm`;
-    else if (weight) weightVolumeBadge = `${weight} kg`;
-    else if (volume) weightVolumeBadge = `${volume} cbm`;
+    if ((isSeaLCL || isAirLCL || isLandLTL) && (weight || volume)) {
+      if (weight && volume) {
+        weightVolumeBadge = `${weight} kg / ${volume} cbm`;
+      } else if (weight) {
+        weightVolumeBadge = `${weight} kg`;
+      } else if (volume) {
+        weightVolumeBadge = `${volume} cbm`;
+      }
+    }
+    
     // Details: always an array of badges
     const detailsBadges = [
       ...containerTypeBadges,
@@ -322,32 +364,41 @@ const QuoteInvoice = () => {
         const type = row[typeKey];
         if (type) counts[type] = (counts[type] || 0) + (Number(row.qty) || 1);
       });
-      return Object.entries(counts)
-        .map(([type, qty]) => `${type}: ${qty}`)
-        .join(', ');
+      return Object.entries(counts).map(([type, qty]) => `${qty} x ${type}`);
     }
 
+    // Determine mode for proper formatting
+    const mode = (quote.modeLabel || quote.mode || '').toUpperCase();
+    const isSeaFCL = mode.includes('SEA') && mode.includes('FCL');
+    const isSeaLCL = mode.includes('SEA') && mode.includes('LCL');
+    const isAirLCL = mode.includes('AIR') && mode.includes('LCL');
+    const isLandFTL = mode.includes('LAND') && mode.includes('FTL');
+    const isLandLTL = mode.includes('LAND') && mode.includes('LTL');
+
     // Compute values for each mode
-    const fclContainerTypes = getTypeQuantityString(tableRows, 'item');
-    const ftlTruckTypes = getTypeQuantityString(tableRows, 'truckType');
+    const fclContainerTypes = isSeaFCL ? getTypeQuantityString(tableRows, 'item') : [];
+    const ftlTruckTypes = isLandFTL ? getTypeQuantityString(tableRows, 'truckType') : [];
+    
     // For LCL/AIR/LTL, show both weight and volume if present
     const weight = effectiveAdditionalInfo.lclWeight || selectedQuoteDetails?.lclWeight || '';
     const volume = effectiveAdditionalInfo.lclVolume || selectedQuoteDetails?.lclVolume || '';
     let lclWeightVolume = '';
-    if (weight && volume) {
-      lclWeightVolume = `${weight} kg/${volume} cbm`;
-    } else if (weight) {
-      lclWeightVolume = `${weight} kg`;
-    } else if (volume) {
-      lclWeightVolume = `${volume} cbm`;
+    if ((isSeaLCL || isAirLCL || isLandLTL) && (weight || volume)) {
+      if (weight && volume) {
+        lclWeightVolume = `${weight} kg / ${volume} cbm`;
+      } else if (weight) {
+        lclWeightVolume = `${weight} kg`;
+      } else if (volume) {
+        lclWeightVolume = `${volume} cbm`;
+      }
     }
 
-    // Details field for ALL tab
+    // Details field for ALL tab - combine all relevant information
     const detailsField = [
-      fclContainerTypes,
-      ftlTruckTypes,
-      lclWeightVolume
-    ].filter(Boolean).join(' | ');
+      ...fclContainerTypes,
+      ...ftlTruckTypes,
+      ...(lclWeightVolume ? [lclWeightVolume] : [])
+    ];
 
     const mappedQuote = {
       id: quoteId,
@@ -366,8 +417,8 @@ const QuoteInvoice = () => {
         if (fallbackLabel.includes('LAND') && fallbackLabel.includes('LTL')) return 'LAND LTL';
         return fallbackLabel || 'FCL';
       })() as import('../../../../store/forwarderquote').Quote['mode'],
-      containertype: fclContainerTypes, // All container types and quantities for FCL
-      truckType: ftlTruckTypes,        // All truck types and quantities for FTL
+      containertype: fclContainerTypes.length > 0 ? fclContainerTypes.join(', ') : '', // All container types and quantities for FCL
+      truckType: ftlTruckTypes.length > 0 ? ftlTruckTypes.join(', ') : '',        // All truck types and quantities for FTL
       weightVolume: lclWeightVolume,   // Weight/volume for LCL, AIR, LTL
       currency: quote.currency || '',
       baseRate: Number(quote.tableRows?.[0]?.baseRate) || 0,
@@ -388,7 +439,7 @@ const QuoteInvoice = () => {
       createdBy: quote.createdBy || '',
       createdDate: quote.createdDate || '',
       notes: effectiveAdditionalInfo.note || quote.notes || '',
-      details: detailsField || quote.details || '',
+      details: Array.isArray(detailsField) ? detailsField.join(' | ') : (detailsField || quote.details || ''),
       // Expanded fields for invoice:
       from: quote.from || {
         company: user?.companyName || '',
@@ -406,7 +457,7 @@ const QuoteInvoice = () => {
       shipmentTypeDescription: shipmentTypeDescription || quote.shipmentTypeDescription || '',
       validUntil: quote.validUntil || '',
       originAirport: quote.originAirport || '',
-      destinationAirport: quote.destinationAirport || ''
+      destinationAirport: quote.destinationAirport || '' 
     };
 
     setCurrentDraftQuote(mappedQuote);
@@ -437,7 +488,7 @@ const QuoteInvoice = () => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-500"></div>
-        <span className="ml-4 text-gray-500 text-lg">Loading invoice...</span>
+        <span className="ml-4 text-gray-500 text-lg">Loading invoice. Please wait...</span>
       </div>
     );
   }

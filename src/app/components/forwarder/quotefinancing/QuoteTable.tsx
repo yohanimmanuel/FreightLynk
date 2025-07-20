@@ -234,8 +234,8 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
         return isTariffValue ? 'Yes' : 'No';
       }
       case 'provider': return q.provider;
-      case 'details': return q.details;
-      case 'containertype': return q.containertype;
+      case 'details': return q.details || '';
+      case 'containertype': return q.containertype || '';
       case 'origin': return q.origin;
       case 'destination': return q.destination;
       case 'status': return q.status;
@@ -245,8 +245,8 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
       case 'incoterms': return q.incoterms || q.invoiceIncoterms || '—';
       case 'remark': return q.remark || q.invoiceRemark || '—';
       case 'notes': return q.notes || q.invoiceNotes || '—';
-      case 'weightVolume': return q.weightVolume;
-      case 'truckType': return q.truckType;
+      case 'weightVolume': return q.weightVolume || '';
+      case 'truckType': return q.truckType || '';
       case 'shipmentType': return q.shipmentType || q.additionalInfo?.shipmentType || '-';
       case 'mode': return q.mode || q.additionalInfo?.shipmentMode || q.modeLabel || '-';
       default: return '';
@@ -606,10 +606,13 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
                         ? q[col.key].map((badge: string, i: number) => (
                             <span key={i} className="inline-block border border-blue-300 bg-blue-50 text-blue-800 rounded-full px-2 py-1 text-xs font-semibold mr-1 truncate">{badge}</span>
                           ))
-                        : typeof q[col.key] === 'string'
-                          ? q[col.key].split('  ').filter(Boolean).map((badge: string, i: number) => (
-                              <span key={i} className="inline-block border border-blue-300 bg-blue-50 text-blue-800 rounded-full px-2 py-1 text-xs font-semibold mr-1 truncate">{badge}</span>
-                            ))
+                        : typeof q[col.key] === 'string' && q[col.key]
+                          ? q[col.key].split(',').map((badge: string, i: number) => {
+                              const trimmedBadge = badge.trim();
+                              return trimmedBadge ? (
+                                <span key={i} className="inline-block border border-blue-300 bg-blue-50 text-blue-800 rounded-full px-2 py-1 text-xs font-semibold mr-1 truncate">{trimmedBadge}</span>
+                              ) : null;
+                            }).filter(Boolean)
                           : <span className="text-gray-400">-</span>
                       }
                     </td>
