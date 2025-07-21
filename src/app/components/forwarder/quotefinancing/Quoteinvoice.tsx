@@ -26,7 +26,8 @@ function formatQuoteForTable(
   editFrom: any,
   editTo: any,
   editRemark: any,
-  totalAmount: any
+  totalAmount: any,
+  editQuote: any
 ) {
   function getTypeQuantityString(rows: any, typeKey: any) {
     const counts: Record<string, number> = {};
@@ -96,6 +97,7 @@ function formatQuoteForTable(
   
   return {
     ...quote,
+    provider: (editQuote && typeof editQuote.provider !== 'undefined') ? editQuote.provider : quote.provider,
     from: editFrom ? { ...editFrom } : quote.from,
     to: editTo ? { ...editTo } : quote.to,
     remark: editRemark !== undefined ? editRemark : quote.remark,
@@ -390,6 +392,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
     }
 
     const updatedQuote = {
+      provider: editQuote.provider || selectedQuoteDetails?.provider || quote.provider || '',
       ...quote,
       from: { ...safeFrom },
       to: { ...safeTo },
@@ -432,7 +435,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       tableRows: tableRows,
     };
     setCurrentDraftQuote(updatedQuote);
-    addQuote(updatedQuote);
+    // Only call addQuote(updatedQuote) in the submit handler, not here.
     setIsEditing(false);
     setSelectedQuoteDetails(updatedQuote);
   };
@@ -641,9 +644,20 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                       editFrom,
                       editTo,
                       editRemark,
-                      totalAmount
+                      totalAmount,
+                      null // placeholder for editQuote
                     );
-                    addQuote(formattedQuote);
+                    addQuote(formatQuoteForTable(
+                      currentDraftQuote,
+                      user,
+                      selectedQuoteDetails,
+                      editAdditionalInfo,
+                      editFrom,
+                      editTo,
+                      editRemark,
+                      totalAmount,
+                      editQuote
+                    ));
                   }
                   router.push('/quotes/list');
                 }}
