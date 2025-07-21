@@ -357,6 +357,21 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       detailsBadges = badge ? [badge] : [];
     }
 
+    // Parse lclWeight and lclVolume from the first row's description
+    let lclWeightParsed = '';
+    let lclVolumeParsed = '';
+    if (editTableRows.length > 0 && editTableRows[0].description) {
+      const desc = editTableRows[0].description;
+      const weightMatch = desc.match(/(\d+(?:\.\d+)?)\s*kg/i);
+      const volumeMatch = desc.match(/(\d+(?:\.\d+)?)\s*cbm/i);
+      if (weightMatch) lclWeightParsed = weightMatch[1];
+      if (volumeMatch) lclVolumeParsed = volumeMatch[1];
+    }
+    let badge = '';
+    if (lclWeightParsed && lclVolumeParsed) badge = `${lclWeightParsed} kg / ${lclVolumeParsed} cbm`;
+    else if (lclWeightParsed) badge = `${lclWeightParsed} kg`;
+    else if (lclVolumeParsed) badge = `${lclVolumeParsed} cbm`;
+
     const updatedQuote = {
       ...quote, // spread first
       provider: editQuote.provider || '', // then override
@@ -366,9 +381,9 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       additionalInfo: cleanedAdditionalInfo,
       shipmentType: cleanedAdditionalInfo.shipmentType || quote.shipmentType || '',
       shipmentTypeDescription,
-      // Preserve weight/volume data
-      lclWeight,
-      lclVolume,
+      // Use parsed lclWeight and lclVolume
+      lclWeight: lclWeightParsed,
+      lclVolume: lclVolumeParsed,
       // Update quote fields from editQuote state
       origin: editQuote.origin,
       destination: editQuote.destination,
@@ -387,12 +402,13 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
         return m;
       })(),
       modeLabel: editQuote.mode || selectedQuoteDetails?.modeLabel || quote.modeLabel || quote.mode || '',
-      details: detailsBadges,
+      // Use badge for details
+      details: badge ? [badge] : [],
       isTariff: cleanedAdditionalInfo.isTariff ?? quote.isTariff ?? false,
       client: safeTo.company || quote.client || '',
       containertype: containerTypeBadges,
       truckType: truckTypeBadges,
-      weightVolume: weightVolumeBadge ? [weightVolumeBadge] : [],
+      weightVolume: badge ? [badge] : [],
       status: quote.status || 'draft',
       price: finalTotalAmount?.toString() || quote.price || '',
       createdBy: user?.fullName || quote.createdBy || '',
