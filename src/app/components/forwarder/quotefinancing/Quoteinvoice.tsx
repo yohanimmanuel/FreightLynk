@@ -789,8 +789,23 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
               )}
             </div>
             <div className="text-3xl text-gray-900 font-semibold uppercase mt-2 text-right w-full">Quotation</div>
+            {isEditing ? (
+              <div className="w-full flex flex-col items-end mt-2">
+                <label className="text-xs text-gray-500 mb-1">Provider</label>
+                <input
+                  className="border border-gray-700 rounded px-2 py-1 text-xs text-gray-900 w-50 text-right"
+                  value={editQuote.provider}
+                  onChange={e => setEditQuote(prev => ({ ...prev, provider: e.target.value }))}
+                  placeholder="e.g. MAERSK"
+                />
+              </div>
+            ) : (
+              <div className="w-full flex flex-col items-end mt-2">
+                <span className="text-xs text-gray-700 font-semibold">{editQuote.provider || '-'}</span>
+              </div>
+            )}
             <div className="text-md text-gray-700 font-semibold mt-1 text-right w-full">{quote.provider}</div>
-            <div className="text-xs text-gray-600 mt-2 text-right w-full">Created on: <span className="font-medium text-gray-900">{createdOn}</span></div>
+            <div className="text-xs text-gray-600 text-right w-full">Created on: <span className="font-medium text-gray-900">{createdOn}</span></div>
             <div className="text-xs text-gray-600 text-right w-full">Valid until: {!isEditing && !isManualQuotation ? (
               <span className="font-medium text-gray-900">{quote.validUntil}</span>
             ) : (
@@ -975,10 +990,8 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                           id: currentDraftQuote?.id || '',
                           lane: currentDraftQuote?.lane || '',
                           containertype: currentDraftQuote?.containertype || [],
-                          truckType: currentDraftQuote?.truckType || [],
-                          weightVolume: currentDraftQuote?.weightVolume || [],
-                          currency: currentDraftQuote?.currency || '',
-                          baseRate: currentDraftQuote?.baseRate || 0,
+                          currency: currentDraftQuote?.currency || 'USD',
+                          baseRate: typeof currentDraftQuote?.baseRate === 'number' ? currentDraftQuote.baseRate : 0,
                           price: currentDraftQuote?.price || '',
                           transitTime: currentDraftQuote?.transitTime || '',
                           provider: currentDraftQuote?.provider || '',
@@ -986,14 +999,13 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                           status: currentDraftQuote?.status || 'draft',
                           origin: currentDraftQuote?.origin || '',
                           destination: currentDraftQuote?.destination || '',
-                          transitPort: currentDraftQuote?.transitPort || '',
-                          serviceType: currentDraftQuote?.serviceType || '',
                           incoterms: currentDraftQuote?.incoterms || '',
                           remark: currentDraftQuote?.remark || '',
                           from: currentDraftQuote?.from || { company: '', address: '', phone: '', preparedBy: '', mobile: '', email: '' },
                           to: currentDraftQuote?.to || { company: '', address: '', phone: '', contact: '' },
                           tableRows: currentDraftQuote?.tableRows || [],
                           additionalInfo: currentDraftQuote?.additionalInfo || { shipmentType: '', cargoReadyDate: '', etd: '', incoterms: '', freightTerms: '', ofPriceFeedback: '', notes: '', companyBranch: '', commodities: '', isTariff: false },
+                          // Do NOT reset any other fields
                         });
                       }}
                     >
@@ -1300,7 +1312,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                               containertype: currentDraftQuote?.containertype || [],
                               truckType: currentDraftQuote?.truckType || [],
                               weightVolume: currentDraftQuote?.weightVolume || [],
-                              baseRate: currentDraftQuote?.baseRate || 0,
+                              baseRate: typeof currentDraftQuote?.baseRate === 'number' ? currentDraftQuote.baseRate : 0,
                               price: currentDraftQuote?.price || '',
                               transitTime: currentDraftQuote?.transitTime || '',
                               provider: currentDraftQuote?.provider || '',
