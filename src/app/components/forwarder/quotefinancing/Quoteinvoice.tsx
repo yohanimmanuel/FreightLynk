@@ -1363,14 +1363,14 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                   <input
                     type="number"
                     step="0.01"
-                    className="w-32 border rounded px-2 py-1 text-xs"
+                    className="w-32 border rounded px-2 py-1 text-xs text-gray-900"
                     placeholder="0.00"
                     value={additionalCost}
                     onChange={(e) => setAdditionalCost(parseFloat(e.target.value) || 0)}
                   />
                   <input
                     type="text"
-                    className="flex-1 border rounded px-2 py-1 text-xs"
+                    className="flex-1 border rounded px-2 py-1 text-xs text-gray-900"
                     placeholder="Description (optional)"
                     value={additionalCostDescription}
                     onChange={(e) => setAdditionalCostDescription(e.target.value)}
