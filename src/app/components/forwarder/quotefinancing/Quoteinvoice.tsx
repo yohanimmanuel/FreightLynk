@@ -635,30 +635,129 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
               <button
                 className="px-4 py-2 rounded-lg bg-[#FFA726] text-white font-medium hover:bg-[#fb8c00] transition-colors flex items-center gap-2"
                 onClick={() => {
-                  if (!isAlreadySubmitted && currentDraftQuote) {
-                    const formattedQuote = formatQuoteForTable(
-                      currentDraftQuote,
-                      user,
-                      selectedQuoteDetails,
-                      editAdditionalInfo,
-                      editFrom,
-                      editTo,
-                      editRemark,
-                      totalAmount,
-                      null // placeholder for editQuote
-                    );
-                    addQuote(formatQuoteForTable(
-                      currentDraftQuote,
-                      user,
-                      selectedQuoteDetails,
-                      editAdditionalInfo,
-                      editFrom,
-                      editTo,
-                      editRemark,
-                      totalAmount,
-                      editQuote
-                    ));
+                  // Build the updated quote object directly
+                  const safeFrom = {
+                    company: editFrom.company || user?.companyName || 'Demo Company (FreightLynk LLC)',
+                    address: editFrom.address || '1000 20th Street NW, Suite 400, Washington D.C. 20036',
+                    phone: editFrom.phone || '(028) 1208 281055',
+                    preparedBy: editFrom.preparedBy || user?.fullName || 'Demo User',
+                    mobile: editFrom.mobile || '(028) 1208 281055',
+                    email: editFrom.email || user?.email || 'demo123@gmail.com',
+                  };
+                  const safeTo = {
+                    company: editTo.company || '',
+                    address: editTo.address || '',
+                    phone: editTo.phone || '',
+                    contact: editTo.contact || '',
+                  };
+                  const isOther = editAdditionalInfo.shipmentType === 'Other';
+                  const shipmentTypeDescription = isOther ? editAdditionalInfo.shipmentTypeDescription : '';
+                  const cleanedAdditionalInfo = {
+                    ...editAdditionalInfo,
+                    shipmentTypeDescription,
+                  };
+                  let tableRows = quote.tableRows;
+                  if (!Array.isArray(tableRows) || typeof tableRows[0] !== 'object') {
+                    tableRows = Array.isArray(selectedQuoteDetails?.tableRows) && typeof selectedQuoteDetails.tableRows[0] === 'object'
+                      ? selectedQuoteDetails.tableRows
+                      : [];
                   }
+                  const containerTypes = Array.from(new Set((tableRows || []).map((row: any) => row.item).filter(Boolean)));
+                  const truckTypes = Array.from(new Set((tableRows || []).map((row: any) => row.truckType).filter(Boolean)));
+                  const weightVolumes = Array.from(new Set((tableRows || []).map((row: any) => row.weightVolume).filter(Boolean)));
+                  const details = [
+                    ...containerTypes,
+                    ...truckTypes,
+                    ...weightVolumes
+                  ].filter(Boolean).join(', ');
+                  const totalAmount = (tableRows || []).reduce((sum: number, row: any) => sum + (typeof row.amount === 'number' ? row.amount : 0), 0);
+                  const finalTotalAmount = totalAmount + (isManualQuotation ? additionalCost : 0);
+                  function getTypeQuantityString(rows: any[], typeKey: string) {
+                    const counts: Record<string, number> = {};
+                    rows.forEach(row => {
+                      const type = row[typeKey];
+                      if (type && type !== 'Volume' && type !== 'Weight') {
+                        const existingCount = counts[type] || 0;
+                        const rowQty = Number(row.qty) || 1;
+                        counts[type] = existingCount + rowQty;
+                      }
+                    });
+                    return Object.entries(counts).map(([type, qty]) => `${qty} x ${type}`);
+                  }
+                  const modeLabel = selectedQuoteDetails?.modeLabel || quote.mode || '';
+                  const mode = modeLabel.toUpperCase();
+                  const containerTypeBadges = getTypeQuantityString(tableRows, 'item');
+                  const truckTypeBadges = getTypeQuantityString(tableRows, 'truckType');
+                  const weight = editAdditionalInfo.lclWeight || quote.lclWeight || '';
+                  const volume = editAdditionalInfo.lclVolume || quote.lclVolume || '';
+                  let weightVolumeBadge = '';
+                  if (weight && volume) {
+                    weightVolumeBadge = `${weight} kg / ${volume} cbm`;
+                  } else if (weight) {
+                    weightVolumeBadge = `${weight} kg`;
+                  } else if (volume) {
+                    weightVolumeBadge = `${volume} cbm`;
+                  }
+                  let detailsBadges = [];
+                  if (mode.includes('SEA') && mode.includes('FCL')) {
+                    detailsBadges = [...containerTypeBadges];
+                  } else if (mode.includes('LAND') && mode.includes('FTL')) {
+                    detailsBadges = [...truckTypeBadges];
+                  } else if (mode.includes('SEA') && mode.includes('LCL') || mode.includes('AIR') || mode.includes('LAND') && mode.includes('LTL')) {
+                    detailsBadges = weightVolumeBadge ? [weightVolumeBadge] : [];
+                  } else {
+                    if (mode.includes('SEA') && mode.includes('FCL')) {
+                      detailsBadges = [...containerTypeBadges];
+                    } else if (mode.includes('LAND') && mode.includes('FTL')) {
+                      detailsBadges = [...truckTypeBadges];
+                    } else if (mode.includes('SEA') && mode.includes('LCL') || mode.includes('AIR') || mode.includes('LAND') && mode.includes('LTL')) {
+                      detailsBadges = weightVolumeBadge ? [weightVolumeBadge] : [];
+                    } else {
+                      detailsBadges = containerTypeBadges.length > 0 ? [...containerTypeBadges] : (weightVolumeBadge ? [weightVolumeBadge] : []);
+                    }
+                  }
+                  const updatedQuote = {
+                    provider: editQuote.provider || selectedQuoteDetails?.provider || quote.provider || '',
+                    ...quote,
+                    from: { ...safeFrom },
+                    to: { ...safeTo },
+                    remark: editRemark,
+                    additionalInfo: cleanedAdditionalInfo,
+                    shipmentType: cleanedAdditionalInfo.shipmentType || quote.shipmentType || '',
+                    shipmentTypeDescription,
+                    lclWeight: editAdditionalInfo.lclWeight || quote.lclWeight || '',
+                    lclVolume: editAdditionalInfo.lclVolume || quote.lclVolume || '',
+                    origin: editQuote.origin,
+                    destination: editQuote.destination,
+                    transitPort: editQuote.transitPort,
+                    serviceType: editQuote.serviceType,
+                    transitTime: editQuote.transitTime,
+                    validUntil: editQuote.validUntil,
+                    mode: (() => {
+                      const m = (selectedQuoteDetails?.modeLabel || quote.mode || '').toUpperCase();
+                      if (m.includes('SEA') && m.includes('FCL')) return 'SEA FCL';
+                      if (m.includes('SEA') && m.includes('LCL')) return 'SEA LCL';
+                      if (m.includes('AIR') && m.includes('LCL')) return 'AIR LCL';
+                      if (m.includes('AIR')) return 'AIR';
+                      if (m.includes('LAND') && m.includes('FTL')) return 'LAND FTL';
+                      if (m.includes('LAND') && m.includes('LTL')) return 'LAND LTL';
+                      return m;
+                    })(),
+                    modeLabel: editQuote.mode || selectedQuoteDetails?.modeLabel || quote.modeLabel || quote.mode || '',
+                    details: detailsBadges,
+                    isTariff: cleanedAdditionalInfo.isTariff ?? quote.isTariff ?? false,
+                    client: safeTo.company || quote.client || '',
+                    containertype: containerTypeBadges,
+                    truckType: truckTypeBadges,
+                    weightVolume: weightVolumeBadge ? [weightVolumeBadge] : [],
+                    status: quote.status || 'draft',
+                    price: finalTotalAmount?.toString() || quote.price || '',
+                    createdBy: user?.fullName || quote.createdBy || '',
+                    incoterms: cleanedAdditionalInfo.incoterm || quote.incoterms || '',
+                    notes: cleanedAdditionalInfo.note || quote.notes || '',
+                    tableRows: tableRows,
+                  };
+                  addQuote(updatedQuote);
                   router.push('/quotes/list');
                 }}
                 title={isAlreadySubmitted ? 'This quote has already been submitted.' : 'Submit this quote'}
@@ -1212,7 +1311,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
               </thead>
               <tbody className="text-gray-900">
                 {tableRows.map((row: any, idx: number) => (
-                  <tr key={row.item + idx} className="border-b border-gray-200">
+                  <tr key={idx} className="border-b border-gray-200">
                     <td className="px-4 py-3">
                       {(isManualQuotation || isEditing) ? (
                         <input
