@@ -3,6 +3,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuthStore, UserRole } from "@/store/authStore";
+import { getCurrentUser } from '@/utils/auth';
 
 // Define user types
 const userTypes = [
@@ -17,6 +18,7 @@ export default function RegisterPage() {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [redirecting, setRedirecting] = useState(false);
   
   // Add proper type for errors
   interface FormErrors {
@@ -171,37 +173,36 @@ export default function RegisterPage() {
     if (validateStep(step)) {
       setIsSubmitting(true);
       setError("");
-      
       try {
         // Register user with auth store
-        const success = await register(formData);
-        
-        if (success) {
-          // Get user from store after registration
-          const user = useAuthStore.getState().user;
-          
-          // Redirect based on role
+        const result = await register(formData);
+        console.log('Register result:', result);
+        if (result.success) {
+          setRedirecting(true);
+          // Fetch user directly from backend to ensure up-to-date state
+          const userRes = await getCurrentUser();
+          const user = userRes.user;
           if (user) {
             switch (user.role) {
-              case UserRole.ADMIN:
+              case 'admin':
                 router.push('/admin');
                 break;
-              case UserRole.CLIENT:
+              case 'client':
                 router.push('/client');
                 break;
-              case UserRole.FORWARDER:
+              case 'forwarder':
                 router.push('/forwarder');
                 break;
-              case UserRole.LOGISTICS_PROVIDER:
+              case 'logisticsprovider':
                 router.push('/logisticsprovider');
                 break;
               default:
                 router.push('/');
             }
+            return;
           }
-        } else {
-          setError("Registration failed. Please try again.");
         }
+        setError(result.error || "Registration failed. Please check your details or try a different email.");
       } catch (err) {
         setError("An error occurred during registration");
         console.error(err);
@@ -266,6 +267,17 @@ export default function RegisterPage() {
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-6 px-4 shadow sm:rounded-lg sm:px-8">
+          {redirecting && (
+            <div className="mb-4 p-3 bg-blue-100 border border-blue-400 text-blue-700 rounded animate-fade-in">
+              Registration successful! Redirecting to your dashboard...
+            </div>
+          )}
+          {/* Show error message if exists */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded animate-fade-in">
+              {error}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Step 1: Company Information */}
             {step === 1 && (

@@ -84,10 +84,10 @@ const Navbar = () => {
           
           {/* User dropdown menu */}
           {showDropdown && (
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
+            <div className="absolute right-0 mt-2 min-w-[230px] max-w-[350px] border border-gray-200 bg-white rounded-lg shadow-lg py-1 z-10 break-words">
               <div className="px-4 py-2 border-b">
-                <p className="text-sm font-medium text-gray-900">{user?.fullName}</p>
-                <p className="text-xs text-gray-500">{user?.email}</p>
+                <p className="text-sm font-medium text-gray-900 truncate" title={user?.fullName}>{user?.fullName}</p>
+                <p className="text-xs text-gray-500 break-all" title={user?.email}>{user?.email}</p>
               </div>
               <a href="/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                 Account Settings

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { login as apiLogin, register as apiRegister, logout as apiLogout, getCurrentUser } from '@/utils/auth';
 
 // Define user roles
 export enum UserRole {
@@ -69,7 +70,7 @@ interface AuthState {
   isAuthenticated: boolean;
   token: string | null;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (userData: any) => Promise<boolean>;
+  register: (userData: any) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   checkPermission: (permission: string) => boolean;
   hasHydrated: boolean;
@@ -89,40 +90,23 @@ export const useAuthStore = create<AuthState>()(
       // Login function
       login: async (email: string, password: string) => {
         try {
-          // In a real app, you would make an API call here
-          // For demo purposes, we'll simulate a successful login with mock data
-          
-          // Mock response based on email prefix
-          let role = UserRole.CLIENT; // default role
-          if (email.startsWith('admin')) {
-            role = UserRole.ADMIN;
-          } else if (email.startsWith('forwarder')) {
-            role = UserRole.FORWARDER;
-          } else if (email.startsWith('logistics')) {
-            role = UserRole.LOGISTICS_PROVIDER;
+          const res = await apiLogin(email, password);
+          if (res.success) {
+            const userRes = await getCurrentUser();
+            if (userRes.user) {
+              const role = userRes.user.role as UserRole;
+              set({ user: {
+                id: userRes.user.id,
+                email: userRes.user.username, // username is used as email in this demo
+                fullName: '',
+                companyName: '',
+                role,
+                permissions: rolePermissions[role]
+              }, isAuthenticated: true, token: null });
+              return true;
+            }
           }
-          
-          // Mock user data
-          const userData: User = {
-            id: '123456',
-            email,
-            fullName: 'Demo User',
-            companyName: 'Demo Company',
-            role,
-            permissions: rolePermissions[role]
-          };
-          
-          // Mock token
-          const token = 'mock-jwt-token';
-          
-          // Update state
-          set({ 
-            user: userData, 
-            isAuthenticated: true,
-            token
-          });
-          
-          return true;
+          return false;
         } catch (error) {
           console.error('Login failed:', error);
           return false;
@@ -132,46 +116,38 @@ export const useAuthStore = create<AuthState>()(
       // Register function
       register: async (userData: any) => {
         try {
-          // In a real app, you would make an API call here
-          // For demo purposes, we'll simulate a successful registration
-          
-          // Determine role based on userType from registration
-          let role = UserRole.CLIENT;
+          let role: 'client' | 'forwarder' | 'logisticsprovider' = 'client';
           if (userData.userType === 'Freight Forwarder') {
-            role = UserRole.FORWARDER;
+            role = 'forwarder';
           } else if (userData.userType === 'Logistics Provider') {
-            role = UserRole.LOGISTICS_PROVIDER;
+            role = 'logisticsprovider';
           }
-          
-          // Create user with role
-          const newUser: User = {
-            id: 'new-user-123',
-            email: userData.email,
-            fullName: userData.fullName,
-            companyName: userData.companyName,
-            role,
-            permissions: rolePermissions[role]
-          };
-          
-          // Mock token
-          const token = 'mock-jwt-token';
-          
-          // Update state
-          set({ 
-            user: newUser, 
-            isAuthenticated: true,
-            token
-          });
-          
-          return true;
+          const res = await apiRegister(userData.email, userData.password, role);
+          if (res.success) {
+            const userRes = await getCurrentUser();
+            if (userRes.user) {
+              const storeRole = userRes.user.role as UserRole;
+              set({ user: {
+                id: userRes.user.id,
+                email: userRes.user.username, // username is used as email in this demo
+                fullName: userData.fullName,
+                companyName: userData.companyName,
+                role: storeRole,
+                permissions: rolePermissions[storeRole]
+              }, isAuthenticated: true, token: null });
+              return { success: true };
+            }
+          }
+          return { success: false, error: res.error || 'Registration failed.' };
         } catch (error) {
           console.error('Registration failed:', error);
-          return false;
+          return { success: false, error: 'An error occurred during registration.' };
         }
       },
 
       // Logout function
       logout: () => {
+        apiLogout();
         set({ 
           user: null, 
           isAuthenticated: false,
