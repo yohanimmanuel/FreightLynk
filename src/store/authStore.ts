@@ -100,10 +100,10 @@ export const useAuthStore = create<AuthState>()(
                 email: userRes.user.username, // username is used as email in this demo
                 fullName: '',
                 companyName: '',
-                role,
-                permissions: rolePermissions[role]
+            role,
+            permissions: rolePermissions[role]
               }, isAuthenticated: true, token: null });
-              return true;
+          return true;
             }
           }
           return false;
@@ -130,8 +130,8 @@ export const useAuthStore = create<AuthState>()(
               set({ user: {
                 id: userRes.user.id,
                 email: userRes.user.username, // username is used as email in this demo
-                fullName: userData.fullName,
-                companyName: userData.companyName,
+            fullName: userData.fullName,
+            companyName: userData.companyName,
                 role: storeRole,
                 permissions: rolePermissions[storeRole]
               }, isAuthenticated: true, token: null });
