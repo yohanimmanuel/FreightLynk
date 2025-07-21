@@ -170,6 +170,8 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
   // For client: Accept/Reject actions
   const updateQuoteStatus = role === 'client' ? clientStore.updateQuoteStatus : undefined;
 
+  console.log('QuoteTable quotes:', quotes);
+
   const [tab, setTab] = useState('all');
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');

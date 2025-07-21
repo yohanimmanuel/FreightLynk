@@ -340,13 +340,7 @@ const QuoteSearch = () => {
       }));
     } else if (appliedTransportMode === 'Sea' && appliedCargoTab === 'LCL') {
       modeLabel = 'Sea LCL';
-      // Use the same logic and values as displayed in the QuoteSearch result
-      // Assume the user selected either perKg or perCbm as the chargeable basis
-      // For this implementation, pass both values and let the UI display as in the search result
       cargoLabel = `${appliedLclWeight}kg / ${appliedLclVolume}cbm`;
-      // Use the same calculation as in the search result
-      // If the QuoteSearch result table shows perCbm, use perCbm; if perKg, use perKg
-      // Here, we assume the chargeable basis is volume if volumeCharge >= weightCharge, else weight
       const weight = parseFloat(appliedLclWeight) || 0;
       const volume = parseFloat(appliedLclVolume) || 0;
       const perKg = quoteResult.lclRates?.perKg || 0;
@@ -359,17 +353,22 @@ const QuoteSearch = () => {
       let qty = 0;
       let description = '';
       let calculation = '';
+      // Always build description as 'X kg / Y cbm' (or just one if only one is present)
+      let desc = '';
+      if (weight && volume) desc = `${weight} kg / ${volume} cbm`;
+      else if (weight) desc = `${weight} kg`;
+      else if (volume) desc = `${volume} cbm`;
       if (volumeCharge >= weightCharge) {
         chargeableBasis = 'Volume';
         baseRate = perCbm;
         qty = volume;
-        description = `Volume: ${volume} cbm`;
+        description = desc;
         calculation = 'By volume (cbm)';
       } else {
         chargeableBasis = 'Weight';
         baseRate = perKg;
         qty = weight;
-        description = `Weight: ${weight} kg`;
+        description = desc;
         calculation = 'By weight (kg)';
       }
       tableRows = [
@@ -386,7 +385,6 @@ const QuoteSearch = () => {
       ];
     } else if (appliedTransportMode === 'Air') {
       modeLabel = 'Air LCL';
-      // Use the same logic and values as displayed in the QuoteSearch result
       cargoLabel = `${appliedLclWeight}kg / ${appliedLclVolume}cbm`;
       const weight = parseFloat(appliedLclWeight) || 0;
       const volume = parseFloat(appliedLclVolume) || 0;
@@ -400,17 +398,22 @@ const QuoteSearch = () => {
       let qty = 0;
       let description = '';
       let calculation = '';
+      // Always build description as 'X kg / Y cbm' (or just one if only one is present)
+      let desc = '';
+      if (weight && volume) desc = `${weight} kg / ${volume} cbm`;
+      else if (weight) desc = `${weight} kg`;
+      else if (volume) desc = `${volume} cbm`;
       if (volumeCharge >= weightCharge) {
         chargeableBasis = 'Volume';
         baseRate = perCbm;
         qty = volume;
-        description = `Volume: ${volume} cbm`;
+        description = desc;
         calculation = 'By volume (cbm)';
       } else {
         chargeableBasis = 'Weight';
         baseRate = perKg;
         qty = weight;
-        description = `Weight: ${weight} kg`;
+        description = desc;
         calculation = 'By weight (kg)';
       }
       tableRows = [
@@ -453,8 +456,6 @@ const QuoteSearch = () => {
       });
     } else if (appliedTransportMode === 'Land' && appliedCargoTab === 'LTL') {
       modeLabel = 'Land LTL';
-      // Use the same logic and values as displayed in the QuoteSearch result
-      // (Assume similar to LCL logic)
       const weight = parseFloat(appliedLclWeight) || 0;
       const volume = parseFloat(appliedLclVolume) || 0;
       const perKg = quoteResult.ltlRates?.perKg || 0;
@@ -467,17 +468,22 @@ const QuoteSearch = () => {
       let qty = 0;
       let description = '';
       let calculation = '';
+      // Always build description as 'X kg / Y cbm' (or just one if only one is present)
+      let desc = '';
+      if (weight && volume) desc = `${weight} kg / ${volume} cbm`;
+      else if (weight) desc = `${weight} kg`;
+      else if (volume) desc = `${volume} cbm`;
       if (volumeCharge >= weightCharge) {
         chargeableBasis = 'Volume';
         baseRate = perCbm;
         qty = volume;
-        description = `Volume: ${volume} cbm`;
+        description = desc;
         calculation = 'By volume (cbm)';
       } else {
         chargeableBasis = 'Weight';
         baseRate = perKg;
         qty = weight;
-        description = `Weight: ${weight} kg`;
+        description = desc;
         calculation = 'By weight (kg)';
       }
       tableRows = [
@@ -493,6 +499,11 @@ const QuoteSearch = () => {
         },
       ];
     }
+    // After setting lclWeight and lclVolume, add standardized badge logic
+    let badge = '';
+    if (appliedLclWeight && appliedLclVolume) badge = `${appliedLclWeight} kg / ${appliedLclVolume} cbm`;
+    else if (appliedLclWeight) badge = `${appliedLclWeight} kg`;
+    else if (appliedLclVolume) badge = `${appliedLclVolume} cbm`;
     // Build the quote object with client/contact, id, and validUntil
     const quoteObj = {
       ...quoteResult,
@@ -523,6 +534,7 @@ const QuoteSearch = () => {
       companyLogo: quoteResult.logo, // Also set companyLogo for consistency
       // Initialize additionalInfo as empty object - will be populated in QuoteAdditionalInfo step
       additionalInfo: {},
+      details: badge ? [badge] : [], // standardized badge
     };
     setSelectedQuoteDetails(quoteObj);
     router.push('/quotes/list/addinfo');

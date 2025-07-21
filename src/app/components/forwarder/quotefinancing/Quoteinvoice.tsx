@@ -70,6 +70,9 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
     provider: quote.provider || '',
   });
 
+  // Add local editTableRows state
+  const [editTableRows, setEditTableRows] = useState<Array<any>>(quote.tableRows ? JSON.parse(JSON.stringify(quote.tableRows)) : []);
+
   // Functions for manual quotation table management
   const addTableRow = () => {
     const newRow = {
@@ -83,23 +86,17 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       amount: 0,
     };
     
-    const updatedTableRows = [...tableRows, newRow];
-    setSelectedQuoteDetails({
-      ...selectedQuoteDetails,
-      tableRows: updatedTableRows,
-    });
+    const updatedTableRows = [...editTableRows, newRow];
+    setEditTableRows(updatedTableRows);
   };
 
   const removeTableRow = (index: number) => {
-    const updatedTableRows = tableRows.filter((_: any, i: number) => i !== index);
-    setSelectedQuoteDetails({
-      ...selectedQuoteDetails,
-      tableRows: updatedTableRows,
-    });
+    const updatedTableRows = editTableRows.filter((_: any, i: number) => i !== index);
+    setEditTableRows(updatedTableRows);
   };
 
   const updateTableRow = (index: number, field: string, value: any) => {
-    const updatedTableRows = [...tableRows];
+    const updatedTableRows = [...editTableRows];
     updatedTableRows[index] = { ...updatedTableRows[index], [field]: value };
     
     // Recalculate amount if qty or baseRate changed
@@ -109,10 +106,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       updatedTableRows[index].amount = qty * baseRate;
     }
     
-    setSelectedQuoteDetails({
-      ...selectedQuoteDetails,
-      tableRows: updatedTableRows,
-    });
+    setEditTableRows(updatedTableRows);
   };
 
   // Centralized empty form state for invoice
@@ -182,12 +176,36 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
   const hasAddedQuote = useRef<string | null>(null);
 
   // --- Handlers ---
+  // 1. Fix edit state initialization in handleEdit
   const handleEdit = () => {
+    setEditFrom({
+      company: quote.from?.company || user?.companyName || 'Demo Company (FreightLynk LLC)',
+      address: quote.from?.address || '1000 20th Street NW, Suite 400, Washington D.C. 20036',
+      phone: quote.from?.phone || '(028) 1208 281055',
+      preparedBy: quote.from?.preparedBy || user?.fullName || 'Demo User',
+      mobile: quote.from?.mobile || '(028) 1208 281055',
+      email: quote.from?.email || user?.email || 'demo123@gmail.com',
+    });
+    setEditTo(quote.to || { company: '', address: '', phone: '', contact: '' });
+    setEditRemark(quote.remark || '');
+    setEditAdditionalInfo({ ...quote.additionalInfo });
+    setEditQuote({
+      origin: quote.origin || '',
+      destination: quote.destination || '',
+      transitPort: quote.transitPort || '',
+      serviceType: quote.serviceType || '',
+      mode: quote.mode || '',
+      transitTime: quote.transitTime || '',
+      validUntil: quote.validUntil || '',
+      provider: quote.provider || '',
+    });
+    setEditTableRows(quote.tableRows ? JSON.parse(JSON.stringify(quote.tableRows)) : []);
     setOriginalState({
       from: { ...editFrom },
       to: { ...editTo },
       remark: editRemark,
       additionalInfo: { ...editAdditionalInfo },
+      tableRows: quote.tableRows ? JSON.parse(JSON.stringify(quote.tableRows)) : [],
     });
     setIsEditing(true);
   };
@@ -197,6 +215,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       setEditTo(originalState.to);
       setEditRemark(originalState.remark);
       setEditAdditionalInfo(originalState.additionalInfo);
+      setEditTableRows(originalState.tableRows ? JSON.parse(JSON.stringify(originalState.tableRows)) : []);
     }
     setIsEditing(false);
   };
@@ -224,15 +243,15 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       shipmentTypeDescription,
     };
     // Compute details and other table fields
-    const containerTypes = Array.from(new Set((quote.tableRows || []).map((row: any) => row.item).filter(Boolean)));
-    const truckTypes = Array.from(new Set((quote.tableRows || []).map((row: any) => row.truckType).filter(Boolean)));
-    const weightVolumes = Array.from(new Set((quote.tableRows || []).map((row: any) => row.weightVolume).filter(Boolean)));
+    const containerTypes = Array.from(new Set((editTableRows || []).map((row: any) => row.item).filter(Boolean)));
+    const truckTypes = Array.from(new Set((editTableRows || []).map((row: any) => row.truckType).filter(Boolean)));
+    const weightVolumes = Array.from(new Set((editTableRows || []).map((row: any) => row.weightVolume).filter(Boolean)));
     const details = [
       ...containerTypes,
       ...truckTypes,
       ...weightVolumes
     ].filter(Boolean).join(', ');
-    const totalAmount = (quote.tableRows || []).reduce((sum: number, row: any) => sum + (typeof row.amount === 'number' ? row.amount : 0), 0);
+    const totalAmount = (editTableRows || []).reduce((sum: number, row: any) => sum + (typeof row.amount === 'number' ? row.amount : 0), 0);
     const finalTotalAmount = totalAmount + (isManualQuotation ? additionalCost : 0);
     // Compute container/truck type as 'qty x type' and weight/volume as 'weight kg / volume cbm'
     function getTypeQuantityString(rows: any[], typeKey: string) {
@@ -268,20 +287,33 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
     const truckTypeBadges = getTypeQuantityString(tableRows, 'truckType');
     
     // Weight/volume badge for LCL, AIR, LTL
+    let weightVolumeBadge = '';
+    if (isManualQuotation && (mode.includes('SEA') && mode.includes('LCL') || mode.includes('AIR') || mode.includes('LAND') && mode.includes('LTL'))) {
+      const desc = tableRows[0]?.description || '';
+      // Try to extract 'X kg' and 'Y cbm' from the description
+      const weightMatch = desc.match(/(\d+(?:\.\d+)?)\s*kg/i);
+      const volumeMatch = desc.match(/(\d+(?:\.\d+)?)\s*cbm/i);
+      if (weightMatch) weightVolumeBadge = `${weightMatch[1]} kg`;
+      if (volumeMatch) weightVolumeBadge = `${weightVolumeBadge} / ${volumeMatch[1]} cbm`;
+    } else {
     const weight = editAdditionalInfo.lclWeight || quote.lclWeight || '';
     const volume = editAdditionalInfo.lclVolume || quote.lclVolume || '';
-    let weightVolumeBadge = '';
     if (weight && volume) {
       weightVolumeBadge = `${weight} kg / ${volume} cbm`;
     } else if (weight) {
       weightVolumeBadge = `${weight} kg`;
     } else if (volume) {
       weightVolumeBadge = `${volume} cbm`;
+      }
     }
 
     // Create details badges based on mode
     let detailsBadges = [];
-    if (mode.includes('SEA') && mode.includes('FCL')) {
+    if (isManualQuotation && (mode.includes('SEA') && mode.includes('LCL') || mode.includes('AIR') || mode.includes('LAND') && mode.includes('LTL'))) {
+      // Manual quoting: show only the description of the first table row as the badge
+      const descBadge = tableRows[0]?.description?.trim();
+      detailsBadges = descBadge ? [descBadge] : [];
+    } else if (mode.includes('SEA') && mode.includes('FCL')) {
       detailsBadges = [...containerTypeBadges];
     } else if (mode.includes('LAND') && mode.includes('FTL')) {
       detailsBadges = [...truckTypeBadges];
@@ -301,6 +333,30 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       }
     }
 
+    // For manual quoting and LCL/AIR/LTL, extract lclWeight/lclVolume from first table row description
+    let lclWeight = '';
+    let lclVolume = '';
+    if (isManualQuotation && (mode.includes('SEA') && mode.includes('LCL') || mode.includes('AIR') || mode.includes('LAND') && mode.includes('LTL'))) {
+      const desc = tableRows[0]?.description || '';
+      // Try to extract 'X kg' and 'Y cbm' from the description
+      const weightMatch = desc.match(/(\d+(?:\.\d+)?)\s*kg/i);
+      const volumeMatch = desc.match(/(\d+(?:\.\d+)?)\s*cbm/i);
+      if (weightMatch) lclWeight = weightMatch[1];
+      if (volumeMatch) lclVolume = volumeMatch[1];
+    } else {
+      lclWeight = editAdditionalInfo.lclWeight || quote.lclWeight || '';
+      lclVolume = editAdditionalInfo.lclVolume || quote.lclVolume || '';
+    }
+
+    // After extracting lclWeight and lclVolume, recompute detailsBadges for manual quoting LCL/AIR/LTL
+    if (isManualQuotation && (mode.includes('SEA') && mode.includes('LCL') || mode.includes('AIR') || mode.includes('LAND') && mode.includes('LTL'))) {
+      let badge = '';
+      if (lclWeight && lclVolume) badge = `${lclWeight} kg / ${lclVolume} cbm`;
+      else if (lclWeight) badge = `${lclWeight} kg`;
+      else if (lclVolume) badge = `${lclVolume} cbm`;
+      detailsBadges = badge ? [badge] : [];
+    }
+
     const updatedQuote = {
       ...quote, // spread first
       provider: editQuote.provider || '', // then override
@@ -311,8 +367,8 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       shipmentType: cleanedAdditionalInfo.shipmentType || quote.shipmentType || '',
       shipmentTypeDescription,
       // Preserve weight/volume data
-      lclWeight: editAdditionalInfo.lclWeight || quote.lclWeight || '',
-      lclVolume: editAdditionalInfo.lclVolume || quote.lclVolume || '',
+      lclWeight,
+      lclVolume,
       // Update quote fields from editQuote state
       origin: editQuote.origin,
       destination: editQuote.destination,
@@ -342,13 +398,48 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       createdBy: user?.fullName || quote.createdBy || '',
       incoterms: cleanedAdditionalInfo.incoterm || quote.incoterms || '',
       notes: cleanedAdditionalInfo.note || quote.notes || '',
-      tableRows: tableRows,
+      tableRows: editTableRows,
     };
     setCurrentDraftQuote(updatedQuote);
     // Only call addQuote(updatedQuote) in the submit handler, not here.
     setIsEditing(false);
     setSelectedQuoteDetails(updatedQuote);
+    // Fix: update quotes array directly if setQuotes does not accept a function
+    const prevQuotes = quotes || [];
+    const idx = prevQuotes.findIndex((q: any) => q.id === updatedQuote.id);
+    if (idx !== -1) {
+      const newQuotes = [...prevQuotes];
+      newQuotes[idx] = updatedQuote;
+      setQuotes(newQuotes);
+    } else {
+      setQuotes([updatedQuote, ...prevQuotes]);
+    }
   };
+
+  // 2. Fix state reset on quote change
+  useEffect(() => {
+    setEditFrom({
+      company: quote.from?.company || user?.companyName || 'Demo Company (FreightLynk LLC)',
+      address: quote.from?.address || '1000 20th Street NW, Suite 400, Washington D.C. 20036',
+      phone: quote.from?.phone || '(028) 1208 281055',
+      preparedBy: quote.from?.preparedBy || user?.fullName || 'Demo User',
+      mobile: quote.from?.mobile || '(028) 1208 281055',
+      email: quote.from?.email || user?.email || 'demo123@gmail.com',
+    });
+    setEditTo(quote.to || { company: '', address: '', phone: '', contact: '' });
+    setEditRemark(quote.remark || '');
+    setEditAdditionalInfo({ ...quote.additionalInfo });
+    setEditQuote({
+      origin: quote.origin || '',
+      destination: quote.destination || '',
+      transitPort: quote.transitPort || '',
+      serviceType: quote.serviceType || '',
+      mode: quote.mode || '',
+      transitTime: quote.transitTime || '',
+      validUntil: quote.validUntil || '',
+      provider: quote.provider || '',
+    });
+  }, [quote?.id]);
 
   // Reset form state after submission or when starting a new quote
   useEffect(() => {
@@ -598,15 +689,24 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                   const mode = modeLabel.toUpperCase();
                   const containerTypeBadges = getTypeQuantityString(tableRows, 'item');
                   const truckTypeBadges = getTypeQuantityString(tableRows, 'truckType');
+                  let weightVolumeBadge = '';
+                  if (isManualQuotation && (mode.includes('SEA') && mode.includes('LCL') || mode.includes('AIR') || mode.includes('LAND') && mode.includes('LTL'))) {
+                    const desc = tableRows[0]?.description || '';
+                    // Try to extract 'X kg' and 'Y cbm' from the description
+                    const weightMatch = desc.match(/(\d+(?:\.\d+)?)\s*kg/i);
+                    const volumeMatch = desc.match(/(\d+(?:\.\d+)?)\s*cbm/i);
+                    if (weightMatch) weightVolumeBadge = `${weightMatch[1]} kg`;
+                    if (volumeMatch) weightVolumeBadge = `${weightVolumeBadge} / ${volumeMatch[1]} cbm`;
+                  } else {
                   const weight = editAdditionalInfo.lclWeight || quote.lclWeight || '';
                   const volume = editAdditionalInfo.lclVolume || quote.lclVolume || '';
-                  let weightVolumeBadge = '';
                   if (weight && volume) {
                     weightVolumeBadge = `${weight} kg / ${volume} cbm`;
                   } else if (weight) {
                     weightVolumeBadge = `${weight} kg`;
                   } else if (volume) {
                     weightVolumeBadge = `${volume} cbm`;
+                    }
                   }
                   let detailsBadges = [];
                   if (mode.includes('SEA') && mode.includes('FCL')) {
@@ -635,8 +735,8 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                     additionalInfo: cleanedAdditionalInfo,
                     shipmentType: cleanedAdditionalInfo.shipmentType || quote.shipmentType || '',
                     shipmentTypeDescription,
-                    lclWeight: editAdditionalInfo.lclWeight || quote.lclWeight || '',
-                    lclVolume: editAdditionalInfo.lclVolume || quote.lclVolume || '',
+                    lclWeight: isManualQuotation && (mode.includes('SEA') && mode.includes('LCL') || mode.includes('AIR') || mode.includes('LAND') && mode.includes('LTL')) ? (tableRows[0]?.description?.match(/(\d+(?:\.\d+)?)\s*kg/i)?.[1] || '') : editAdditionalInfo.lclWeight || quote.lclWeight || '',
+                    lclVolume: isManualQuotation && (mode.includes('SEA') && mode.includes('LCL') || mode.includes('AIR') || mode.includes('LAND') && mode.includes('LTL')) ? (tableRows[0]?.description?.match(/(\d+(?:\.\d+)?)\s*cbm/i)?.[1] || '') : editAdditionalInfo.lclVolume || quote.lclVolume || '',
                     origin: editQuote.origin,
                     destination: editQuote.destination,
                     transitPort: editQuote.transitPort,
@@ -668,6 +768,16 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                     tableRows: tableRows,
                   };
                   addQuote(updatedQuote);
+                  // Fix: update quotes array directly if setQuotes does not accept a function
+                  const prevQuotes = quotes || [];
+                  const idx = prevQuotes.findIndex((q: any) => q.id === updatedQuote.id);
+                  if (idx !== -1) {
+                    const newQuotes = [...prevQuotes];
+                    newQuotes[idx] = updatedQuote;
+                    setQuotes(newQuotes);
+                  } else {
+                    setQuotes([updatedQuote, ...prevQuotes]);
+                  }
                   router.push('/quotes/list');
                 }}
                 title={isAlreadySubmitted ? 'This quote has already been submitted.' : 'Submit this quote'}
@@ -734,7 +844,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
         <QuoteInvoiceDetail
           isEditing={isEditing}
           isManualQuotation={isManualQuotation}
-          tableRows={tableRows}
+          tableRows={isEditing ? editTableRows : (selectedQuoteDetails?.tableRows || [])}
           addTableRow={addTableRow}
           removeTableRow={removeTableRow}
           updateTableRow={updateTableRow}

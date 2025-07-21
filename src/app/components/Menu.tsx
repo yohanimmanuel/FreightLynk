@@ -138,11 +138,11 @@ const menuItems: MenuSection[] = [
                 label: "Pre-alerts",
                 href: "/shipments/pre-alerts",
               },
-              // {
-              //   icon: List,
-              //   label: "Customs",
-              //   href: "/shipments/customs",
-              // },
+              {
+                icon: List,
+                label: "Customs",
+                href: "/shipments/customs",
+              },
               // {
               //   icon: List,
               //   label: "Consolidation",

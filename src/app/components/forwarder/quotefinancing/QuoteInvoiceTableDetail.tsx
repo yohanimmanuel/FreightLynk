@@ -79,9 +79,10 @@ const QuoteInvoiceDetail = ({
                   {(isManualQuotation || isEditing) ? (
                     <input
                       type="text"
-                      className="w-full border rounded px-2 py-1 text-xs"
-                      value={row.description || ''}
-                      onChange={(e) => updateTableRow(idx, 'description', e.target.value)}
+                      className="w-full px-2 py-1 border border-gray-900 rounded text-xs text-gray-900"
+                      value={row.description}
+                      onChange={e => updateTableRow(idx, 'description', e.target.value)}
+                      placeholder="e.g. 12 kg / 23 cbm"
                     />
                   ) : (
                     row.description
