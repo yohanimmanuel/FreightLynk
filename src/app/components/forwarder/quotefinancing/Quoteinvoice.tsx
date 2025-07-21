@@ -372,6 +372,43 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
     else if (lclWeightParsed) badge = `${lclWeightParsed} kg`;
     else if (lclVolumeParsed) badge = `${lclVolumeParsed} cbm`;
 
+    // Unified badge logic for all modes
+    let detailsField: string[] = [];
+    let truckTypeField: string[] = [];
+    let containerTypeField: string[] = [];
+    let weightVolumeField: string[] = [];
+    if (mode.includes('SEA') && mode.includes('FCL')) {
+      detailsField = [...containerTypeBadges];
+      containerTypeField = [...containerTypeBadges];
+      truckTypeField = [];
+      weightVolumeField = [];
+    } else if (mode.includes('LAND') && mode.includes('FTL')) {
+      detailsField = [...truckTypeBadges];
+      truckTypeField = [...truckTypeBadges];
+      containerTypeField = [];
+      weightVolumeField = [];
+    } else if (mode.includes('SEA') && mode.includes('LCL') || mode.includes('AIR') || mode.includes('LAND') && mode.includes('LTL')) {
+      detailsField = weightVolumeBadge ? [weightVolumeBadge] : [];
+      weightVolumeField = weightVolumeBadge ? [weightVolumeBadge] : [];
+      containerTypeField = [];
+      truckTypeField = [];
+    } else {
+      detailsField = containerTypeBadges.length > 0 ? [...containerTypeBadges] : (weightVolumeBadge ? [weightVolumeBadge] : []);
+      containerTypeField = containerTypeBadges.length > 0 ? [...containerTypeBadges] : [];
+      truckTypeField = truckTypeBadges.length > 0 ? [...truckTypeBadges] : [];
+      weightVolumeField = weightVolumeBadge ? [weightVolumeBadge] : [];
+    }
+
+    // Debug log to confirm fields
+    console.log('QUOTE SAVE DEBUG:', {
+      id: quote.id,
+      mode,
+      detailsField,
+      truckTypeField,
+      containerTypeField,
+      weightVolumeField
+    });
+
     const updatedQuote = {
       ...quote, // spread first
       provider: editQuote.provider || '', // then override
@@ -402,13 +439,11 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
         return m;
       })(),
       modeLabel: editQuote.mode || selectedQuoteDetails?.modeLabel || quote.modeLabel || quote.mode || '',
-      // Use badge for details
-      details: badge ? [badge] : [],
-      isTariff: cleanedAdditionalInfo.isTariff ?? quote.isTariff ?? false,
-      client: safeTo.company || quote.client || '',
-      containertype: containerTypeBadges,
-      truckType: truckTypeBadges,
-      weightVolume: badge ? [badge] : [],
+      // Use only the new fields
+      details: detailsField,
+      containertype: containerTypeField,
+      truckType: truckTypeField,
+      weightVolume: weightVolumeField,
       status: quote.status || 'draft',
       price: finalTotalAmount?.toString() || quote.price || '',
       createdBy: user?.fullName || quote.createdBy || '',
