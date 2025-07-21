@@ -417,6 +417,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
         if (m.includes('LAND') && m.includes('LTL')) return 'LAND LTL';
         return m;
       })(),
+      modeLabel: editQuote.mode || selectedQuoteDetails?.modeLabel || quote.modeLabel || quote.mode || '',
       details: detailsBadges,
       isTariff: cleanedAdditionalInfo.isTariff ?? quote.isTariff ?? false,
       client: safeTo.company || quote.client || '',
@@ -537,27 +538,8 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
     const mappedQuote = {
       id: quoteId,
       lane: `${quote.origin} - ${quote.destination}`,
-      mode: (() => {
-        // Use the detected mode from the quote
-        if (modeLabel) {
-          const detectedMode = modeLabel.toUpperCase();
-          if (detectedMode.includes('SEA') && detectedMode.includes('FCL')) return 'SEA FCL';
-          if (detectedMode.includes('SEA') && detectedMode.includes('LCL')) return 'SEA LCL';
-          if (detectedMode.includes('AIR')) return 'AIR LCL';
-          if (detectedMode.includes('LAND') && detectedMode.includes('FTL')) return 'LAND FTL';
-          if (detectedMode.includes('LAND') && detectedMode.includes('LTL')) return 'LAND LTL';
-          return detectedMode;
-        }
-        
-        // Fallback logic if modeLabel is not available
-        const fallbackLabel = (quote.mode || '').toUpperCase();
-        if (fallbackLabel.includes('SEA') && fallbackLabel.includes('FCL')) return 'SEA FCL';
-        if (fallbackLabel.includes('SEA') && fallbackLabel.includes('LCL')) return 'SEA LCL';
-        if (fallbackLabel.includes('AIR')) return 'AIR LCL';
-        if (fallbackLabel.includes('LAND') && fallbackLabel.includes('FTL')) return 'LAND FTL';
-        if (fallbackLabel.includes('LAND') && fallbackLabel.includes('LTL')) return 'LAND LTL';
-        return fallbackLabel || 'FCL';
-      })() as import('../../../../store/forwarderquote').Quote['mode'],
+      mode: quote.mode || quote.modeLabel || '',
+      modeLabel: quote.modeLabel || quote.mode || '',
       containertype: fclContainerTypes, // All container types and quantities for FCL
       truckType: ftlTruckTypes,        // All truck types and quantities for FTL
       weightVolume: lclWeightVolume ? [lclWeightVolume] : [],   // Weight/volume for LCL, AIR, LTL
@@ -971,7 +953,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                 <div className="flex justify-between text-xs items-center">
                   <span className="text-gray-500">Mode:</span>
                   {!isEditing && !isManualQuotation ? (
-                    <span className="font-semibold">{quote.mode || quote.additionalInfo?.shipmentMode || quote.modeLabel || '-'}</span>
+                    <span className="font-semibold">{quote.modeLabel || quote.additionalInfo?.shipmentMode || quote.mode || '-'}</span>
                   ) : (
                     <select
                       className="border rounded px-2 py-1 text-xs"
@@ -987,6 +969,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                         setCurrentDraftQuote({
                           ...currentDraftQuote,
                           mode: newModeType,
+                          modeLabel: newModeLabel,
                           id: currentDraftQuote?.id || '',
                           lane: currentDraftQuote?.lane || '',
                           containertype: currentDraftQuote?.containertype || [],

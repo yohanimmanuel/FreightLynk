@@ -96,6 +96,7 @@ export interface Quote {
   id: string;
   lane: string;
   mode: 'ocean' | 'air' | 'road';
+  modeLabel?: string;
   containertype: string | string[];
   currency: string;
   baseRate: number;
