@@ -149,6 +149,13 @@ function getModeIcon(mode: string) {
   return null;
 }
 
+// Helper to format date as 'Month Day, Year'
+function formatDisplayDate(dateString: string) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
 export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' | 'client' }) {
   // Forwarder store
   const forwarderStore = useQuoteRateStore();
@@ -246,7 +253,11 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
       case 'price': return q.price;
       case 'currency': return q.currency || 'USD';
       case 'createdBy': return q.createdBy || user?.fullName || q.accountName || '—';
-      case 'createdDate': return q.createdDate || (q.createdAt ? new Date(q.createdAt).toLocaleDateString() : new Date().toLocaleDateString());
+      case 'createdDate': {
+        if (q.createdDate) return formatDisplayDate(q.createdDate);
+        if (q.createdAt) return formatDisplayDate(q.createdAt);
+        return formatDisplayDate(new Date().toISOString());
+      }
       case 'incoterms': return q.incoterms || q.invoiceIncoterms || '—';
       case 'remark': return q.remark || q.invoiceRemark || '—';
       case 'notes': return q.notes || q.invoiceNotes || '—';
