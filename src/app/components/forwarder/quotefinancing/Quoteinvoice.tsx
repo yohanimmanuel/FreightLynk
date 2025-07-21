@@ -7,7 +7,7 @@ import { useQuoteRateStore } from '../../../../store/forwarderquote';
 import { partnerDirectory } from '../../../../store/partnerCompanyData';
 import QuoteInvoiceHeader from './QuoteInvoiceHeader';
 import QuoteInvoiceDetails from './QuoteInvoiceDetails';
-import QuoteInvoiceDetail from './QuoteInvoiceDetail';
+import QuoteInvoiceDetail from './QuoteInvoiceTableDetail';
 
 // Utility to generate a unique Quote ID
 function generateQuoteId() {
@@ -302,8 +302,8 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
     }
 
     const updatedQuote = {
-      provider: editQuote.provider || '',
-      ...quote,
+      ...quote, // spread first
+      provider: editQuote.provider || '', // then override
       from: { ...safeFrom },
       to: { ...safeTo },
       remark: editRemark,
@@ -627,8 +627,8 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                     }
                   }
                   const updatedQuote = {
-                    provider: editQuote.provider || selectedQuoteDetails?.provider || quote.provider || '',
-                    ...quote,
+                    ...quote, // spread first
+                    provider: editQuote.provider || selectedQuoteDetails?.provider || quote.provider || '', // then override
                     from: { ...safeFrom },
                     to: { ...safeTo },
                     remark: editRemark,
