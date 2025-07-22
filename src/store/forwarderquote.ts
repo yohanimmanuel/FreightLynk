@@ -121,6 +121,19 @@ export interface Quote {
   truckType?: string | string[];
   weightVolume?: string | string[];
 
+  /**
+   * Invoice-level additional cost entered manually by user (e.g. documentation fee).
+   * Included in finalTotalAmount calculations.
+   */
+  additionalCost?: number;
+  /** Optional description of the additional cost */
+  additionalCostDescription?: string;
+
+  /** Sum of all line-item amounts (without additionalCost). */
+  totalAmount?: number;
+  /** totalAmount + additionalCost, used for display and list tables */
+  finalTotalAmount?: number;
+
   // Expanded fields for invoice
   from: QuoteParty;
   to: QuoteParty;
@@ -136,6 +149,64 @@ export interface Quote {
   destinationAirport?: string;
 }
 
+
+// Mock forwarder quotes for QuoteRequest integration
+export const mockForwarderQuotes: any[] = [
+  {
+    id: 'QR-1001',
+    customer: 'Acme Electronics',
+    provider: 'Global Forwarders Ltd',
+    details: '1x40ft High Cube Container, 20,000 kg',
+    origin: 'Shenzhen, CN',
+    destination: 'Los Angeles, US',
+    attachment: 'invoice-1001.pdf',
+    status: 'Quoted',
+    incoterms: 'FOB',
+    createdBy: 'John Doe',
+    createdOn: '2025-07-20',
+    mode: 'FCL',
+    notes: 'Handle with care. Fragile items.',
+    commodities: 'Consumer Electronics (Laptops, Tablets)',
+    expectedDelivery: '2025-08-05',
+    cargoReadyDate: '2025-07-25'
+  },
+  {
+    id: 'QR-1002',
+    customer: 'Beta Textiles',
+    provider: 'Oceanic Logistics',
+    details: '2x20ft Standard Containers, 16,000 kg total',
+    origin: 'Ho Chi Minh City, VN',
+    destination: 'Hamburg, DE',
+    attachment: 'packinglist-2002.pdf',
+    status: 'Pending',
+    incoterms: 'CIF',
+    createdBy: 'Jane Smith',
+    createdOn: '2025-07-18',
+    mode: 'FCL',
+    notes: 'Urgent shipment for seasonal demand.',
+    commodities: 'Cotton Textile Rolls',
+    expectedDelivery: '2025-08-10',
+    cargoReadyDate: '2025-07-22'
+  },
+  {
+    id: 'QR-1003',
+    customer: 'Delta Auto Parts',
+    provider: 'SkyTrans Express',
+    details: '1 air pallet, 1,200 kg, 2.5 CBM',
+    origin: 'Nagoya, JP',
+    destination: 'Chicago, US',
+    attachment: 'specsheet-3003.pdf',
+    status: 'Accepted',
+    incoterms: 'EXW',
+    createdBy: 'Carlos Ruiz',
+    createdOn: '2025-07-15',
+    mode: 'Air',
+    notes: 'Deliver ASAP. Customer waiting.',
+    commodities: 'Automotive Engine Parts',
+    expectedDelivery: '2025-07-24',
+    cargoReadyDate: '2025-07-16'
+  }
+];
 
 // Zustand store interface
 export interface QuoteRateStore {

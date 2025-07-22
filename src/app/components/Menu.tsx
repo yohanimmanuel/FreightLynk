@@ -97,12 +97,6 @@ const menuItems: MenuSection[] = [
             visible: ["admin", "client"],
           },
           {
-            icon: CalendarCheck,
-            label: "Bookings",
-            href: "/bookings",
-            visible: ["admin", "client"],
-          },
-          {
             icon: BriefcaseBusiness,
             label: "Quotes",
             href: "#",
@@ -120,6 +114,12 @@ const menuItems: MenuSection[] = [
                 href: "/quotes/request",
               },
             ]
+          },
+          {
+            icon: CalendarCheck,
+            label: "Bookings",
+            href: "/bookings",
+            visible: ["admin", "client"],
           },
           {
             icon: Package,

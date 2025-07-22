@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuoteSearchStore, QuoteSearchResult } from '../../../../store/quotesearchdata';
 import { useAuthStore } from '../../../../store/authStore';
-import { Edit, Send, Plus, Download } from 'lucide-react';
+import { Edit, Send, Plus, Download, CheckCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useQuoteRateStore } from '../../../../store/forwarderquote';
 import { partnerDirectory } from '../../../../store/partnerCompanyData';
 import QuoteInvoiceHeader from './QuoteInvoiceHeader';
 import QuoteInvoiceDetails from './QuoteInvoiceDetails';
 import QuoteInvoiceDetail from './QuoteInvoiceTableDetail';
+import { useInvoiceSend } from './useInvoiceSend';
 
 // Utility to generate a unique Quote ID
 function generateQuoteId() {
@@ -21,6 +22,15 @@ function formatDate(date: Date) {
 }
 
 const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boolean }) => {
+  // --- Invoice Send Confirmation Logic ---
+  const {
+    showSendConfirm,
+    invoiceSent,
+    toCompany,
+    openSendConfirm,
+    confirmSend,
+    cancelSend,
+  } = useInvoiceSend();
   const { selectedQuoteDetails, additionalInfo, shipmentType, shipmentTypeDescription, setSelectedQuoteDetails } = useQuoteSearchStore();
   const { user } = useAuthStore();
   const router = useRouter();
@@ -55,8 +65,14 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
   const [loadingDraft, setLoadingDraft] = useState(true);
 
   // Additional state for manual quotations
-  const [additionalCost, setAdditionalCost] = useState(0);
-  const [additionalCostDescription, setAdditionalCostDescription] = useState('');
+  const [additionalCost, setAdditionalCost] = useState(quote.additionalCost || 0);
+  const [additionalCostDescription, setAdditionalCostDescription] = useState(quote.additionalCostDescription || '');
+
+  // Sync additional cost fields whenever quote changes
+  useEffect(() => {
+    setAdditionalCost(quote.additionalCost || 0);
+    setAdditionalCostDescription(quote.additionalCostDescription || '');
+  }, [quote?.id]);
 
   // State for editable quote fields
   const [editQuote, setEditQuote] = useState({
@@ -252,7 +268,29 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       ...weightVolumes
     ].filter(Boolean).join(', ');
     const totalAmount = (editTableRows || []).reduce((sum: number, row: any) => sum + (typeof row.amount === 'number' ? row.amount : 0), 0);
-    const finalTotalAmount = totalAmount + (isManualQuotation ? additionalCost : 0);
+    const finalTotalAmount = totalAmount + (additionalCost || 0);
+
+    // ---- Save quote with additional cost ----
+    const newQuote = {
+      ...quote,
+      from: safeFrom,
+      to: safeTo,
+      remark: editRemark,
+      additionalInfo: cleanedAdditionalInfo,
+      tableRows: editTableRows,
+      totalAmount,
+      finalTotalAmount,
+      additionalCost,
+      additionalCostDescription,
+    };
+    addQuote(newQuote);
+    if (Array.isArray(quotes)) {
+      const idx = quotes.findIndex((q) => q.id === newQuote.id);
+      const updatedQuotes = idx !== -1 ? [...quotes.slice(0, idx), newQuote, ...quotes.slice(idx + 1)] : [...quotes, newQuote];
+      setQuotes(updatedQuotes);
+    }
+    setSelectedQuoteDetails(newQuote as any);
+
     // Compute container/truck type as 'qty x type' and weight/volume as 'weight kg / volume cbm'
     function getTypeQuantityString(rows: any[], typeKey: string) {
       const counts: Record<string, number> = {};
@@ -490,6 +528,8 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       validUntil: quote.validUntil || '',
       provider: quote.provider || '',
     });
+    setAdditionalCost(quote.additionalCost || 0);
+    setAdditionalCostDescription(quote.additionalCostDescription || '');
   }, [quote?.id]);
 
   // Reset form state after submission or when starting a new quote
@@ -676,6 +716,27 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
 
   return (
     <>
+      {/* Invoice Send Confirmation Modal and Overlay */}
+      {showSendConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+            <div className="mb-4 text-lg text-gray-900 mb-6">Send invoice to <b>{toCompany}</b>?</div>
+            <div className="mb-6 text-sm text-gray-600 w-120">
+             Note: This invoice will appear in the selected client's dashboard under their <b>Bookings Confirm</b> page of the respected booking/quote request, placing the price in the <b>Price</b> field and allowing them to view and process payment.
+            </div>
+            <button onClick={confirmSend} className="px-4 py-2 bg-green-600 text-white rounded-lg mr-2">Confirm</button>
+            <button onClick={cancelSend} className="px-4 py-2 bg-gray-300 rounded-lg">Cancel</button>
+          </div>
+        </div>
+      )}
+      {invoiceSent && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 pb-150">
+          <div className="bg-green-100 border border-green-600 rounded-lg shadow-sm p-4 text-center text-sm font-medium text-green-800 flex items-center justify-center gap-2">
+            <CheckCircle className="w-5 h-5 text-green-600" />
+            Invoice sent to {toCompany}!
+          </div>
+        </div>
+      )}
       {/* Button Row */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2">
@@ -723,7 +784,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                     ...weightVolumes
                   ].filter(Boolean).join(', ');
                   const totalAmount = (tableRows || []).reduce((sum: number, row: any) => sum + (typeof row.amount === 'number' ? row.amount : 0), 0);
-                  const finalTotalAmount = totalAmount + (isManualQuotation ? additionalCost : 0);
+                  const finalTotalAmount = totalAmount + (additionalCost || 0);
                   function getTypeQuantityString(rows: any[], typeKey: string) {
                     const counts: Record<string, number> = {};
                     rows.forEach(row => {
@@ -835,8 +896,11 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
               >
                 Submit
               </button>
-              <button className="px-4 py-2 rounded-lg bg-green-500 text-white font-medium hover:bg-green-600 transition-colors flex items-center gap-2">
-                <Send className="w-4 h-4" /> Send
+              <button 
+                onClick={() => openSendConfirm(editTo.company)}
+                className="px-4 py-2 rounded-lg bg-green-500 text-white font-medium hover:bg-green-600 transition-colors flex items-center gap-2">
+                <Send className="w-4 h-4" /> 
+                Send
               </button>
             </>
           ) : (

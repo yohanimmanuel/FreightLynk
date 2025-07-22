@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Search, ChevronDown, X, Menu, Ship, Box, Plane, Truck, Upload, Download, CheckCircle, XCircle } from 'lucide-react';
-import { useQuoteRateStore } from '@/store/forwarderquote';
+import { useQuoteRateStore, mockForwarderQuotes } from '@/store/forwarderquote';
+import { useInvoiceSend } from './useInvoiceSend';
 import { useClientQuoteStore } from '@/store/clientquotes';
 import { useBookingStore } from '@/store/bookingStore';
 
@@ -38,7 +39,7 @@ type RequestType = {
   createdOn: string;
   mode?: string;
   notes?: string;
-  commodity?: string;
+  commodities?: string;
   expectedDelivery?: string;
   cargoReadyDate?: string;
   [key: string]: string | undefined; // index signature for dynamic access
@@ -194,7 +195,7 @@ export default function QuoteRequest({ role = 'forwarder', hasBookings = true }:
   // Requests data source
   let requests: RequestType[] = [];
   if (role === 'forwarder') {
-    requests = [];
+    requests = mockForwarderQuotes;
   } else if (role === 'client') {
     // Map confirmedBookings to quote request rows
     const today = new Date().toLocaleDateString('en-CA');
@@ -295,8 +296,33 @@ export default function QuoteRequest({ role = 'forwarder', hasBookings = true }:
     alert('Import CSV clicked');
   };
 
+  const {
+    showSendConfirm,
+    invoiceSent,
+    toCompany,
+    openSendConfirm,
+    confirmSend,
+    cancelSend,
+  } = useInvoiceSend();
+
   return (
     <div className="bg-white">
+      {showSendConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+            <div className="mb-4 text-lg">Send invoice to <b>{toCompany}</b>?</div>
+            <button onClick={confirmSend} className="px-4 py-2 bg-green-600 text-white rounded-lg mr-2">Confirm</button>
+            <button onClick={cancelSend} className="px-4 py-2 bg-gray-300 rounded-lg">Cancel</button>
+          </div>
+        </div>
+      )}
+      {invoiceSent && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-8 text-center text-xl font-bold">
+            Invoice sent to {toCompany}!
+          </div>
+        </div>
+      )}
       {successMsg && (
         <div className={`fixed top-30 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded px-4 py-2 shadow-lg border ${successType === 'error' ? 'bg-red-100 border-red-200 text-red-800' : 'bg-green-100 border-green-200 text-green-800'}`}>
           {successType === 'error' ? (
@@ -450,6 +476,9 @@ export default function QuoteRequest({ role = 'forwarder', hasBookings = true }:
                   />
                 </div>
               </th>
+              {role === 'forwarder' && (
+                <th className="px-4 py-2 text-left font-medium uppercase text-gray-500 whitespace-nowrap">Send Invoice</th>
+              )}
               {columns.map(col => (
                 <th key={col.key} className="px-4 py-2 text-left font-medium uppercase text-gray-500 whitespace-nowrap">{col.label}</th>
               ))}

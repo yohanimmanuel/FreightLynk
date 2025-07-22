@@ -12,7 +12,6 @@ const QuoteInvoiceDetail = ({
   setAdditionalCost,
   additionalCostDescription,
   setAdditionalCostDescription,
-  totalAmount,
   currency,
   selectedQuoteDetails,
   setSelectedQuoteDetails,
@@ -22,7 +21,7 @@ const QuoteInvoiceDetail = ({
   return (
     <div className="mt-8 bg-white border-t border-gray-200 pt-4">
       <div className="font-semibold text-gray-900 mb-2 text-md">Quote detail</div>
-      {(isManualQuotation || isEditing) && (
+      {(isManualQuotation || isEditing || additionalCost > 0) && (
         <div className="mb-4 flex justify-between items-center">
           <button
             onClick={addTableRow}
@@ -179,7 +178,7 @@ const QuoteInvoiceDetail = ({
                 <td className="px-4 py-3 text-right">
                   {(row.qty * row.baseRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </td>
-                {(isManualQuotation || isEditing) && (
+                {(isManualQuotation || isEditing || additionalCost > 0) && (
                   <td className="px-4 py-3 text-center">
                     <button
                       onClick={() => removeTableRow(idx)}
@@ -194,7 +193,7 @@ const QuoteInvoiceDetail = ({
           </tbody>
         </table>
         {/* Additional Cost Section for Manual Quotations */}
-        {(isManualQuotation || isEditing) && (
+        {(isManualQuotation || isEditing || additionalCost > 0) && (
           <div className="mt-4 px-4 py-3 border-t border-gray-200">
             <div className="flex items-center gap-4 mb-3">
               <span className="text-sm font-medium text-gray-700">Additional Cost:</span>
@@ -213,32 +212,50 @@ const QuoteInvoiceDetail = ({
                 value={additionalCostDescription}
                 onChange={(e) => setAdditionalCostDescription(e.target.value)}
               />
+              {additionalCost > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAdditionalCost(0);
+                    setAdditionalCostDescription('');
+                  }}
+                  className="px-2 py-1 text-xs text-red-600 border border-red-300 rounded hover:bg-red-50"
+                >
+                  Remove
+                </button>
+              )}
             </div>
           </div>
         )}
         {/* Subtotal and Total Rows */}
-        <div className="flex flex-col items-end mt-2 px-4 text-sm">
-          <div className="flex w-full justify-end mb-2">
-            <div className="w-32 text-right font-semibold text-gray-700">SUB-TOTAL :</div>
-            <div className="w-16 text-right font-semibold text-gray-700">{currency}</div>
-            <div className="w-24 text-right font-semibold text-gray-900">{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</div>
-          </div>
-          {(isManualQuotation || isEditing) && additionalCost > 0 && (
-            <div className="flex w-full justify-end mb-2">
-              <div className="w-32 text-right font-semibold text-gray-700">ADDITIONAL :</div>
-              <div className="w-16 text-right font-semibold text-gray-700">{currency}</div>
-              <div className="w-24 text-right font-semibold text-gray-900">{additionalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+        {(() => {
+          const subtotal = tableRows.reduce((sum: number, row: any) => sum + (Number(row.qty) * Number(row.baseRate)), 0);
+          const total = subtotal + Number(additionalCost || 0);
+          return (
+            <div className="flex flex-col items-end mt-2 px-4 text-sm">
+              <div className="flex w-full justify-end mb-2">
+                <div className="w-32 text-right font-semibold text-gray-700">SUB-TOTAL :</div>
+                <div className="w-16 text-right font-semibold text-gray-700 mr-15">{currency}</div>
+                <div className="w-24 text-right font-semibold text-gray-900">{subtotal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</div>
+              </div>
+              {additionalCost > 0 && (
+                <div className="flex w-full justify-end mb-2">
+                  <div className="w-32 text-right font-semibold text-gray-700">ADDITIONAL :</div>
+                  <div className="w-16 text-right font-semibold text-gray-700 mr-15">{currency}</div>
+                  <div className="w-24 text-right font-semibold text-gray-900">{additionalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                </div>
+              )}
+              <div className="flex w-full justify-end border-t border-gray-200 pt-2">
+                <div className="w-32 text-right font-bold text-gray-900">TOTAL :</div>
+                <div className="w-16 text-right font-bold text-gray-900 mr-15">{currency}</div>
+                <div className="w-24 text-right font-bold text-gray-900">{total.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</div>
+              </div>
             </div>
-          )}
-          <div className="flex w-full justify-end border-t border-gray-200 pt-2">
-            <div className="w-32 text-right font-bold text-gray-900">TOTAL :</div>
-            <div className="w-16 text-right font-bold text-gray-900">{currency}</div>
-            <div className="w-24 text-right font-bold text-gray-900">{(totalAmount + additionalCost).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</div>
-          </div>
-        </div>
+          );
+        })()}
       </div>
     </div>
   );
 };
 
-export default QuoteInvoiceDetail; 
+export default QuoteInvoiceDetail;

@@ -252,7 +252,11 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
       case 'origin': return q.origin;
       case 'destination': return q.destination;
       case 'status': return q.status;
-      case 'price': return q.price;
+      case 'price': {
+        // Prefer finalTotalAmount (includes additional cost) then totalAmount, fallback to price
+        const amount = q.finalTotalAmount ?? q.totalAmount ?? q.price;
+        return typeof amount === 'number' ? amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : amount;
+      }
       case 'currency': return q.currency || 'USD';
       case 'createdBy': return q.createdBy || user?.fullName || q.accountName || '—';
       case 'createdDate': {
