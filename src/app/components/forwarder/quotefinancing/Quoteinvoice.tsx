@@ -878,7 +878,11 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                     incoterms: cleanedAdditionalInfo.incoterm || quote.incoterms || '',
                     notes: cleanedAdditionalInfo.note || quote.notes || '',
                     tableRows: tableRows,
+                    // --- Ensure additional cost fields are always included ---
+                    additionalCost: additionalCost,
+                    additionalCostDescription: additionalCostDescription,
                   };
+                  console.log('QUOTE SUBMIT DEBUG:', updatedQuote);
                   addQuote(updatedQuote);
                   // Fix: update quotes array directly if setQuotes does not accept a function
                   const prevQuotes = quotes || [];

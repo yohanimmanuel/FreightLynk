@@ -259,15 +259,16 @@ export const useQuoteRateStore = create<QuoteRateStore>()(
       setQuotes: (quotes) => set({ quotes }),
       addQuote: (quote) => set((state) => {
         const existingIndex = state.quotes.findIndex(q => q.id === quote.id);
+        let updatedQuotes;
         if (existingIndex !== -1) {
           // Update existing quote
-          const updatedQuotes = [...state.quotes];
+          updatedQuotes = [...state.quotes];
           updatedQuotes[existingIndex] = quote;
-          return { quotes: updatedQuotes };
         } else {
           // Add new quote
-          return { quotes: [...state.quotes, quote] };
+          updatedQuotes = [...state.quotes, quote];
         }
+        return { quotes: updatedQuotes };
       }),
       updateQuote: (updatedQuote) => set((state) => ({
         quotes: state.quotes.map(quote => quote.id === updatedQuote.id ? updatedQuote : quote)
