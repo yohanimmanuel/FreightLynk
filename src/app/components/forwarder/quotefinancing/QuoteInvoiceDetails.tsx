@@ -159,33 +159,21 @@ const QuoteInvoiceDetails = ({
                 )}
               </div>
             )}
-            {/* Mode (read-only) */}
+            {/* Mode (always editable) */}
             <div className="flex justify-between text-xs items-center">
               <span className="text-gray-500">Mode:</span>
-              {!isEditing && !isManualQuotation ? (
-                <span className="font-semibold">{quote.modeLabel || quote.additionalInfo?.shipmentMode || quote.mode || '-'}</span>
-              ) : (
-                <select
-                  className="border rounded px-2 py-1 text-xs"
-                  value={editQuote.mode}
-                  onChange={e => {
-                    const newModeLabel = e.target.value;
-                    let newModeType: 'ocean' | 'air' | 'road' = 'ocean';
-                    if (newModeLabel.includes('AIR')) newModeType = 'air';
-                    else if (newModeLabel.includes('LAND')) newModeType = 'road';
-                    else newModeType = 'ocean';
-                    setEditQuote((prev: any) => ({ ...prev, mode: newModeLabel }));
-                    // You may need to update parent state for mode/modeLabel as well
-                  }}
-                >
-                  <option value="">Select</option>
-                  <option value="SEA FCL">SEA FCL</option>
-                  <option value="SEA LCL">SEA LCL</option>
-                  <option value="AIR LCL">AIR LCL</option>
-                  <option value="LAND FTL">LAND FTL</option>
-                  <option value="LAND LTL">LAND LTL</option>
-                </select>
-              )}
+              <select
+                className="border rounded px-2 py-1 text-xs"
+                value={editQuote.mode}
+                onChange={e => setEditQuote((prev: any) => ({ ...prev, mode: e.target.value }))}
+              >
+                <option value="">Select</option>
+                <option value="SEA FCL">SEA FCL</option>
+                <option value="SEA LCL">SEA LCL</option>
+                <option value="AIR LCL">AIR LCL</option>
+                <option value="LAND FTL">LAND FTL</option>
+                <option value="LAND LTL">LAND LTL</option>
+              </select>
             </div>
             {/* Transit Time */}
             <div className="flex justify-between text-xs items-center">

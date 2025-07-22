@@ -284,7 +284,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
     const containerTypeBadges = getTypeQuantityString(tableRows, 'item');
     
     // Format truck types for FTL
-    const truckTypeBadges = getTypeQuantityString(tableRows, 'truckType');
+    const truckTypeBadges = getTypeQuantityString(tableRows, 'item');
     
     // Weight/volume badge for LCL, AIR, LTL
     let weightVolumeBadge = '';
@@ -316,7 +316,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
     } else if (mode.includes('SEA') && mode.includes('FCL')) {
       detailsBadges = [...containerTypeBadges];
     } else if (mode.includes('LAND') && mode.includes('FTL')) {
-      detailsBadges = [...truckTypeBadges];
+      detailsBadges = [...truckTypeBadges]; // Now uses 'item' field
     } else if (mode.includes('SEA') && mode.includes('LCL') || mode.includes('AIR') || mode.includes('LAND') && mode.includes('LTL')) {
       detailsBadges = weightVolumeBadge ? [weightVolumeBadge] : [];
     } else {
@@ -324,7 +324,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       if (mode.includes('SEA') && mode.includes('FCL')) {
         detailsBadges = [...containerTypeBadges];
       } else if (mode.includes('LAND') && mode.includes('FTL')) {
-        detailsBadges = [...truckTypeBadges];
+        detailsBadges = [...truckTypeBadges]; // Now uses 'item' field
       } else if (mode.includes('SEA') && mode.includes('LCL') || mode.includes('AIR') || mode.includes('LAND') && mode.includes('LTL')) {
         detailsBadges = weightVolumeBadge ? [weightVolumeBadge] : [];
       } else {
@@ -383,8 +383,8 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       truckTypeField = [];
       weightVolumeField = [];
     } else if (mode.includes('LAND') && mode.includes('FTL')) {
-      detailsField = [...truckTypeBadges];
-      truckTypeField = [...truckTypeBadges];
+      detailsField = [...truckTypeBadges]; // Now uses 'item' field
+      truckTypeField = [...truckTypeBadges]; // Now uses 'item' field
       containerTypeField = [];
       weightVolumeField = [];
     } else if (mode.includes('SEA') && mode.includes('LCL') || mode.includes('AIR') || mode.includes('LAND') && mode.includes('LTL')) {
@@ -446,7 +446,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       weightVolume: weightVolumeField,
       status: quote.status || 'draft',
       price: finalTotalAmount?.toString() || quote.price || '',
-      createdBy: user?.fullName || quote.createdBy || '',
+      createdBy: editFrom.preparedBy || '',
       incoterms: cleanedAdditionalInfo.incoterm || quote.incoterms || '',
       notes: cleanedAdditionalInfo.note || quote.notes || '',
       tableRows: editTableRows,
@@ -554,7 +554,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
     
     // Compute values for each mode
     const fclContainerTypes = getTypeQuantityString(tableRows, 'item');
-    const ftlTruckTypes = getTypeQuantityString(tableRows, 'truckType');
+    const ftlTruckTypes = getTypeQuantityString(tableRows, 'item');
     
     // For LCL/AIR/LTL, show both weight and volume if present
     const weight = effectiveAdditionalInfo.lclWeight || selectedQuoteDetails?.lclWeight || quote.lclWeight || '';
@@ -739,7 +739,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                   const modeLabel = selectedQuoteDetails?.modeLabel || quote.mode || '';
                   const mode = modeLabel.toUpperCase();
                   const containerTypeBadges = getTypeQuantityString(tableRows, 'item');
-                  const truckTypeBadges = getTypeQuantityString(tableRows, 'truckType');
+                  const truckTypeBadges = getTypeQuantityString(tableRows, 'item');
                   let weightVolumeBadge = '';
                   if (isManualQuotation && (mode.includes('SEA') && mode.includes('LCL') || mode.includes('AIR') || mode.includes('LAND') && mode.includes('LTL'))) {
                     const desc = tableRows[0]?.description || '';
