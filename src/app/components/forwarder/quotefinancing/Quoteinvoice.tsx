@@ -733,8 +733,8 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
             <div className="mb-6 text-sm text-gray-600 w-120">
              Note: This invoice will appear in the selected client's dashboard under their <b>Bookings Confirm</b> page of the respected booking/quote request, placing the price in the <b>Price</b> field and allowing them to view and process payment.
             </div>
-            <button onClick={confirmSend} className="px-4 py-2 bg-green-600 text-white rounded-lg mr-2">Confirm</button>
-            <button onClick={cancelSend} className="px-4 py-2 bg-gray-300 rounded-lg">Cancel</button>
+            <button onClick={confirmSend} className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg mr-2">Confirm</button>
+            <button onClick={cancelSend} className="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-gray-900 rounded-lg">Cancel</button>
           </div>
         </div>
       )}

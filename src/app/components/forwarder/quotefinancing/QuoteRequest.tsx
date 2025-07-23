@@ -45,7 +45,25 @@ type RequestType = {
   [key: string]: string | undefined; // index signature for dynamic access
 };
 
-function ViewRequestModal({ open, onClose, request, columns, onUpdate, onCancel, role = 'forwarder' }: { open: boolean; onClose: () => void; request: RequestType | undefined; columns: { key: string; label: string }[]; onUpdate?: (id: string) => void; onCancel?: (id: string) => void; role?: 'forwarder' | 'client' }) {
+function ViewRequestModal({ 
+  open, 
+  onClose, 
+  request, 
+  columns, 
+  onUpdate, 
+  onCancel, 
+  onSendInvoice,
+  role = 'forwarder' 
+  }: { 
+    open: boolean; 
+    onClose: () => void; 
+    request: RequestType | undefined; 
+    columns: { key: string; label: string }[]; 
+    onUpdate?: (id: string) => void; 
+    onCancel?: (id: string) => void; 
+    role?: 'forwarder' | 'client' 
+    onSendInvoice?: (request: RequestType) => void 
+  }) {
   if (!open || !request) return null;
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -144,6 +162,15 @@ function ViewRequestModal({ open, onClose, request, columns, onUpdate, onCancel,
               <button type="button" onClick={() => onUpdate && onUpdate(request.id)} className="px-4 py-2 text-sm text-white bg-[#007bff] rounded-lg hover:bg-blue-700">Update</button>
               <button type="button" onClick={() => onCancel && onCancel(request.id)} className="px-4 py-2 text-sm text-white bg-red-500 rounded-lg hover:bg-red-700">Cancel Request</button>
             </div>
+          )}
+          {role === 'forwarder' && onSendInvoice && (
+            <button
+              type="button"
+              onClick={() => onSendInvoice(request)}
+              className="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+            >
+              Send Invoice
+            </button>
           )}
         </div>
       </div>
@@ -304,6 +331,10 @@ export default function QuoteRequest({ role = 'forwarder', hasBookings = true }:
     confirmSend,
     cancelSend,
   } = useInvoiceSend();
+
+  const handleSendInvoice = (request: RequestType) => {
+    if (request.customer) openSendConfirm(request.customer);
+  };
 
   return (
     <div className="bg-white">
@@ -547,6 +578,7 @@ export default function QuoteRequest({ role = 'forwarder', hasBookings = true }:
           setShowViewModal(false);
           handleRequestAction(id, 'cancel');
         }}
+        onSendInvoice={handleSendInvoice}
         role={role}
       />
     </div>
