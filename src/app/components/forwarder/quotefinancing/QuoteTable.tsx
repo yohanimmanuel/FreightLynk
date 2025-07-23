@@ -254,8 +254,16 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
       case 'status': return q.status;
       case 'price': {
         // Prefer finalTotalAmount (includes additional cost) then totalAmount, fallback to price
-        const amount = q.finalTotalAmount ?? q.totalAmount ?? q.price;
-        return typeof amount === 'number' ? amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : amount;
+        const rawAmount = q.finalTotalAmount ?? q.totalAmount ?? q.price;
+        const num = Number(rawAmount);
+        if (!isNaN(num)) {
+          // Show up to 2 decimal places, but drop trailing zeros (e.g., 4820 not 4820.00)
+          return num.toLocaleString(undefined, {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2,
+          });
+        }
+        return rawAmount;
       }
       case 'currency': return q.currency || 'USD';
       case 'createdBy': return q.createdBy || user?.fullName || q.accountName || '—';
@@ -646,16 +654,29 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
                     </td>
                   ) : col.key === 'details' || col.key === 'containertype' || col.key === 'truckType' || col.key === 'weightVolume' ? (
                     <td key={col.key} className="px-4 py-4 text-gray-900 whitespace-nowrap overflow-x-auto">
-                      {Array.isArray(q[col.key])
-                        ? q[col.key].map((badge: string, i: number) => (
-                            <span key={i} className="inline-block border border-blue-300 bg-blue-50 text-blue-800 rounded-full px-2 py-1 text-xs font-semibold mr-1 truncate">{badge}</span>
-                          ))
-                        : typeof q[col.key] === 'string'
-                          ? q[col.key].split('  ').filter(Boolean).map((badge: string, i: number) => (
-                              <span key={i} className="inline-block border border-blue-300 bg-blue-50 text-blue-800 rounded-full px-2 py-1 text-xs font-semibold mr-1 truncate">{badge}</span>
-                            ))
-                          : <span className="text-gray-400">-</span>
-                      }
+                      {(() => {
+                        let badges: string[] = [];
+                        if (Array.isArray(q[col.key])) {
+                          badges = q[col.key];
+                        } else if (typeof q[col.key] === 'string') {
+                          badges = q[col.key].split('  ').filter(Boolean);
+                        }
+                        if (badges.length === 0) {
+                          return <span className="text-gray-400">-</span>;
+                        }
+                        const displayBadges = badges.slice(0, 3);
+                        const extraCount = badges.length - 3;
+                        return (
+                          <>
+                            {displayBadges.map((badge, i) => (
+                              <span key={i} className="inline-block border border-blue-300 bg-blue-50 text-blue-800 rounded-full px-3 py-1 text-xs font-semibold mr-1 truncate">{badge}</span>
+                            ))}
+                            {extraCount > 0 && (
+                              <span className="inline-block border border-blue-300 bg-blue-50 text-blue-800 rounded-full px-2 py-1 text-xs font-semibold mr-1 truncate">+ more</span>
+                            )}
+                          </>
+                        );
+                      })()}
                     </td>
                   ) : (
                     <td key={col.key} className="px-4 py-4 text-gray-900 whitespace-nowrap overflow-x-auto">{getValue(q, col.key)}</td>

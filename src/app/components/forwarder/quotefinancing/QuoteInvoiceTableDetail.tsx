@@ -21,7 +21,7 @@ const QuoteInvoiceDetail = ({
   return (
     <div className="mt-8 bg-white border-t border-gray-200 pt-4">
       <div className="font-semibold text-gray-900 mb-2 text-md">Quote detail</div>
-      {(isManualQuotation || isEditing || additionalCost > 0) && (
+      {isEditing && (
         <div className="mb-4 flex justify-between items-center">
           <button
             onClick={addTableRow}
@@ -44,14 +44,14 @@ const QuoteInvoiceDetail = ({
               <th className="px-4 py-3 font-semibold text-right">Price</th>
               <th className="px-4 py-3 font-semibold text-right">Currency</th>
               <th className="px-4 py-3 font-semibold text-right">Amount</th>
-              {(isManualQuotation || isEditing) && <th className="px-4 py-3 font-semibold text-center">Actions</th>}
+              {isEditing && <th className="px-4 py-3 font-semibold text-center">Actions</th>}
             </tr>
           </thead>
           <tbody className="text-gray-900">
             {tableRows.map((row: any, idx: number) => (
               <tr key={idx} className="border-b border-gray-200">
                 <td className="px-4 py-3">
-                  {(isManualQuotation || isEditing) ? (
+                  {isEditing ? (
                     <input
                       type="text"
                       className="w-full border rounded px-2 py-1 text-xs"
@@ -63,7 +63,7 @@ const QuoteInvoiceDetail = ({
                   )}
                 </td>
                 <td className="px-4 py-3">
-                  {(isManualQuotation || isEditing) ? (
+                  {isEditing ? (
                     <input
                       type="text"
                       className="w-full border rounded px-2 py-1 text-xs"
@@ -75,7 +75,7 @@ const QuoteInvoiceDetail = ({
                   )}
                 </td>
                 <td className="px-4 py-3">
-                  {(isManualQuotation || isEditing) ? (
+                  {isEditing ? (
                     <input
                       type="text"
                       className="w-full px-2 py-1 border border-gray-900 rounded text-xs text-gray-900"
@@ -88,7 +88,7 @@ const QuoteInvoiceDetail = ({
                   )}
                 </td>
                 <td className="px-4 py-3">
-                  {(isManualQuotation || isEditing) ? (
+                  {isEditing ? (
                     <input
                       type="text"
                       className="w-full border rounded px-2 py-1 text-xs"
@@ -100,7 +100,7 @@ const QuoteInvoiceDetail = ({
                   )}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  {(isManualQuotation || isEditing) ? (
+                  {isEditing ? (
                     <input
                       type="number"
                       className="w-20 border rounded px-2 py-1 text-xs text-right"
@@ -112,7 +112,7 @@ const QuoteInvoiceDetail = ({
                   )}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  {(isManualQuotation || isEditing) ? (
+                  {isEditing ? (
                     <input
                       type="number"
                       step="0.01"
@@ -125,7 +125,7 @@ const QuoteInvoiceDetail = ({
                   )}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  {(isManualQuotation || isEditing) ? (
+                  {isEditing ? (
                     <select
                       className="w-20 border rounded px-2 py-1 text-xs text-right"
                       value={row.currency || 'USD'}
@@ -178,7 +178,7 @@ const QuoteInvoiceDetail = ({
                 <td className="px-4 py-3 text-right">
                   {(row.qty * row.baseRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </td>
-                {(isManualQuotation || isEditing || additionalCost > 0) && (
+                {isEditing && (
                   <td className="px-4 py-3 text-center">
                     <button
                       onClick={() => removeTableRow(idx)}
@@ -193,7 +193,7 @@ const QuoteInvoiceDetail = ({
           </tbody>
         </table>
         {/* Additional Cost Section for Manual Quotations */}
-        {(isManualQuotation || isEditing || additionalCost > 0) && (
+        {isEditing && (
           <div className="mt-4 px-4 py-3 border-t border-gray-200">
             <div className="flex items-center gap-4 mb-3">
               <span className="text-sm font-medium text-gray-700">Additional Cost:</span>
@@ -234,21 +234,21 @@ const QuoteInvoiceDetail = ({
           return (
             <div className="flex flex-col items-end mt-2 px-4 text-sm">
               <div className="flex w-full justify-end mb-2">
-                <div className="w-32 text-right font-semibold text-gray-700">SUB-TOTAL :</div>
-                <div className="w-16 text-right font-semibold text-gray-700 mr-15">{currency}</div>
-                <div className="w-24 text-right font-semibold text-gray-900">{subtotal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</div>
+                <div className="w-40 text-right font-semibold text-gray-700 whitespace-nowrap">SUB-TOTAL :</div>
+                <div className="w-12 text-right font-semibold text-gray-700 whitespace-nowrap">{currency}</div>
+                <div className="w-28 text-right font-semibold text-gray-900 whitespace-nowrap">{subtotal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</div>
               </div>
               {additionalCost > 0 && (
                 <div className="flex w-full justify-end mb-2">
-                  <div className="w-32 text-right font-semibold text-gray-700">ADDITIONAL :</div>
-                  <div className="w-16 text-right font-semibold text-gray-700 mr-15">{currency}</div>
-                  <div className="w-24 text-right font-semibold text-gray-900">{additionalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                  <div className="w-40 text-right font-semibold text-gray-700 whitespace-nowrap">ADDITIONAL{additionalCostDescription ? ` (${additionalCostDescription})` : ''} :</div>
+                  <div className="w-12 text-right font-semibold text-gray-700 whitespace-nowrap">{currency}</div>
+                  <div className="w-28 text-right font-semibold text-gray-900 whitespace-nowrap">{additionalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                 </div>
               )}
               <div className="flex w-full justify-end border-t border-gray-200 pt-2">
-                <div className="w-32 text-right font-bold text-gray-900">TOTAL :</div>
-                <div className="w-16 text-right font-bold text-gray-900 mr-15">{currency}</div>
-                <div className="w-24 text-right font-bold text-gray-900">{total.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</div>
+                <div className="w-40 text-right font-bold text-gray-900 whitespace-nowrap">TOTAL :</div>
+                <div className="w-12 text-right font-bold text-gray-900 whitespace-nowrap">{currency}</div>
+                <div className="w-28 text-right font-bold text-gray-900 whitespace-nowrap">{total.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</div>
               </div>
             </div>
           );

@@ -23,7 +23,7 @@ const QuoteInvoiceDetails = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-gray-900">
             <div className="flex justify-between text-xs">
               <span className="text-gray-500">Origin:</span>
-              {!isEditing && !isManualQuotation ? (
+              {!isEditing ? (
                 <span className="font-semibold">{quote.origin}</span>
               ) : (
                 <input
@@ -36,7 +36,7 @@ const QuoteInvoiceDetails = ({
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-gray-500">Destination:</span>
-              {!isEditing && !isManualQuotation ? (
+              {!isEditing ? (
                 <span className="font-semibold">{quote.destination}</span>
               ) : (
                 <input
@@ -49,7 +49,7 @@ const QuoteInvoiceDetails = ({
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-gray-500">Port of Loading:</span>
-              {!isEditing && !isManualQuotation ? (
+              {!isEditing ? (
                 <span className="font-semibold">{quote.origin}</span>
               ) : (
                 <input
@@ -62,7 +62,7 @@ const QuoteInvoiceDetails = ({
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-gray-500">Port of Discharge:</span>
-              {!isEditing && !isManualQuotation ? (
+              {!isEditing ? (
                 <span className="font-semibold">{quote.destination}</span>
               ) : (
                 <input
@@ -75,7 +75,7 @@ const QuoteInvoiceDetails = ({
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-gray-500">Port of Delivery:</span>
-              {!isEditing && !isManualQuotation ? (
+              {!isEditing ? (
                 <span className="font-semibold">{quote.destination}</span>
               ) : (
                 <input
@@ -88,7 +88,7 @@ const QuoteInvoiceDetails = ({
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-gray-500">Transit Port:</span>
-              {!isEditing && !isManualQuotation ? (
+              {!isEditing ? (
                 <span className="font-semibold">{quote.transitPort || '-'}</span>
               ) : (
                 <input
@@ -101,7 +101,7 @@ const QuoteInvoiceDetails = ({
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-gray-500">Location Type:</span>
-              {!isEditing && !isManualQuotation ? (
+              {!isEditing ? (
                 <span className="font-semibold">{quote.serviceType || '-'}</span>
               ) : (
                 <input
@@ -178,7 +178,7 @@ const QuoteInvoiceDetails = ({
             {/* Transit Time */}
             <div className="flex justify-between text-xs items-center">
               <span className="text-gray-500">Transit Time:</span>
-              {!isEditing && !isManualQuotation ? (
+              {!isEditing ? (
                 <span className="font-semibold">{quote.transitTime || '-'}</span>
               ) : (
                 <input

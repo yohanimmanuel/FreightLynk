@@ -447,6 +447,10 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       weightVolumeField
     });
 
+    // --- Compute totals including additional cost ---
+    const draftTotalAmount = editTableRows.reduce((sum: number, row: any) => sum + (typeof row.amount === 'number' ? row.amount : 0), 0);
+    const draftFinalTotal = draftTotalAmount + (additionalCost || 0);
+
     const updatedQuote = {
       ...quote, // spread first
       provider: editQuote.provider || '', // then override
@@ -483,7 +487,12 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       truckType: truckTypeField,
       weightVolume: weightVolumeField,
       status: quote.status || 'draft',
-      price: finalTotalAmount?.toString() || quote.price || '',
+      // --- Persist additional cost & totals ---
+      additionalCost: additionalCost,
+      additionalCostDescription: additionalCostDescription,
+      totalAmount: draftTotalAmount,
+      finalTotalAmount: draftFinalTotal,
+      price: draftFinalTotal.toString(),
       createdBy: editFrom.preparedBy || '',
       incoterms: cleanedAdditionalInfo.incoterm || quote.incoterms || '',
       notes: cleanedAdditionalInfo.note || quote.notes || '',
@@ -948,7 +957,6 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
         {/* Details */}
         <QuoteInvoiceDetails
           isEditing={isEditing}
-          isManualQuotation={isManualQuotation}
           quote={quote}
           editQuote={editQuote}
           setEditQuote={setEditQuote}
@@ -962,7 +970,6 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
         {/* Table */}
         <QuoteInvoiceDetail
           isEditing={isEditing}
-          isManualQuotation={isManualQuotation}
           tableRows={isEditing ? editTableRows : (selectedQuoteDetails?.tableRows || [])}
           addTableRow={addTableRow}
           removeTableRow={removeTableRow}
