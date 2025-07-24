@@ -60,6 +60,17 @@ export interface User {
   email: string;
   fullName: string;
   companyName: string;
+  companyAddress?: string;
+  companyWebsite?: string;
+  companySize?: string;
+  userType?: string;
+  otherUserType?: string;
+  businessOperations?: string;
+  goodsTypes?: string;
+  shippingFrequency?: string;
+  primaryRoutes?: string;
+  jobTitle?: string;
+  phone?: string;
   role: UserRole;
   permissions?: string[];
 }
@@ -122,7 +133,24 @@ export const useAuthStore = create<AuthState>()(
           } else if (userData.userType === 'Logistics Provider') {
             role = 'logisticsprovider';
           }
-          const res = await apiRegister(userData.email, userData.password, role);
+          const res = await apiRegister(
+  userData.email,
+  userData.password,
+  role,
+  userData.fullName,
+  userData.companyName,
+  userData.companyAddress,
+  userData.companyWebsite,
+  userData.companySize,
+  userData.userType,
+  userData.otherUserType,
+  userData.businessOperations,
+  userData.goodsTypes,
+  userData.shippingFrequency,
+  userData.primaryRoutes,
+  userData.jobTitle,
+  userData.phone
+);
           if (res.success) {
             const userRes = await getCurrentUser();
             if (userRes.user) {
@@ -130,8 +158,19 @@ export const useAuthStore = create<AuthState>()(
               set({ user: {
                 id: userRes.user.id,
                 email: userRes.user.username, // username is used as email in this demo
-            fullName: userData.fullName,
-            companyName: userData.companyName,
+                fullName: userRes.user.fullName,
+                companyName: userRes.user.companyName,
+                companyAddress: userRes.user.companyAddress,
+                companyWebsite: userRes.user.companyWebsite,
+                companySize: userRes.user.companySize,
+                userType: userRes.user.userType,
+                otherUserType: userRes.user.otherUserType,
+                businessOperations: userRes.user.businessOperations,
+                goodsTypes: userRes.user.goodsTypes,
+                shippingFrequency: userRes.user.shippingFrequency,
+                primaryRoutes: userRes.user.primaryRoutes,
+                jobTitle: userRes.user.jobTitle,
+                phone: userRes.user.phone,
                 role: storeRole,
                 permissions: rolePermissions[storeRole]
               }, isAuthenticated: true, token: null });

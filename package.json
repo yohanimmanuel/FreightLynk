@@ -6,9 +6,11 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "migrate": "ts-node --project tsconfig.json scripts/migrate.ts"
   },
   "dependencies": {
+    "better-sqlite3": "^12.2.0",
     "canvas-confetti": "^1.9.3",
     "fuzzball": "^2.2.2",
     "lucide-react": "^0.516.0",
@@ -19,16 +21,19 @@
     "pdfjs-dist": "^5.3.93",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "uuid": "^11.1.0",
     "xlsx": "^0.18.5",
     "zustand": "^5.0.6"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/uuid": "^10.0.0",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
     "tailwindcss": "^4",

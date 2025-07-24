@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getUserById } from '../users';
 
 export async function GET(req: NextRequest) {
-  const userId = req.cookies.get('user_id')?.value;
+  const userId = req.cookies.get('auth_token')?.value;
   if (!userId) {
     return NextResponse.json({ user: null });
   }

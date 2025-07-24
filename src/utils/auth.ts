@@ -1,8 +1,42 @@
-export async function register(username: string, password: string, role: 'client' | 'forwarder' | 'logisticsprovider') {
+export async function register(
+  username: string,
+  password: string,
+  role: 'client' | 'forwarder' | 'logisticsprovider',
+  fullName: string,
+  companyName: string,
+  companyAddress?: string,
+  companyWebsite?: string,
+  companySize?: string,
+  userType?: string,
+  otherUserType?: string,
+  businessOperations?: string,
+  goodsTypes?: string,
+  shippingFrequency?: string,
+  primaryRoutes?: string,
+  jobTitle?: string,
+  phone?: string
+) {
   const res = await fetch('/api/auth/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password, role }),
+    body: JSON.stringify({
+      username,
+      password,
+      role,
+      fullName,
+      companyName,
+      companyAddress,
+      companyWebsite,
+      companySize,
+      userType,
+      otherUserType,
+      businessOperations,
+      goodsTypes,
+      shippingFrequency,
+      primaryRoutes,
+      jobTitle,
+      phone
+    }),
   });
   return res.json();
 }
