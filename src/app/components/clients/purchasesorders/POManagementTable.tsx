@@ -77,7 +77,7 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
 
     const selectedBookingData = selectedPOs.map(poSelection => {
       const po = purchaseOrders.find(p => p.id === poSelection.poId);
-              const items = poDetails.filter(item => 
+      const items = poDetails.filter(item => 
         poSelection.selectedItems.has(item.id) && 
         item.poOrderNumber === poSelection.poId
       );

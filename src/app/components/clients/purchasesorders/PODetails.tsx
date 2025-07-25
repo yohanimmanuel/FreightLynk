@@ -239,7 +239,7 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
     await upsertPODetails(data.poNumber, newPODetails);
     
     console.log('PODetails save completed successfully');
-    
+
     if (onSave) await onSave(data);
   };
 

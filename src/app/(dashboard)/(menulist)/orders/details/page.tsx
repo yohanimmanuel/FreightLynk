@@ -49,11 +49,11 @@ const ClientDetailsUI = () => {
         await fetchPODetails(poId);
         
         setLoading(false);
-      } catch (error) {
+    } catch (error) {
         console.error('Error loading PO data:', error);
         setLoading(false);
-      }
-    };
+    }
+  }; 
 
     loadPOData();
   }, [searchParams]);
@@ -77,8 +77,8 @@ const ClientDetailsUI = () => {
     console.log('Relevant details for', poId, ':', relevantDetails);
 
     const transformedItems = relevantDetails.map((detail, idx) => ({
-      id: idx + 1,
-      lineNumber: idx + 1,
+          id: idx + 1,
+          lineNumber: idx + 1,
       productSKU: detail.productCode || '',
       productName: detail.productName || '',
       crd: detail.cargoReadyDate || '',
@@ -90,7 +90,7 @@ const ClientDetailsUI = () => {
       uom: (detail.uom as 'PC' | 'KG' | 'CBM' | 'LBS' | 'TON') || 'PC',
       requestedQty: detail.requested || 0,
       bookedQty: detail.booked || 0,
-      bookingProgress: 0  
+          bookingProgress: 0
     }));
 
     const poData = {
@@ -176,12 +176,12 @@ const ClientDetailsUI = () => {
   return (
     <ProtectedRoute allowedRoles={[UserRole.CLIENT, UserRole.ADMIN]}>
       <div className="p-6">
-        <PODetails 
-          poData={poData} 
-          onSave={handleSave}
-          onCancel={handleCancel}
-        />
-      </div>
+    <PODetails
+      poData={poData}
+      onSave={handleSave}
+      onCancel={handleCancel}
+    />
+    </div>
     </ProtectedRoute>
   );
 };

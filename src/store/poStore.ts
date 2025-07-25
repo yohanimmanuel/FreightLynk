@@ -113,7 +113,7 @@ export const usePOStore = create<POState>()(
           console.log('upsertPODetails: Starting update for', poId, 'with', details.length, 'items');
           
           // Wait for API call to complete
-          await purchaseOrderApi.upsertPODetails(poId, details);
+        await purchaseOrderApi.upsertPODetails(poId, details);
           console.log('upsertPODetails: API call completed for', poId);
           
           // Don't automatically refetch - let the UI handle updates
