@@ -52,8 +52,9 @@ const initAdminUser = () => {
   }
 };
 
-// Run the initialization
-initAdminUser();
+// Do NOT run the initialization automatically at module load
+// Run initAdminUser() manually from a setup script or server startup if needed
+export const ensureAdminUser = initAdminUser;
 
 export function addUser(userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): User {
   const user = {

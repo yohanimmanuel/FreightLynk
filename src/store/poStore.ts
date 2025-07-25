@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import * as purchaseOrderApi from '@/utils/purchaseOrderApi';
 
 // --- Type Definitions ---
 export interface POItem {
@@ -46,7 +47,7 @@ export interface PurchaseOrder {
 
 export interface PODetail {
   id: number;
-  poOrderNumber: number;
+  poOrderNumber: string;
   productCode: string;
   productName: string;
   cargoReadyDate: string;
@@ -60,128 +61,76 @@ export interface PODetail {
   uom: string;
 }
 
-// --- Mock Data ---
-export const purchaseOrdersData: PurchaseOrder[] = [
-  {
-    id: 'PO1001',
-    buyer: 'Acme Corp',
-    seller: 'Global Supplies',
-    status: 'Open',
-    cargoReadyBy: '2024-07-01',
-    mustArriveBy: '2024-07-15',
-    subjectedCarrier: 'Maersk',
-    progress: '2/3 lines booked',
-    exceptions: [],
-  },
-  {
-    id: 'PO1002',
-    buyer: 'Beta Inc',
-    seller: 'Asia Exporters',
-    status: 'Pending',
-    cargoReadyBy: '2024-07-10',
-    mustArriveBy: '2024-07-25',
-    subjectedCarrier: 'CMA CGM',
-    progress: '0/2 lines booked',
-    exceptions: ['Delayed documentation'],
-  },
-];
-
-export const poDetailsData: PODetail[] = [
-  {
-    id: 1,
-    poOrderNumber: 1001,
-    productCode: 'ELEC-001',
-    productName: 'Electronic Widget',
-    cargoReadyDate: '2024-07-01',
-    mustArriveDate: '2024-07-15',
-    transportMode: 'Sea',
-    destination: 'Los Angeles',
-    requested: 100,
-    booked: 80,
-    currency: 'USD',
-    unitCost: 10,
-    uom: 'PC',
-  },
-  {
-    id: 2,
-    poOrderNumber: 1001,
-    productCode: 'ELEC-002',
-    productName: 'Gadget Pro',
-    cargoReadyDate: '2024-07-01',
-    mustArriveDate: '2024-07-15',
-    transportMode: 'Air',
-    destination: 'San Francisco',
-    requested: 50,
-    booked: 50,
-    currency: 'USD',
-    unitCost: 20,
-    uom: 'KG',
-  },
-  {
-    id: 3,
-    poOrderNumber: 1001,
-    productCode: 'ELEC-003',
-    productName: 'Widget Mini',
-    cargoReadyDate: '2024-07-01',
-    mustArriveDate: '2024-07-15',
-    transportMode: 'Road',
-    destination: 'San Diego',
-    requested: 30,
-    booked: 0,
-    currency: 'USD',
-    unitCost: 5,
-    uom: 'CBM',
-  },
-  {
-    id: 4,
-    poOrderNumber: 1002,
-    productCode: 'TEXT-001',
-    productName: 'Textile Roll',
-    cargoReadyDate: '2024-07-10',
-    mustArriveDate: '2024-07-25',
-    transportMode: 'Sea',
-    destination: 'New York',
-    requested: 200,
-    booked: 0,
-    currency: 'USD',
-    unitCost: 2,
-    uom: 'LBS',
-  },
-  {
-    id: 5,
-    poOrderNumber: 1002,
-    productCode: 'TEXT-002',
-    productName: 'Cotton Bale',
-    cargoReadyDate: '2024-07-10',
-    mustArriveDate: '2024-07-25',
-    transportMode: 'Rail',
-    destination: 'Chicago',
-    requested: 100,
-    booked: 0,
-    currency: 'USD',
-    unitCost: 3,
-    uom: 'TON',
-  },
-];
-
 // --- Zustand Store ---
 interface POState {
   purchaseOrders: PurchaseOrder[];
   poDetails: PODetail[];
   setPurchaseOrders: (orders: PurchaseOrder[]) => void;
   setPODetails: (details: PODetail[]) => void;
+  fetchPurchaseOrders: () => Promise<void>;
+  fetchPODetails: (poId: string) => Promise<void>;
+  createPurchaseOrder: (po: Partial<PurchaseOrder>) => Promise<void>;
+  updatePurchaseOrder: (poId: string, po: Partial<PurchaseOrder>) => Promise<void>;
+  deletePurchaseOrder: (poId: string) => Promise<void>;
+  upsertPODetails: (poId: string, details: PODetail[]) => Promise<void>;
+  clearCache: () => void;
 }
 
 export const usePOStore = create<POState>()(
   persist(
-    (set) => ({
-      purchaseOrders: purchaseOrdersData,
-      poDetails: poDetailsData,
+    (set, get) => ({
+      purchaseOrders: [],
+      poDetails: [],
       setPurchaseOrders: (orders) => set({ purchaseOrders: orders }),
       setPODetails: (details) => set({ poDetails: details }),
+      fetchPurchaseOrders: async () => {
+        const orders = await purchaseOrderApi.fetchPurchaseOrders();
+        set({ purchaseOrders: orders });
+      },
+      fetchPODetails: async (poId: string) => {
+        const details = await purchaseOrderApi.fetchPODetails(poId);
+        set((state) => ({
+          poDetails: [
+            ...state.poDetails.filter(detail => detail.poOrderNumber !== poId),
+            ...details
+          ]
+        }));
+      },
+      createPurchaseOrder: async (po) => {
+        await purchaseOrderApi.createPurchaseOrder(po);
+        await get().fetchPurchaseOrders();
+      },
+      updatePurchaseOrder: async (poId, po) => {
+        await purchaseOrderApi.updatePurchaseOrder(poId, po);
+        await get().fetchPurchaseOrders();
+      },
+      deletePurchaseOrder: async (poId) => {
+        await purchaseOrderApi.deletePurchaseOrder(poId);
+        await get().fetchPurchaseOrders();
+      },
+      upsertPODetails: async (poId, details) => {
+        try {
+          console.log('upsertPODetails: Starting update for', poId, 'with', details.length, 'items');
+          
+          // Wait for API call to complete
+          await purchaseOrderApi.upsertPODetails(poId, details);
+          console.log('upsertPODetails: API call completed for', poId);
+          
+          // Don't automatically refetch - let the UI handle updates
+          console.log('upsertPODetails: Update completed for', poId);
+          
+        } catch (error) {
+          console.error('upsertPODetails: Error updating', poId, error);
+          throw error;
+        }
+      },
+      clearCache: () => {
+        set({ purchaseOrders: [], poDetails: [] });
+        console.log('Cache cleared.');
+      },
     }),
     {
       name: 'po-storage',
     }
   )
-); 
+);

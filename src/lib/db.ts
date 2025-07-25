@@ -1,49 +1,21 @@
 import Database from 'better-sqlite3';
 import path from 'path';
+import { mkdirSync, existsSync } from 'fs';
 import { User } from '@/app/api/auth/users';
 
 // Database file will be created in the .data directory
 const dbPath = path.join(process.cwd(), '.data', 'freightlynk.db');
 
 // Create the .data directory if it doesn't exist
-import { mkdirSync, existsSync } from 'fs';
 const dataDir = path.join(process.cwd(), '.data');
 if (!existsSync(dataDir)) {
   mkdirSync(dataDir, { recursive: true });
 }
 
-// Initialize the database
+// Create a single shared connection
 const db = new Database(dbPath);
-
-// Create users table if it doesn't exist
-const createTables = () => {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY,
-      username TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
-      fullName TEXT,
-      companyName TEXT,
-      companyAddress TEXT,
-      companyWebsite TEXT,
-      companySize TEXT,
-      userType TEXT,
-      otherUserType TEXT,
-      businessOperations TEXT,
-      goodsTypes TEXT,
-      shippingFrequency TEXT,
-      primaryRoutes TEXT,
-      jobTitle TEXT,
-      phone TEXT,
-      role TEXT NOT NULL,
-      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
-};
-
-// Initialize the database
-createTables();
+db.pragma('journal_mode = WAL');
+db.pragma('busy_timeout = 30000');
 
 // Helper function to map database row to User type
 const mapRowToUser = (row: any): User | undefined => {
@@ -71,14 +43,36 @@ const mapRowToUser = (row: any): User | undefined => {
   };
 };
 
-// User related functions
+// User related functions (use shared db)
 export const addUser = (user: Omit<User, 'id' | 'createdAt' | 'updatedAt'> & { id: string }) => {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      username TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      fullName TEXT,
+      companyName TEXT,
+      companyAddress TEXT,
+      companyWebsite TEXT,
+      companySize TEXT,
+      userType TEXT,
+      otherUserType TEXT,
+      businessOperations TEXT,
+      goodsTypes TEXT,
+      shippingFrequency TEXT,
+      primaryRoutes TEXT,
+      jobTitle TEXT,
+      phone TEXT,
+      role TEXT NOT NULL,
+      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
   const stmt = db.prepare(`
     INSERT INTO users (
       id, username, password, fullName, companyName, companyAddress, companyWebsite, companySize, userType, otherUserType, businessOperations, goodsTypes, shippingFrequency, primaryRoutes, jobTitle, phone, role
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
-  
   stmt.run(
     user.id,
     user.username,
@@ -98,7 +92,6 @@ export const addUser = (user: Omit<User, 'id' | 'createdAt' | 'updatedAt'> & { i
     user.phone || null,
     user.role
   );
-  
   // Return the newly created user
   const newUser = findUserByUsername(user.username);
   if (!newUser) {

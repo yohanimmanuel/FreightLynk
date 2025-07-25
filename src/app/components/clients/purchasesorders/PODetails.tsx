@@ -23,10 +23,8 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isChanged, setIsChanged] = useState(false);
   
-  const setPurchaseOrders = usePOStore(state => state.setPurchaseOrders);
-  const setPODetails = usePOStore(state => state.setPODetails);
-  const purchaseOrders = usePOStore(state => state.purchaseOrders);
-  const poDetails = usePOStore(state => state.poDetails);
+  const updatePurchaseOrder = usePOStore(state => state.updatePurchaseOrder);
+  const upsertPODetails = usePOStore(state => state.upsertPODetails);
   
   // Initialize form data when poData changes
   useEffect(() => {
@@ -200,7 +198,10 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
 
   // Enhanced onSave to update Zustand store
   const handleSave = async (data: POData) => {
-    // Update PO in purchaseOrders
+    console.log('PODetails handleSave called with:', data);
+    console.log('PODetails handleSave items:', data.items);
+    
+    // Update PO in backend and store
     const updatedPO: PurchaseOrder = {
       id: data.poNumber,
       cargoReadyBy: data.cargoReadyBy,
@@ -212,19 +213,13 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
       progress: data.progress,
       exceptions: data.exceptions,
     };
-    const updatedPurchaseOrders = purchaseOrders.map(po =>
-      po.id === updatedPO.id ? updatedPO : po
-    );
-    setPurchaseOrders(updatedPurchaseOrders);
+    console.log('PODetails updating PO:', updatedPO);
+    await updatePurchaseOrder(updatedPO.id, updatedPO);
 
-    // Update line items in poDetails
-    const poNumber = parseInt(data.poNumber.replace('PO', ''));
-    // Remove old items for this PO
-    const filteredPODetails = poDetails.filter(item => item.poOrderNumber !== poNumber);
-    // Add new items (ensure unique numeric id and correct poOrderNumber)
+    // Update PO details in backend and store
     const newPODetails: PODetail[] = data.items.map((item, idx) => ({
       id: item.id,
-      poOrderNumber: poNumber,
+      poOrderNumber: data.poNumber,
       productCode: item.productSKU,
       productName: item.productName,
       cargoReadyDate: item.crd,
@@ -235,9 +230,16 @@ const PODetails: React.FC<PODetailsProps> = ({ poData, onSave, onCancel }) => {
       booked: Number(item.bookedQty) || 0,
       currency: item.currency,
       unitCost: Number(item.unitCost) || 0,
+      uom: item.uom,
     }));
-    setPODetails([...filteredPODetails, ...newPODetails]);
-
+    
+    console.log('PODetails transformed newPODetails:', newPODetails);
+    console.log('PODetails sending to API - poNumber:', data.poNumber, 'details count:', newPODetails.length);
+    
+    await upsertPODetails(data.poNumber, newPODetails);
+    
+    console.log('PODetails save completed successfully');
+    
     if (onSave) await onSave(data);
   };
 

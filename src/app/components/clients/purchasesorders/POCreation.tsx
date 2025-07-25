@@ -5,10 +5,8 @@ import { usePOStore, PurchaseOrder, PODetail, POItem, POData } from '@/store/poS
 
 const POCreation: React.FC = () => {
   const router = useRouter();
-  const setPurchaseOrders = usePOStore(state => state.setPurchaseOrders);
-  const setPODetails = usePOStore(state => state.setPODetails);
-  const purchaseOrders = usePOStore(state => state.purchaseOrders);
-  const poDetails = usePOStore(state => state.poDetails);
+  const createPurchaseOrder = usePOStore(state => state.createPurchaseOrder);
+  const upsertPODetails = usePOStore(state => state.upsertPODetails);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);  
   const [showModeDropdowns, setShowModeDropdowns] = useState<{[key: string]: boolean}>({});
   const [showCurrencyDropdowns, setShowCurrencyDropdowns] = useState<{[key: string]: boolean}>({});
@@ -268,11 +266,12 @@ const POCreation: React.FC = () => {
         booked: Number(item.bookedQty) || 0,
         currency: item.currency,
         unitCost: Number(item.unitCost) || 0,
+        uom: item.uom,
       }));
 
-      // Update store
-      setPurchaseOrders([...purchaseOrders, newPO]);
-      setPODetails([...poDetails, ...newPODetails]);
+      // Save to backend and update store
+      await createPurchaseOrder(newPO);
+      await upsertPODetails(formData.poNumber, newPODetails);
 
       // Reset form and redirect
       router.push('/orders');

@@ -12,6 +12,13 @@ const ClientUI = () => {
   const router = useRouter();
   const purchaseOrders = usePOStore(state => state.purchaseOrders);
   const poDetails = usePOStore(state => state.poDetails);
+  const clearCache = usePOStore(state => state.clearCache);
+
+  // Fetch fresh data on mount
+  useEffect(() => {
+    console.log('Orders page mounted - fetching fresh data');
+    usePOStore.getState().fetchPurchaseOrders();
+  }, []);
 
   const formatDateForInput = (displayDate: string): string => {
     if (!displayDate || displayDate === '--') return '';
@@ -31,24 +38,9 @@ const ClientUI = () => {
   };
 
   const handleEditOrder = (poId: string) => {
-    const po = purchaseOrders.find(o => o.id === poId);
-    if (!po) {
-      console.error('PO not found:', poId);
-      return;
-    }
-
-    const poNumber = parseInt(poId.replace('PO', ''));
-    const poItems = poDetails.filter(item => item.poOrderNumber === poNumber);
-
-    const poWithFormattedDates = {
-      ...po,
-      cargoReadyBy: formatDateForInput(po.cargoReadyBy),
-      mustArriveBy: formatDateForInput(po.mustArriveBy),
-      items: poItems
-    };
-
-    sessionStorage.setItem('currentPO', JSON.stringify(poWithFormattedDates));
-    router.push('/orders/details');
+    console.log('Navigating to edit PO:', poId);
+    // Navigate with URL parameter instead of sessionStorage
+    router.push(`/orders/details?poId=${poId}`);
   };
 
   const handleCreateOrder = () => {

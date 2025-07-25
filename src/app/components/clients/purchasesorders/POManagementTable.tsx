@@ -31,9 +31,28 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
 
   const purchaseOrders = usePOStore(state => state.purchaseOrders);
   const poDetails = usePOStore(state => state.poDetails);
-  const setPurchaseOrders = usePOStore(state => state.setPurchaseOrders);
+  const fetchPurchaseOrders = usePOStore(state => state.fetchPurchaseOrders);
+  const fetchPODetails = usePOStore(state => state.fetchPODetails);
 
-    // Helper function to format date
+  // Fetch purchase orders from backend on mount
+  useEffect(() => {
+    fetchPurchaseOrders();
+  }, [fetchPurchaseOrders]);
+
+  // Only fetch details for expanded POs when needed
+  const handlePOExpand = (poId: string) => {
+    if (expandedPO === poId) {
+      setExpandedPO(null);
+    } else {
+      setExpandedPO(poId);
+      // Fetch details only when expanding
+      fetchPODetails(poId);
+    }
+  };
+
+  const deletePurchaseOrder = usePOStore(state => state.deletePurchaseOrder);
+
+  // Helper function to format date
   const formatDate = (dateString: string) => {
     if (!dateString) return '';
     const date = new Date(dateString);
@@ -58,9 +77,9 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
 
     const selectedBookingData = selectedPOs.map(poSelection => {
       const po = purchaseOrders.find(p => p.id === poSelection.poId);
-      const items = poDetails.filter(item => 
+              const items = poDetails.filter(item => 
         poSelection.selectedItems.has(item.id) && 
-        item.poOrderNumber === parseInt(poSelection.poId.replace('PO', ''))
+        item.poOrderNumber === poSelection.poId
       );
       // Convert Set<number> to number[] for selectedItems
       return { po, items, selection: { ...poSelection, selectedItems: Array.from(poSelection.selectedItems) } };
@@ -248,26 +267,29 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
 
  // Helper function to get line items for a PO with sequential numbering
   const getLineItemsForPO = (poId: string) => {
-    const poNumber = parseInt(poId.replace('PO', ''));
+    console.log(`getLineItemsForPO: Looking for poId="${poId}"`);
+    console.log(`poDetails available:`, poDetails.map(d => ({ id: d.id, poOrderNumber: d.poOrderNumber, productCode: d.productCode })));
     const items = poDetails
-      .filter(item => item.poOrderNumber === poNumber)
+      .filter(item => item.poOrderNumber === poId)
       .map((item, index) => ({
         ...item,
         lineNumber: index + 1 // Add sequential line number
       }));
+    console.log(`getLineItemsForPO: Found ${items.length} items for ${poId}`);
     return items;
   };
 
   // Helper function to count items in a PO
   const getItemCountForPO = (poId: string) => {
-    const poNumber = parseInt(poId.replace('PO', ''));
-    return poDetails.filter(item => item.poOrderNumber === poNumber).length;
+    return poDetails.filter(item => item.poOrderNumber === poId).length;
   };
 
-  const handleStatusChange = (poId: string, newStatus: 'Open' | 'Closed' | 'Pending') => {
-    setPurchaseOrders(purchaseOrders.map(po => po.id === poId ? { ...po, status: newStatus } : po));
+  const updatePurchaseOrder = usePOStore(state => state.updatePurchaseOrder);
+  const handleStatusChange = async (poId: string, newStatus: 'Open' | 'Closed' | 'Pending') => {
+    await updatePurchaseOrder(poId, { status: newStatus });
     setStatusDropdowns(prev => ({ ...prev, [poId]: false }));
   };
+
 
   const toggleStatusDropdown = (poId: string) => {
     setStatusDropdowns(prev => ({ 
@@ -359,14 +381,13 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
 
   const handleSelectAllPOItems = (poId: string) => {
     setSelectedPOs(prev => {
-      const poNumber = parseInt(poId.replace('PO', ''));
       const poItems = poDetails
-        .filter(item => item.poOrderNumber === poNumber)
+        .filter(item => item.poOrderNumber === poId)
         .map(item => item.id);
       
       // Always select all items (don't deselect if already selected)
       const bookedQuantities = poDetails
-        .filter(item => item.poOrderNumber === poNumber)
+        .filter(item => item.poOrderNumber === poId)
         .reduce((acc, item) => {
           acc[item.id] = item.requested; // Set to max requested
           return acc;
@@ -723,7 +744,7 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
                         <div className="flex items-center">
                           <span className="px-4 text-xs font-medium text-gray-900">{po.id}</span>
                           <button
-                            onClick={() => setExpandedPO(expandedPO === po.id ? null : po.id)}
+                            onClick={() => handlePOExpand(po.id)}
                             className="p-1 -ml-2 hover:bg-gray-200 text-gray-900 rounded"
                           >
                             {expandedPO === po.id ? (
@@ -756,14 +777,19 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
                       {renderStatusDropdown(po)}
                       <td className="px-4 py-5 flex items-center gap-2">
                         <button 
-                          onClick={() => onEditOrder(po.id)}  
-                          className="p-1 text-gray-500 hover:text-gray-700 rounded"
-                          title="Edit PO"
+                          onClick={() => {
+                            console.log('Editing PO:', po.id);
+                            onEditOrder(po.id);
+                          }}
+                          className="p-1 text-gray-400 hover:text-blue-600"
+                          title="Edit Purchase Order"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => setPurchaseOrders(purchaseOrders.filter(p => p.id !== po.id))}
+                          onClick={async () => {
+                            await deletePurchaseOrder(po.id);
+                          }}
                           className="p-1 text-gray-500 hover:text-red-600 rounded"
                           title="Remove PO"
                         >
