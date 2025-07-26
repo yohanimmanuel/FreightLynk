@@ -24,6 +24,7 @@ import POSummaryTable from '../purchasesorders/POSummaryTable';
 import { usePOStore } from '@/store/poStore';
 import { useRouter } from 'next/navigation';
 import { useBookingStore } from '@/store/bookingStore';
+import { fetchBookingById, formatBookingForDisplay } from '@/utils/bookingApi';
 
 // Move zoom handlers outside so both components can use them
 type ZoomSetter = Dispatch<SetStateAction<number>>;
@@ -242,11 +243,21 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
   }, [bookingId, flNumber, router]);
 
   // Load existing booking if bookingId is provided
-  // Removed localStorage loading - now using database API
   useEffect(() => {
     if (bookingId) {
-      // TODO: Load booking from database API instead of localStorage
-      console.log('Loading booking from database:', bookingId);
+      (async () => {
+        try {
+          console.log('Loading booking from database:', bookingId);
+          const booking = await fetchBookingById(bookingId);
+          console.log('Raw booking data from API:', booking);
+          const formattedBooking = formatBookingForDisplay(booking);
+          console.log('Formatted booking data:', formattedBooking);
+          setExternalBooking(formattedBooking);
+        } catch (err) {
+          console.error('Failed to load booking:', err);
+          setExternalBooking(null);
+        }
+      })();
     }
   }, [bookingId]);
 
@@ -359,10 +370,6 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
       <div className="bg-white p-4">
         <div className="max-w-8xl mx-auto flex items-center justify-between">
           <div>
-            <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-              <FileText className="w-4 h-4" />
-              <span>{displayData.shipmentId || flNumber || 'FLYNK-XXXXX'}</span>
-            </div>
             <div className="flex items-center gap-4">
               {isEditingTitle ? (
                 <>
