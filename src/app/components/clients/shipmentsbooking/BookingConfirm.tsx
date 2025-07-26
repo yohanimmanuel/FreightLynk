@@ -339,6 +339,8 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
     goodsDescription: formData.goodsDescription,
     truckType: formData.truckType,
     truckQuantity: formData.truckQuantity,
+    truckTypes: formData.truckTypes || [],
+    containerTypes: formData.containerTypes || [],
     selectedPOs: selectedPOs,
   };
 
@@ -349,6 +351,20 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
       console.log('displayData:', displayData);
     }
   }, [bookingId, externalBooking, displayData]);
+
+  // Utility to ensure array from possible stringified JSON
+  function ensureArray(val: any): any[] {
+    if (Array.isArray(val)) return val;
+    if (typeof val === 'string') {
+      try {
+        const parsed = JSON.parse(val);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -639,44 +655,44 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
                         </div>
                         {/* Container/Truck Type & Quantity Logic */}
                         {displayData.shipmentTypeValue === 'fcl' && (
-                          <>
-                            <div>
-                              <span className="text-gray-500">Container Types:</span>
-                              <div className="ml-2">
-                                {displayData.containerTypes && displayData.containerTypes.length > 0 ? (
-                                  <div className="flex flex-wrap gap-1">
-                                    {displayData.containerTypes.map((containerType: any, index: number) => (
-                                      <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                                        {containerType.quantity} x {containerType.type}
-                                      </span>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <span className="text-gray-900">{displayData.containerTypeValue || displayData.containerType || '-'}</span>
-                                )}
-                              </div>
-                            </div>
-                          </>
+                          <div>
+                            <span className="text-gray-500">Container Types:</span>
+                            {ensureArray(displayData.containerTypes).length > 0 ? (
+                              <span className="ml-2 flex flex-wrap gap-1 items-center" style={{ display: 'inline-flex' }}>
+                                {ensureArray(displayData.containerTypes).map((containerType: any, index: number) => (
+                                  <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 border border-blue-300">
+                                    {containerType.quantity} x {containerType.type}
+                                  </span>
+                                ))}
+                              </span>
+                            ) : (
+                              <span className="ml-2 text-gray-900">{displayData.containerTypeValue || displayData.containerType || '-'}</span>
+                            )}
+                          </div>
                         )}
                         {displayData.shipmentTypeValue === 'ftl' && (
-                          <>
-                            <div>
-                              <span className="text-gray-500">Truck Types:</span>
-                              <div className="ml-2">
-                                {displayData.truckTypes && displayData.truckTypes.length > 0 ? (
-                                  <div className="flex flex-wrap gap-1">
-                                    {displayData.truckTypes.map((truckType: any, index: number) => (
-                                      <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                                        {truckType.quantity} x {truckType.type}
-                                      </span>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <span className="text-gray-900">{displayData.truckType || '-'}</span>
-                                )}
-                              </div>
-                            </div>
-                          </>
+                          <div>
+                            <span className="text-gray-500">Truck Types:</span>
+                            {ensureArray(displayData.truckTypes).length > 0 ? (
+                              <span className="ml-2 flex flex-wrap gap-1 items-center" style={{ display: 'inline-flex' }}>
+                                {ensureArray(displayData.truckTypes).map((truckType: any, index: number) => (
+                                  <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 border border-blue-300">
+                                    {truckType.quantity} x {truckType.type}
+                                  </span>
+                                ))}
+                              </span>
+                            ) : (
+                              <span className="ml-2 text-gray-900">{displayData.truckType || '-'}</span>
+                            )}
+                          </div>
+                        )}
+                        {(['lcl', 'air', 'ltl'].includes((displayData.shipmentTypeValue || '').toLowerCase())) && (displayData.weight || displayData.volume) && (
+                          <span className="text-gray-500">
+                            Load:
+                            <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 border border-blue-300 font-semibold">
+                              {displayData.weight ? `${displayData.weight} kg` : ''}{displayData.weight && displayData.volume ? ' / ' : ''}{displayData.volume ? `${displayData.volume} cbm` : ''}
+                            </span>
+                          </span>
                         )}
                         <div>
                           <span className="text-gray-500">Incoterm:</span>

@@ -40,6 +40,11 @@ interface Shipment {
   carrier: string;
   progress: number;
   transportMode?: string;
+  containerTypes?: any[]; // Added for FCL
+  truckTypes?: any[]; // Added for FTL
+  shipmentTypeValue?: string; // Added for LCL/AIR/LTL
+  volume?: string; // Added for LCL/AIR/LTL
+  milestones?: any[]; // Added for milestones
 }
 
 const ShipmentTracking: React.FC = () => {
@@ -109,6 +114,11 @@ const ShipmentTracking: React.FC = () => {
         carrier: b.carrier || 'To be confirmed by forwarder/provider',
         progress: b.progress || 0,
         transportMode: b.transportMode || b.mode || '',
+        containerTypes: b.containerTypes || [], // Added for FCL
+        truckTypes: b.truckTypes || [], // Added for FTL
+        shipmentTypeValue: b.shipmentTypeValue || '', // Added for LCL/AIR/LTL
+        volume: b.volume || '', // Added for LCL/AIR/LTL
+        milestones: b.milestones || [], // Added for milestones
       }))
     : [];
 
@@ -191,7 +201,7 @@ const ShipmentTracking: React.FC = () => {
             <div className="relative min-w-[110px]">
               <button
                 onClick={toggleDropdown}
-                className="flex items-center justify-between w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-between w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 <span>{transportModes.find((mode) => mode.value === selectedTransportMode)?.label}</span>
                 {isDropdownOpen ? (
@@ -201,7 +211,7 @@ const ShipmentTracking: React.FC = () => {
                 )}
               </button>
               {isDropdownOpen && (
-                <div className="absolute top-full mt-1 right-0 bg-white border border-gray-300 rounded-lg shadow-lg z-10 min-w-[110px]">
+                <div className="p-2 absolute top-full mt-1 right-0 bg-white border border-gray-300 rounded-lg shadow-lg z-10 min-w-[110px]">
                   {transportModes.map((mode) => (
                     <button
                       key={mode.value}
@@ -235,7 +245,7 @@ const ShipmentTracking: React.FC = () => {
                 return (
                   <div key={shipment.id} className="text-md bg-white rounded-lg border shadow-sm overflow-hidden">
                     <div
-                      className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                      className="p-4 cursor-pointer transition-colors"
                       onClick={() => handleShipmentClick(shipment)}
                     >
                     <div className="flex justify-between items-start mb-2">
@@ -248,22 +258,21 @@ const ShipmentTracking: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="space-y-1 mb-2">
                       <p className="text-xs text-gray-500">Arrived on {shipment.arrivalDate}</p>
                       <p className="text-xs text-gray-900 font-medium">{shipment.goodsDescription}</p>
                     </div>
-                  </div>
 
-                  <div className="border-t">
+                    <div className="border-t">
                     <button
                       onClick={() => expandedShipment === shipment.id ? setExpandedShipment(null) : setExpandedShipment(shipment.id)}
-                      className="w-full flex items-center justify-between p-3 text-xs text-gray-500 transition-colors"
+                      className="w-full flex items-center justify-between mt-4 text-xs text-gray-500 transition-colors"
                     >
                       <span>View tracking details</span>
                       {expandedShipment === shipment.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     </button>
                     {expandedShipment === shipment.id && (
-                      <div className="p-3 white space-y-3">
+                      <div className="mt-4 white space-y-3">
                         <div className="grid grid-cols-2 gap-4 text-xs">
                           <div>
                             <p className="text-gray-500">Shipper</p>
@@ -291,22 +300,30 @@ const ShipmentTracking: React.FC = () => {
                           </div>
                         </div>
                         <div className="pt-3 space-y-3">
-                          <p className="text-xs text-gray-900 font-medium">Timeline</p>
-                          {shipment.timeline.map((event, index) => (
-                            <div key={index} className="flex items-start gap-3">
-                              <div className={`w-2 h-2 text-xs rounded-full mt-2 ${event.completed ? 'bg-[#007bff]' : 'bg-gray-300'}`} />
-                              <div>
-                                <p className={`text-xs text-gray-900 ${event.completed ? 'font-medium' : 'text-gray-500'}`}>{event.step}</p>
-                                <p className="text-xs text-gray-500">{event.date}</p>
-                                <p className="text-xs text-gray-500">{event.location}</p>
-                              </div>
-                            </div>
-                          ))}
+                          {/* Milestone Data */}
+                          <div>
+                            <p className="text-xs text-gray-900 font-medium mb-3">Milestones</p>
+                            {Array.isArray(shipment.milestones) && shipment.milestones.length > 0 ? (
+                              <ul className="list-disc ml-4">
+                                {shipment.milestones.map((ms: any, idx: number) => (
+                                  <li key={idx} className="text-xs text-gray-700">
+                                    <span className="font-medium">{ms.step}</span>
+                                    {ms.description && (
+                                      <span className="block text-gray-500 mt-1">{ms.description}</span>
+                                    )}
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="text-xs text-gray-400">No milestones yet.</p>
+                            )}
+                          </div>
                         </div>
                       </div>
                     )}
                   </div>
                 </div>
+              </div>
               );
             })
            )}
@@ -347,15 +364,24 @@ const ShipmentTracking: React.FC = () => {
                         <span className="text-xs font-medium text-gray-500">Tracking ID:</span>
                         <span className="text-sm font-bold text-[#007bff]">#{selectedShipment.id}</span>
                       </div>
-                      <span className={`px-2 py-1 mr-130 rounded-full text-xs font-medium ${getStatusColors(selectedShipment.status).colorClass}`}>
-                        {selectedShipment.status}
-                      </span>
                       <button
                         onClick={() => setShowMapOverlay(false)}
                         className="text-gray-500 hover:text-gray-700 p-1"
                       >
                         <X size={16} />
                       </button>
+                    </div>
+
+                    {/* Milestone Data Below Tracking ID */}
+                    <div className="mt-2 flex items-center gap-2">
+                      <p className="text-xs text-gray-900 font-medium mb-0">Status Update:</p>
+                      {Array.isArray(selectedShipment.milestones) && selectedShipment.milestones.length > 0 ? (
+                        <span className="text-xs text-blue-700 font-semibold rounded-full px-2 py-1 bg-blue-100 border border-blue-300">
+                          {selectedShipment.milestones[selectedShipment.milestones.length - 1].step}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400">No status updates yet.</span>
+                      )}
                     </div>
 
                     {/* Progress Bar with Origin/Destination */}

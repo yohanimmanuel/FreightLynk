@@ -221,13 +221,31 @@ export async function GET(req: NextRequest) {
         ORDER BY b.created_at DESC
       `).all(user.id);
 
+      // Get milestones for all bookings
+      const allMilestones = db.prepare(`
+        SELECT booking_id, step, description, location, milestone_date, completed, order_index, created_at
+        FROM booking_milestones 
+        WHERE user_id = ? 
+        ORDER BY booking_id, order_index ASC, created_at ASC
+      `).all(user.id);
+
+      // Group milestones by booking_id
+      const milestonesByBooking = allMilestones.reduce((acc: Record<string, any[]>, milestone: any) => {
+        if (!acc[milestone.booking_id]) {
+          acc[milestone.booking_id] = [];
+        }
+        acc[milestone.booking_id].push(milestone);
+        return acc;
+      }, {} as Record<string, any[]>);
+
       const enrichedBookings = bookings.map((booking: any) => ({
         ...booking,
         poNumbers: booking.po_numbers ? booking.po_numbers.split(',') : [],
         truckTypes: booking.truck_types ? JSON.parse(booking.truck_types) : [],
         containerTypes: booking.container_types ? JSON.parse(booking.container_types) : [],
         status: booking.shipment_status || booking.status,
-        progress: booking.progress_percentage || booking.progress || 0
+        progress: booking.progress_percentage || booking.progress || 0,
+        milestones: milestonesByBooking[booking.id] || []
       }));
 
       console.log(`Retrieved ${enrichedBookings.length} bookings for user ${user.id}`);
