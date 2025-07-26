@@ -186,7 +186,7 @@ const BookingTable: React.FC<BookingTableProps> = ({
                 </tr>
               ) : (
                 displayRows.map((booking) => (
-                  <tr key={booking.id} className="h-[40px] hover:bg-gray-50">
+                  <tr key={booking.id} className="h-[40px]">
                     {summaryColumns.map((col) => (
                       <td key={col.key} className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">
                         {renderCellContent(booking, col.key)}

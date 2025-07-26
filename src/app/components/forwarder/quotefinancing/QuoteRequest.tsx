@@ -236,16 +236,46 @@ export default function QuoteRequest({ role = 'forwarder', hasBookings = true }:
       } else if (b.transportModeValue === 'land') {
         mode = b.shipmentTypeValue?.toLowerCase() === 'ftl' ? 'ftl' : 'ltl';
       }
-      // Build details string
+      // Build details string with proper format
       let details = '';
+      
       if (b.transportModeValue === 'sea' && b.shipmentTypeValue?.toLowerCase() === 'fcl') {
-        details = `${b.containerQuantity || ''} x ${b.containerTypeValue || ''}`;
+        // For FCL, use container types array if available, otherwise fallback to single values
+        let containerTypesArray = b.containerTypes;
+        if (typeof b.containerTypes === 'string') {
+          try {
+            containerTypesArray = JSON.parse(b.containerTypes);
+          } catch (e) {
+            containerTypesArray = [];
+          }
+        }
+        
+        if (containerTypesArray && Array.isArray(containerTypesArray) && containerTypesArray.length > 0) {
+          details = containerTypesArray.map((ct: any) => `${ct.quantity || ''} x ${ct.type || ''}`).join(', ');
+        } else {
+          details = `${b.containerQuantity || ''} x ${b.containerTypeValue || ''}`;
+        }
       } else if (b.transportModeValue === 'land' && b.shipmentTypeValue?.toLowerCase() === 'ftl') {
-        details = `${b.truckQuantity || ''} x ${b.truckType || ''}`;
+        // For FTL, use truck types array if available, otherwise fallback to single values
+        let truckTypesArray = b.truckTypes;
+        if (typeof b.truckTypes === 'string') {
+          try {
+            truckTypesArray = JSON.parse(b.truckTypes);
+          } catch (e) {
+            truckTypesArray = [];
+          }
+        }
+        
+        if (truckTypesArray && Array.isArray(truckTypesArray) && truckTypesArray.length > 0) {
+          details = truckTypesArray.map((tt: any) => `${tt.quantity || ''} x ${tt.type || ''}`).join(', ');
+        } else {
+          details = `${b.truckQuantity || ''} x ${b.truckType || ''}`;
+        }
       } else {
-        // Default: weight/volume/cargo
+        // For LCL/AIR/LTL: weight kg/volume cbm
         details = (b.weight && b.volume) ? `${b.weight}kg/${b.volume}cbm` : b.weight ? `${b.weight}kg` : b.volume ? `${b.volume}cbm` : '';
       }
+      
       return {
         id: b.bookingId || `REQ-${idx+1}`,
         customer: b.shipperValue || 'Demo User',
@@ -257,12 +287,12 @@ export default function QuoteRequest({ role = 'forwarder', hasBookings = true }:
         expectedDelivery: b.eta || '',
         attachment: b.attachment || 'No attached file',
         status: b.status || 'Booked',
-        incoterms: b.incotermsValue || '',
+        incoterms: b.incoterms || '',
         remark: '', // Always blank for client
         createdBy: 'Demo User',
         createdOn: today,
         mode,
-        notes: '',
+        notes: b.additionalNotes || '', // Use additional notes from booking
         commodities: b.productName || '', // Use 'productName' for commodities
       };
     });
@@ -556,6 +586,49 @@ export default function QuoteRequest({ role = 'forwarder', hasBookings = true }:
                             {request.status}
                           </span>
                         )
+                        : col.key === 'details'
+                          ? (() => {
+                              const detailsValue = request[col.key];
+                              if (!detailsValue) return <span className="text-gray-400">-</span>;
+                              
+                              // Split by comma and create badges
+                              const badges = detailsValue.split(',').map((s: string) => s.trim()).filter(Boolean);
+                              if (badges.length === 0) return <span className="text-gray-400">-</span>;
+                              
+                              const displayBadges = badges.slice(0, 3);
+                              const extraCount = badges.length - 3;
+                              
+                              return (
+                                <>
+                                  {displayBadges.map((badge: string, i: number) => (
+                                    <span key={i} className="inline-block border border-blue-300 bg-blue-50 text-blue-800 rounded-full px-3 py-1 text-xs font-semibold mr-1 truncate">
+                                      {badge}
+                                    </span>
+                                  ))}
+                                  {extraCount > 0 && (
+                                    <span className="inline-block border border-blue-300 bg-blue-50 text-blue-800 rounded-full px-2 py-1 text-xs font-semibold mr-1 truncate">
+                                      +{extraCount}
+                                    </span>
+                                  )}
+                                </>
+                              );
+                            })()
+                        : col.key === 'incoterms'
+                          ? (request[col.key] ? (
+                              <span className="text-xs font-medium text-gray-900">
+                                {request[col.key]}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            ))
+                        : col.key === 'notes'
+                          ? (request[col.key] ? (
+                              <span className="text-gray-700 max-w-xs truncate" title={request[col.key]}>
+                                {request[col.key]}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            ))
                         : request[col.key]}
                   </td>
                 ))}

@@ -56,17 +56,18 @@ React.useEffect(() => {
 
   const milestoneData = Array.isArray(bookings)
   ? bookings.map((b: any) => {
-      const milestones = b.milestones || b.timeline || [];
+      const milestones = b.milestones || [];
       const hasMilestones = Array.isArray(milestones) && milestones.length > 0;
-      const latestMilestone = hasMilestones ? milestones[milestones.length - 1] : null;
+      const latestMilestone = hasMilestones ? milestones[0] : null; // Get first milestone (Quote Requested)
+      
       return {
         shipmentID: b.bookingId || b.id || '',
         goodsDescription: b.productName || b.goodsDescription || '',
         poNumbers: b.poNumbers || (b.poNumber ? [b.poNumber] : []),
         incoterms: b.incoterms || '',
-        progress: b.progress || 0,
-        latestMilestone: hasMilestones ? latestMilestone.step : 'No status',
-        latestMilestoneDescription: hasMilestones ? latestMilestone.description : 'No Update',
+        progress: 0, // Always start at 0% when waiting for quote
+        latestMilestone: hasMilestones ? latestMilestone.step : 'Quote Requested',
+        latestMilestoneDescription: hasMilestones ? latestMilestone.description : 'Waiting for freight quote from forwarder',
         destination: b.destination && typeof b.destination === 'object'
           ? `${b.destination.city || ''}${b.destination.country ? ', ' + b.destination.country : ''}`
           : (b.destination || ''),

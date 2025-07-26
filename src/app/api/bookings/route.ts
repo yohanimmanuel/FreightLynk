@@ -336,35 +336,21 @@ export async function POST(req: NextRequest) {
       console.log(`Linked ${data.selectedPOs.length} POs to booking ${bookingId}`);
     }
 
-    // Create initial milestones
-    const initialMilestones = [
-      { step: 'Booking Confirmed', description: 'Booking has been confirmed and submitted', completed: true, order: 0 },
-      { step: 'Quote Requested', description: 'Waiting for freight quote from forwarder', completed: false, order: 1 },
-      { step: 'Quote Approved', description: 'Freight quote approved and payment processed', completed: false, order: 2 },
-      { step: 'Cargo Ready', description: 'Cargo ready for pickup/collection', completed: false, order: 3 },
-      { step: 'In Transit', description: 'Shipment is in transit', completed: false, order: 4 },
-      { step: 'Delivered', description: 'Shipment delivered to destination', completed: false, order: 5 }
-    ];
 
+    // Create initial milestone for quote request
     const insertMilestone = db.prepare(`
       INSERT INTO booking_milestones (booking_id, user_id, step, description, completed, order_index)
       VALUES (?, ?, ?, ?, ?, ?)
     `);
 
-    const milestoneTransaction = db.transaction((milestones: any[]) => {
-      milestones.forEach(milestone => {
-        insertMilestone.run(
-          bookingId,
-          user.id,
-          milestone.step,
-          milestone.description,
-          milestone.completed ? 1 : 0,
-          milestone.order
-        );
-      });
-    });
-
-    milestoneTransaction(initialMilestones);
+    insertMilestone.run(
+      bookingId,
+      user.id,
+      'Quote Requested',
+      'Waiting for freight quote from forwarder',
+      0, // not completed
+      0  // first milestone
+    );
 
     // Create initial shipment tracking record
     const insertTracking = db.prepare(`
