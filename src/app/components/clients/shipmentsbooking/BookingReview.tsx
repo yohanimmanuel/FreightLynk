@@ -36,22 +36,35 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking }) => {
   const setBookingSubmitted = useBookingStore(state => state.setBookingSubmitted);
   const purchaseOrders = usePOStore(state => state.purchaseOrders);
   const poDetails = usePOStore(state => state.poDetails);
+  const fetchPurchaseOrders = usePOStore(state => state.fetchPurchaseOrders);
+  const fetchPODetails = usePOStore(state => state.fetchPODetails);
   const [shipmentName, setShipmentName] = useState('');
 
+  // Load purchase orders on component mount
   useEffect(() => {
-    // Check if we're coming from confirmation page
-    if (typeof window !== 'undefined') {
-      const confirmedBookings = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
-      // Only check if the booking exists in localStorage
-      if (confirmedBookings.some((b: any) => b.id === flNumber)) {
-        console.log('Booking already confirmed, redirecting to submitted page');
-        router.replace('/bookings/submitted');
-        return;
-      }
-    }
+    fetchPurchaseOrders();
+  }, [fetchPurchaseOrders]);
 
+  // Load PO details for selected POs
+  useEffect(() => {
+    const loadPODetails = async () => {
+      for (const poSelection of selectedPOs) {
+        try {
+          await fetchPODetails(poSelection.poId);
+        } catch (error) {
+          console.error('Failed to fetch PO details for', poSelection.poId, error);
+        }
+      }
+    };
+
+    if (selectedPOs.length > 0) {
+      loadPODetails();
+    }
+  }, [selectedPOs, fetchPODetails]);
+
+  useEffect(() => {
     setShipmentName(formData.shipmentName || '');
-  }, [formData.shipmentName, router, flNumber]);
+  }, [formData.shipmentName]);
 
   // Helper for transport mode icon
   const renderTransportIcon = (mode: string) => {
@@ -72,6 +85,26 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking }) => {
     return type;
   };
 
+  // Helper for truck types display
+  const renderTruckTypes = (truckTypes: any[]) => {
+    if (!truckTypes || truckTypes.length === 0) return null;
+    return truckTypes.map((truckType: any, index: number) => (
+      <span key={index} className="inline-flex items-center px-2 py-1 rounded-full font-semibold text-xs bg-blue-100 text-blue-800 mr-1 mb-1">
+        {truckType.quantity} x {truckType.type}
+      </span>
+    ));
+  };
+
+  // Helper for container types display
+  const renderContainerTypes = (containerTypes: any[]) => {
+    if (!containerTypes || containerTypes.length === 0) return null;
+    return containerTypes.map((containerType: any, index: number) => (
+      <span key={index} className="inline-flex items-center px-2 py-1 rounded-full font-semibold text-xs bg-blue-100 text-blue-800 mr-1 mb-1">
+        {containerType.quantity} x {containerType.type}
+      </span>
+    ));
+  };
+
   // Helper for date formatting
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '';
@@ -80,13 +113,27 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking }) => {
   };
 
   // When confirm button is clicked
-  const handleConfirmClick = () => {
-    if (!flNumber) {
-      const bookingId = 'FLYNK-' + Math.floor(10000 + Math.random() * 90000);
-      setFlNumber(bookingId);
+  const handleConfirmClick = async () => {
+    try {
+      // Generate FL number if not exists
+      if (!flNumber) {
+        const bookingId = 'FLYNK-' + Math.floor(10000 + Math.random() * 90000);
+        setFlNumber(bookingId);
+      }
+
+      // Create the booking in the database
+      const { createNewBooking } = useBookingStore.getState();
+      console.log('Creating booking with data:', { formData, selectedPOs });
+      
+      const result = await createNewBooking(formData, selectedPOs);
+      console.log('Booking created successfully:', result);
+
+      // Navigate to confirmation page
+      onConfirmBooking && onConfirmBooking();
+    } catch (error) {
+      console.error('Error creating booking:', error);
+      // You might want to show an error message to the user here
     }
-    // Navigate to confirmation page
-    onConfirmBooking && onConfirmBooking();
   };
 
   return (
@@ -136,10 +183,22 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking }) => {
                         <span className="font-semibold">Shipment Type: </span>
                         {formData.transportModeValue === 'land' ? (formData.shipmentTypeValue === 'ftl' ? 'FTL' : 'LTL') : (formData.shipmentTypeValue === 'fcl' ? 'FCL' : 'LCL')}
                         {(formData.transportModeValue === 'land' && formData.shipmentTypeValue === 'ftl') && (
-                          <span className="ml-2">{formData.truckQuantity} x {formData.truckType}</span>
+                          <div className="mt-1 mb-3">
+                            {formData.truckTypes && formData.truckTypes.length > 0 ? (
+                              renderTruckTypes(formData.truckTypes)
+                            ) : (
+                              <span>{formData.truckQuantity} x {formData.truckType}</span>
+                            )}
+                          </div>
                         )}
                         {(formData.transportModeValue === 'sea' && formData.shipmentTypeValue === 'fcl') && (
-                          <span className="ml-2">{formData.containerQuantity} x {formData.containerTypeValue}</span>
+                          <div className="mt-1 mb-3">
+                            {formData.containerTypes && formData.containerTypes.length > 0 ? (
+                              renderContainerTypes(formData.containerTypes)
+                            ) : (
+                              <span>{formData.containerQuantity} x {formData.containerTypeValue}</span>
+                            )}
+                          </div>
                         )}
                         {formData.transportModeValue === 'land' && formData.shipmentTypeValue === 'ltl' && (
                           <>

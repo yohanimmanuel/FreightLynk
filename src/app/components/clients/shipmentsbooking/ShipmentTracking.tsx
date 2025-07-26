@@ -65,29 +65,12 @@ const ShipmentTracking: React.FC = () => {
     setIsDropdownOpen(false);
   };
 
-  // Load confirmedBookings from localStorage (same logic as Bookings page)
-  const [confirmedBookings, setConfirmedBookings] = useState<any[]>([]);
+  // Load confirmedBookings from API via Zustand store
+  const { confirmedBookings, loadBookings } = useBookingStore();
 
   useEffect(() => {
-    const loadBookings = () => {
-      if (typeof window !== 'undefined') {
-        try {
-          const data = localStorage.getItem('confirmedBookings');
-          const bookings = data ? JSON.parse(data) : [];
-          setConfirmedBookings(bookings);
-        } catch (error) {
-          setConfirmedBookings([]);
-        }
-      }
-    };
     loadBookings();
-    window.addEventListener('storage', loadBookings);
-    const interval = setInterval(loadBookings, 1000);
-    return () => {
-      window.removeEventListener('storage', loadBookings);
-      clearInterval(interval);
-    };
-  }, []);
+  }, [loadBookings]);
 
   // Map confirmedBookings to Shipment card structure
   const shipments: Shipment[] = Array.isArray(confirmedBookings)
@@ -105,8 +88,8 @@ const ShipmentTracking: React.FC = () => {
         destination: b.destination || '',
         packageCount: b.packageCount || b.pieces || 1,
         goodsDescription: b.productName || b.goodsDescription || '',
-        arrivalDate: b.eta || '',
-        arrivalTime: b.eta || '',
+        arrivalDate: b.targetDeliveryDate || b.eta || '',
+        arrivalTime: b.targetDeliveryDate || b.eta || '',
         distance: '',
         deliveryTime: '',
         weight: b.weight || '',

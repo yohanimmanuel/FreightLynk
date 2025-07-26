@@ -62,6 +62,39 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
     return `${day}/${month}/${year}`;
   };
 
+  // Centralized function to prepare booking data
+  const prepareBookingData = () => {
+    return selectedPOs
+      .filter(po => po.selectedItems.size > 0)
+      .map(poSelection => ({
+        poId: poSelection.poId,
+        selectedItems: Array.from(poSelection.selectedItems),
+        bookedQuantities: poSelection.bookedQuantities
+      }));
+  };
+
+  // Centralized function to handle booking creation
+  const handleCreateBooking = () => {
+    const bookingData = prepareBookingData();
+    
+    if (bookingData.length === 0) {
+      console.log('No items selected for booking');
+      return;
+    }
+
+    console.log('Creating booking with data:', bookingData);
+    
+    if (onCreateBooking) {
+      onCreateBooking(bookingData);
+    }
+    
+    // Clear selections after successful booking creation
+    setActiveBulkPOs([]);
+    setSelectedPOs([]);
+    setShowBulkActions(false);
+    setShowBookingModal(false);
+  };
+
   useEffect(() => {
     // Update active POs and bulk actions based on selections
     const activePOs = selectedPOs
@@ -73,20 +106,55 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
   }, [selectedPOs]);
 
   const renderBookingModal = () => {
+    console.log('renderBookingModal called - showBookingModal:', showBookingModal);
     if (!showBookingModal) return null;
 
     const selectedBookingData = selectedPOs.map(poSelection => {
+      console.log('Processing poSelection for modal:', poSelection);
+      console.log('poSelection.selectedItems type:', typeof poSelection.selectedItems, 'value:', poSelection.selectedItems);
+      console.log('poSelection.selectedItems as Array:', Array.from(poSelection.selectedItems));
+      console.log('Available poDetails:', poDetails.map(item => ({ id: item.id, poOrderNumber: item.poOrderNumber })));
+      
       const po = purchaseOrders.find(p => p.id === poSelection.poId);
-      const items = poDetails.filter(item => 
-        poSelection.selectedItems.has(item.id) && 
-        item.poOrderNumber === poSelection.poId
-      );
-      // Convert Set<number> to number[] for selectedItems
-      return { po, items, selection: { ...poSelection, selectedItems: Array.from(poSelection.selectedItems) } };
+      console.log('Found PO for modal:', po);
+      // Use poId directly, same as getLineItemsForPO
+      const poNumber = poSelection.poId;
+      console.log('Modal - Using poId directly:', poNumber);
+      console.log('Processing PO number:', poNumber);
+              const items = poDetails.filter(item => {
+        // Check if selectedItems is a Set or Array
+        const hasItem = poSelection.selectedItems instanceof Set 
+          ? poSelection.selectedItems.has(item.id)
+          : (poSelection.selectedItems as number[]).includes(item.id);
+        
+        // FIX: Simplify PO matching - just check if the item belongs to this PO
+        const matchesPO = item.poOrderNumber === poNumber;
+        
+        console.log(`Item ${item.id}: hasItem=${hasItem}, matchesPO=${matchesPO}, item.poOrderNumber="${item.poOrderNumber}", poNumber="${poNumber}"`);
+        
+        if (hasItem && matchesPO) {
+          console.log(`✓ Item ${item.id} will be included in modal`);
+        }
+        
+        return hasItem && matchesPO;
+      });
+      
+      console.log(`Filtered items for PO ${poSelection.poId}:`, items.length, 'items found');
+        
+        // Convert Set<number> to number[] for selectedItems if needed
+        const selectedItemsArray = poSelection.selectedItems instanceof Set 
+          ? Array.from(poSelection.selectedItems)
+          : poSelection.selectedItems;
+          
+        return { po, items, selection: { ...poSelection, selectedItems: selectedItemsArray } };
     }).filter(data => data.po && data.items.length > 0);
 
+    console.log('selectedBookingData for modal:', selectedBookingData);
+    console.log('selectedPOs for modal:', selectedPOs);
+    
     // Auto-close modal when no data
     if (selectedBookingData.length === 0) {
+      console.log('No booking data available, closing modal');
       setShowBookingModal(false);
       return null;
     }
@@ -223,24 +291,7 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
                   Cancel
                 </button>
                 <button
-                  onClick={() => {
-                    // Prepare the booking data
-                    const bookingData = selectedPOs
-                      .filter(po => po.selectedItems.size > 0)
-                      .map(poSelection => ({
-                        poId: poSelection.poId,
-                        selectedItems: Array.from(poSelection.selectedItems),
-                        bookedQuantities: poSelection.bookedQuantities
-                      }));
-
-                    if (bookingData.length === 0) return;
-
-                    if (onCreateBooking) {
-                      onCreateBooking(bookingData);
-                    }
-                    
-                    setShowBookingModal(false);
-                  }}
+                  onClick={handleCreateBooking}
                   className="px-4 py-2 text-sm font-semibold text-white bg-[#007bff] rounded-lg hover:bg-blue-700"
                 >
                   Create Booking
@@ -352,12 +403,32 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
           // Deselect
           newSelected.delete(itemId);
           delete newBookedQuantities[itemId];
+          
+          // If no items selected for this PO, remove from active bulk POs
+          if (newSelected.size === 0) {
+            setActiveBulkPOs(prevActive => {
+              const newActive = prevActive.filter(id => id !== poId);
+              if (newActive.length === 0) {
+                setShowBulkActions(false);
+              }
+              return newActive;
+            });
+          }
         } else {
           // Select and set booked quantity to requested if not set or 0
           newSelected.add(itemId);
           if (!newBookedQuantities[itemId] || newBookedQuantities[itemId] === 0) {
             newBookedQuantities[itemId] = item.requested; // or 1 if you prefer
           }
+          
+          // Add to active bulk POs and show bulk actions
+          setActiveBulkPOs(prevActive => {
+            if (!prevActive.includes(poId)) {
+              setShowBulkActions(true);
+              return [...prevActive, poId];
+            }
+            return prevActive;
+          });
         }
 
         return prev.map(po =>
@@ -368,6 +439,14 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
       }
 
       // New selection
+      setActiveBulkPOs(prevActive => {
+        if (!prevActive.includes(poId)) {
+          setShowBulkActions(true);
+          return [...prevActive, poId];
+        }
+        return prevActive;
+      });
+      
       return [
         ...prev,
         {
@@ -380,36 +459,64 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
   };
 
   const handleSelectAllPOItems = (poId: string) => {
+    console.log('handleSelectAllPOItems called for PO:', poId);
+    console.log('Available poDetails:', poDetails);
+    
     setSelectedPOs(prev => {
+      // Use poId directly, same as getLineItemsForPO
+      const poNumber = poId;
+      console.log('Using poId directly:', poNumber);
+      console.log('Looking for items with poOrderNumber:', poNumber);
+      
       const poItems = poDetails
-        .filter(item => item.poOrderNumber === poId)
+        .filter(item => item.poOrderNumber === poNumber)
         .map(item => item.id);
+      
+      console.log('PO items found for', poId, ':', poItems);
       
       // Always select all items (don't deselect if already selected)
       const bookedQuantities = poDetails
-        .filter(item => item.poOrderNumber === poId)
+        .filter(item => item.poOrderNumber === poNumber)
         .reduce((acc, item) => {
           acc[item.id] = item.requested; // Set to max requested
           return acc;
         }, {} as Record<number, number>);
+        
+      console.log('Found items for PO:', poItems);
+      console.log('Booked quantities:', bookedQuantities);
+        
+      console.log('Booked quantities for', poId, ':', bookedQuantities);
       
       // Show bulk actions and add to active POs
       setActiveBulkPOs(prev => {
+        console.log('Current activeBulkPOs:', prev);
+        console.log('Trying to add poId:', poId);
         if (!prev.includes(poId)) {
           const newActivePOs = [...prev, poId];
+          console.log('Setting new activeBulkPOs:', newActivePOs);
           setShowBulkActions(true);
+          console.log('Set showBulkActions to true');
           return newActivePOs;
         }
+        console.log('PO already in activeBulkPOs');
         return prev;
       });
       
+      console.log('handleSelectAllPOItems - About to return new selection with items:', poItems);
+      
+      const newSelection = {
+        poId, 
+        selectedItems: new Set(poItems),
+        bookedQuantities 
+      };
+      
+      console.log('Adding new PO selection:', newSelection);
+      console.log('New selection selectedItems size:', newSelection.selectedItems.size);
+      console.log('New selection selectedItems array:', Array.from(newSelection.selectedItems));
+      
       return [
         ...prev.filter(po => po.poId !== poId),
-        { 
-          poId, 
-          selectedItems: new Set(poItems),
-          bookedQuantities 
-        }
+        newSelection
       ];
     });
   };
@@ -611,6 +718,20 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
     );
   };
 
+  // Helper to ensure PO details are loaded before opening modal
+  const ensurePODetailsLoaded = async (poIds: string[]) => {
+    for (const poId of poIds) {
+      await fetchPODetails(poId);
+    }
+  };
+
+  // Centralized function to handle booking modal opening
+  const openBookingModal = async () => {
+    const poIds = selectedPOs.map(po => po.poId);
+    await ensurePODetailsLoaded(poIds);
+    setShowBookingModal(true);
+  };
+
   return (
     <div className="">
       <div className="max-w-8xl mx-auto">
@@ -644,7 +765,12 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
         </div>
 
         {/* Bulk Actions */}
-        {showBulkActions && activeBulkPOs.length > 0 && (
+        {(() => {
+          const shouldShow = showBulkActions && activeBulkPOs.length > 0;
+          console.log('Bulk actions render check - showBulkActions:', showBulkActions, 'activeBulkPOs.length:', activeBulkPOs.length, 'activeBulkPOs:', activeBulkPOs, 'shouldShow:', shouldShow);
+          console.log('BULK ACTIONS SHOULD RENDER:', shouldShow);
+          return shouldShow;
+        })() && (
           <div className="mt-4 p-3 bg-white rounded-lg border border-blue-200 mb-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 flex-wrap">
@@ -683,29 +809,14 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
                 </button>
                 {mode === 'standalone' ? (
                   <button 
-                    onClick={() => {
-                      const bookingData = selectedPOs
-                        .filter(po => po.selectedItems.size > 0)
-                        .map(poSelection => ({
-                          poId: poSelection.poId,
-                          selectedItems: Array.from(poSelection.selectedItems),
-                          bookedQuantities: poSelection.bookedQuantities
-                        }));
-                          
-                      if (bookingData.length > 0 && onCreateBooking) {
-                        onCreateBooking(bookingData);
-                        setActiveBulkPOs([]);
-                        setSelectedPOs([]);
-                        setShowBulkActions(false);
-                      }
-                    }}
+                    onClick={handleCreateBooking}
                     className="flex items-center gap-1 px-4 py-2 text-sm text-white bg-[#007bff] rounded-lg shadow-sm hover:bg-blue-700"
                   >
                     Confirm Selection
                   </button>
                 ) : (
                   <button 
-                    onClick={() => setShowBookingModal(true)}
+                    onClick={async () => { await ensurePODetailsLoaded(selectedPOs.map(po => po.poId)); setShowBookingModal(true); }}
                     className="flex items-center gap-1 px-4 py-2 text-sm text-white bg-[#007bff] rounded-lg shadow-sm hover:bg-blue-700"
                   >
                     Review & Book
@@ -875,7 +986,7 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
                                             min="0"
                                             max={item.requested}
                                             value={
-                                              selectedPOs.find(po => po.poId === `PO${item.poOrderNumber}`)
+                                              selectedPOs.find(selectedPO => selectedPO.poId === po.id)
                                                 ?.bookedQuantities[item.id] ?? 0
                                             }
                                             onChange={(e) => {
@@ -883,17 +994,17 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
                                                 Number(e.target.value) || 0,
                                                 item.requested
                                               ));
-                                              handleQuantityChange(`PO${item.poOrderNumber}`, item.id, value);
+                                              handleQuantityChange(po.id, item.id, value);
                                             }}
                                             className="w-16 p-1 text-xs text-gray-900 border border-gray-300 rounded-sm"
                                             onFocus={(e) => e.target.select()}
                                           />
                                           <button
-                                              onClick={() => handlePOItemSelect(`PO${item.poOrderNumber}`, item.id)}
+                                              onClick={() => handlePOItemSelect(po.id, item.id)}
                                               className={`flex items-center justify-center w-6 h-6 text-xs rounded border transition-colors ${
-                                                selectedPOs.some(po => 
-                                                  po.poId === `PO${item.poOrderNumber}` && 
-                                                  po.selectedItems.has(item.id)
+                                                selectedPOs.some(selectedPO => 
+                                                  selectedPO.poId === po.id && 
+                                                  selectedPO.selectedItems.has(item.id)
                                                 )
                                                   ? 'bg-[#007bff] text-white border-[#007bff] hover:bg-blue-700'
                                                   : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-200'

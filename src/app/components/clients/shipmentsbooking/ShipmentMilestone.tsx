@@ -22,31 +22,13 @@ interface ShipmentMilestoneProps {
 const ShipmentMilestone = ({ onSeeAll }: ShipmentMilestoneProps) => {
   const [filter, setFilter] = useState('all');
   const [pinnedItems, setPinnedItems] = useState(new Set(['FL-001927', 'FL-001928']));
-  // Get bookings from Zustand store (root confirmedBookings)
-const bookings = useBookingStore((state) => state.confirmedBookings);
-const setConfirmedBookings = useBookingStore((state) => state.setConfirmedBookings);
+  // Get bookings from Zustand store (load from API)
+const { confirmedBookings: bookings, loadBookings } = useBookingStore();
 
-// Sync Zustand confirmedBookings with localStorage (auto-load)
+// Load bookings from API on component mount
 React.useEffect(() => {
-  const loadBookings = () => {
-    if (typeof window !== 'undefined') {
-      try {
-        const data = localStorage.getItem('confirmedBookings');
-        const bookings = data ? JSON.parse(data) : [];
-        setConfirmedBookings(bookings);
-      } catch {
-        setConfirmedBookings([]);
-      }
-    }
-  };
   loadBookings();
-  window.addEventListener('storage', loadBookings);
-  const interval = setInterval(loadBookings, 1000);
-  return () => {
-    window.removeEventListener('storage', loadBookings);
-    clearInterval(interval);
-  };
-}, [setConfirmedBookings]);
+}, [loadBookings]);
 
   const togglePin = (shipmentId: string) => {
     const newPinned = new Set(pinnedItems);
@@ -88,7 +70,7 @@ React.useEffect(() => {
         destination: b.destination && typeof b.destination === 'object'
           ? `${b.destination.city || ''}${b.destination.country ? ', ' + b.destination.country : ''}`
           : (b.destination || ''),
-        eta: b.eta || b.arrivalDate || (b.dates && b.dates.arrival ? b.dates.arrival : ''),
+        eta: b.targetDeliveryDate || b.eta || b.arrivalDate || (b.dates && b.dates.arrival ? b.dates.arrival : ''),
         transportMode: b.transportMode || b.mode || '',
       };
     })

@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { addUser as dbAddUser, findUserByUsername as dbFindUserByUsername, validateUser as dbValidateUser, getUserById as dbGetUserById } from '@/lib/db';
+import { addUser as dbAddUser, findUserByUsername as dbFindUserByUsername, validateUser as dbValidateUser, getUserById as dbGetUserById } from './userDb';
 
 export type UserRole = 'client' | 'forwarder' | 'logisticsprovider' | 'admin';
 

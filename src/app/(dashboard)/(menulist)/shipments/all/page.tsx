@@ -1,6 +1,6 @@
 'use client';
 
-import ShipmentTable from "@/app/components/clients/shipmentsbooking/ShipmentTable";
+import BookingTable from "@/app/components/clients/shipmentsbooking/BookingTable";
 import { Upload, Download, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAuthStore, UserRole } from '@/store/authStore';
@@ -18,7 +18,7 @@ const ClientUI = () => {
           </button>
         </div>
       </div>
-      <ShipmentTable view="full"/>
+      <BookingTable view="full" bookings={[]} />
     </div>
   );
 };
@@ -26,7 +26,7 @@ const ClientUI = () => {
 const ForwarderUI = () => {
   return (
     <div className="p-4">
-        <ShipmentTable view="full"/>
+        <BookingTable view="full" bookings={[]} />
     </div>
   );
 };

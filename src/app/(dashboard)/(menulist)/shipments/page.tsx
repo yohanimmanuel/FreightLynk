@@ -7,37 +7,19 @@ import ShipmentMapTracker from "@/app/components/clients/shipmentsbooking/Shipme
 import ShipmentMilestone from '@/app/components/clients/shipmentsbooking/ShipmentMilestone';
 import { useEffect, useState } from 'react';
 import BookingTable from '@/app/components/clients/shipmentsbooking/BookingTable';
-import { useBookingStore, mockForwarderBookings } from '@/store/bookingStore';
+import { useBookingStore } from '@/store/bookingStore';
 import { useAuthStore, UserRole } from '@/store/authStore';
 import ProtectedRoute from '@/app/components/ProtectedRoute';
 
 const ClientUI = () => {
    const router = useRouter();
 
-   // Use the same confirmedBookings logic as the Bookings page
-   const [confirmedBookings, setConfirmedBookings] = useState<any[]>([]);
-
-   const loadBookings = () => {
-     if (typeof window !== 'undefined') {
-       try {
-         const data = localStorage.getItem('confirmedBookings');
-         const bookings = data ? JSON.parse(data) : [];
-         setConfirmedBookings(bookings);
-       } catch (error) {
-         setConfirmedBookings([]);
-       }
-     }
-   };
+   // Use the Zustand store for bookings
+   const { confirmedBookings, isLoading, error, loadBookings } = useBookingStore();
 
    useEffect(() => {
      loadBookings();
-     window.addEventListener('storage', loadBookings);
-     const interval = setInterval(loadBookings, 1000);
-     return () => {
-       window.removeEventListener('storage', loadBookings);
-       clearInterval(interval);
-     };
-   }, []);
+   }, [loadBookings]);
 
   // Handle navigation to the bookings page
   const handleSeeAllBookings = () => {

@@ -15,6 +15,9 @@ interface POSummaryTableProps {
 
 const POSummaryTable: React.FC<POSummaryTableProps> = ({ selectedPOs, purchaseOrdersData, poDetailsData, onRemovePO }) => {
   console.log('POSummaryTable selectedPOs:', selectedPOs);
+  console.log('POSummaryTable purchaseOrdersData:', purchaseOrdersData);
+  console.log('POSummaryTable poDetailsData:', poDetailsData);
+  console.log('POSummaryTable render - selectedPOs length:', selectedPOs.length, 'purchaseOrders length:', purchaseOrdersData.length, 'poDetails length:', poDetailsData.length);
   
   // Normalize selectedPOs to handle different data formats
   const normalizedSelectedPOs = selectedPOs.map(poSelection => {
@@ -45,26 +48,41 @@ const POSummaryTable: React.FC<POSummaryTableProps> = ({ selectedPOs, purchaseOr
   
   // Build summary data
   const selectedData = normalizedSelectedPOs.map(poSelection => {
+    console.log('Processing PO selection:', poSelection);
     const po = purchaseOrdersData.find(p => p.id === poSelection.poId);
-    if (!po) return null;
+    if (!po) {
+      console.log('PO not found for ID:', poSelection.poId);
+      return null;
+    }
     
-    const poNum = parseInt(poSelection.poId.replace('PO', ''));
-    const items = poDetailsData.filter(item =>
+    // Use the same format as POManagementTable - use poId directly
+    const poNum = poSelection.poId;
+    console.log('Looking for PO details with poOrderNumber:', poNum);
+    console.log('Available poDetails poOrderNumbers:', poDetailsData.map(item => item.poOrderNumber));
+    
+    const filteredItems = poDetailsData.filter(item =>
       poSelection.selectedItems.includes(item.id) &&
       item.poOrderNumber === poNum
-    ).map(item => ({
+    );
+    console.log('Filtered items for PO', poNum, ':', filteredItems);
+    
+    const items = filteredItems.map(item => ({
       ...item,
       poOrderNumber: poNum,
       booked: poSelection.bookedQuantities[item.id] || 0
-    })).filter(item => item.booked > 0);
+    }));
+    console.log('Items with booked quantities:', items);
     
-    return { po, items, selection: poSelection };
+    const itemsWithBooking = items.filter(item => item.booked > 0);
+    console.log('Items with booked > 0:', itemsWithBooking);
+    
+    return { po, items: itemsWithBooking, selection: poSelection };
   }).filter((data): data is NonNullable<typeof data> => data !== null && data.items.length > 0);
 
   const poDetailsForSummary = selectedData.flatMap(({ items, po }) =>
     items.map(item => ({
       ...item,
-      poOrderNumber: typeof item.poOrderNumber === 'number' ? item.poOrderNumber : parseInt(po.id.replace('PO', '')),
+      poOrderNumber: po.id, // Use the original PO ID directly
       booked: Number(item.booked) || 0
     }))
   );
@@ -72,13 +90,13 @@ const POSummaryTable: React.FC<POSummaryTableProps> = ({ selectedPOs, purchaseOr
   const purchaseOrdersForSummary = Array.from(
     new Set(
       poDetailsForSummary
-        .map(item => purchaseOrdersData.find(po => po.id === `PO${item.poOrderNumber}`))
+        .map(item => purchaseOrdersData.find(po => po.id === item.poOrderNumber))
         .filter((po): po is PurchaseOrder => Boolean(po))
     )
   );
 
   const groupedPOs: Record<string, (typeof poDetailsForSummary)> = poDetailsForSummary.reduce((acc, item) => {
-    const poKey = `PO${item.poOrderNumber}`;
+    const poKey = item.poOrderNumber; // Use the PO ID directly
     if (!acc[poKey]) acc[poKey] = [];
     acc[poKey].push(item);
     return acc;

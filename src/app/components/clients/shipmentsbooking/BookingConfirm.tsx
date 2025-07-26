@@ -56,6 +56,31 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
   const setBookingSubmitted = useBookingStore(state => state.setBookingSubmitted);
   const purchaseOrders = usePOStore(state => state.purchaseOrders);
   const poDetails = usePOStore(state => state.poDetails);
+  const fetchPurchaseOrders = usePOStore(state => state.fetchPurchaseOrders);
+  const fetchPODetails = usePOStore(state => state.fetchPODetails);
+  
+  // Load purchase orders on component mount
+  useEffect(() => {
+    fetchPurchaseOrders();
+  }, [fetchPurchaseOrders]);
+
+  // Load PO details for selected POs
+  useEffect(() => {
+    const loadPODetails = async () => {
+      for (const poSelection of selectedPOs) {
+        try {
+          await fetchPODetails(poSelection.poId);
+        } catch (error) {
+          console.error('Failed to fetch PO details for', poSelection.poId, error);
+        }
+      }
+    };
+
+    if (selectedPOs.length > 0) {
+      loadPODetails();
+    }
+  }, [selectedPOs, fetchPODetails]);
+  
   // Progress steps
   const progressSteps = [
     { id: 'booking', label: 'Booking', status: 'completed', icon: CheckCircle },
@@ -164,65 +189,23 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
 
   useEffect(() => {
     if (bookingSubmitted) {
-      // Build the full booking object with all fields
-      const booking = {
-        id: flNumber,
-        shipmentId: null,
-        poNumber: selectedPOs.map(po => `PO ${po.poId.replace(/^PO ?/, '')}`).join(', '),
-        productName: formData.productName,
-        hsCode: formData.hsCode,
-        consignee: formData.consigneeValue,
-        shipper: formData.shipperValue,
-        origin: formData.originPort,
-        destination: formData.destinationPort,
-        originPort: formData.originPort,
-        destinationPort: formData.destinationPort,
-        shipmentType: formData.shipmentTypeValue,
-        shipmentTypeValue: formData.shipmentTypeValue,
-        containerType: formData.containerTypeValue,
-        containerTypeValue: formData.containerTypeValue,
-        incoterms: formData.incotermsValue,
-        incotermsValue: formData.incotermsValue,
-        cargoReadyDate: formData.cargoReadyDate,
-        dangerousGoods: formData.dangerousGoods,
-        weight: formData.weight,
-        volume: formData.volume,
-        pieces: Number(formData.packageCount) || 0,
-        status: 'Booked',
-        eta: formData.targetDeliveryDate || '',
-        createdAt: new Date().toISOString(),
-        shipmentName: formData.shipmentName,
-        requireShipmentTags: formData.requireShipmentTags,
-        skuNumber: formData.skuNumber,
-        originLocation: formData.originLocation,
-        destinationLocation: formData.destinationLocation,
-        containerQuantity: formData.containerQuantity,
-        transportModeValue: formData.transportModeValue,
-        packageType: formData.packageTypeValue || formData.packageType,
-        goodsDescription: formData.goodsDescription,
-        truckType: formData.truckType,
-        truckQuantity: formData.truckQuantity,
-        // Properly format selectedPOs for storage
-        selectedPOs: selectedPOs.map(po => ({
-          poId: po.poId,
-          selectedItems: Array.isArray(po.selectedItems) ? po.selectedItems : Array.from(po.selectedItems),
-          bookedQuantities: po.bookedQuantities || {}
-        })),
-      };
-
-      // Save to localStorage first
-      if (typeof window !== 'undefined') {
+      // Create booking via API
+      const createBookingAsync = async () => {
         try {
-          const prev = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
-          const updated = [...prev, booking];
-          localStorage.setItem('confirmedBookings', JSON.stringify(updated));
-          console.log('Saved booking to localStorage:', booking);
+          const { createNewBooking } = useBookingStore.getState();
+          const result = await createNewBooking(formData, selectedPOs);
           
-          // Dispatch storage event to notify other components
-          window.dispatchEvent(new Event('storage'));
+          console.log('Successfully created booking:', result);
+          
+          // Update FL number with the one from API
+          if (result.flNumber) {
+            setFlNumber(result.flNumber);
+          }
           
           // Clear booking data from sessionStorage
-          sessionStorage.removeItem('bookingData');
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('bookingData');
+          }
           
           // Navigate to submitted page
           router.replace('/bookings/submitted');
@@ -236,11 +219,16 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
             setBookingSubmitted(false);
           }, 100);
         } catch (error) {
-          console.error('Error saving booking:', error);
+          console.error('Error creating booking:', error);
+          // Handle error - maybe show error message to user
+          // For now, still redirect but could show error state
+          router.replace('/bookings/submitted');
         }
-      }
+      };
+
+      createBookingAsync();
     }
-  }, [bookingSubmitted, router, flNumber, formData, selectedPOs, setFormData, setSelectedPOs, setTradeRole, setFlNumber, setBookingSubmitted]);
+  }, [bookingSubmitted, router, formData, selectedPOs, setFormData, setSelectedPOs, setTradeRole, setFlNumber, setBookingSubmitted]);
 
   // Check if this is a new booking or viewing an existing one
   useEffect(() => {
@@ -250,34 +238,17 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
     }
 
     // For new bookings, check if already confirmed
-    if (typeof window !== 'undefined') {
-      const confirmedBookings = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
-      if (confirmedBookings.some((b: any) => b.id === flNumber)) {
-        router.replace('/bookings/submitted');
-      }
-    }
+    // Removed localStorage check - now using database
   }, [bookingId, flNumber, router]);
 
   // Load existing booking if bookingId is provided
+  // Removed localStorage loading - now using database API
   useEffect(() => {
-    if (bookingId && typeof window !== 'undefined') {
-      const all = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
-      const found = all.find((b: any) => b.id === bookingId);
-      if (found) {
-        setExternalBooking(found);
-        console.log('Loaded existing booking:', found);
-        
-        // Override Zustand state with the booking data to ensure correct display
-        if (found.originPort) {
-          setFormData((prev: any) => ({
-            ...prev,
-            originPort: found.originPort,
-            destinationPort: found.destinationPort
-          }));
-        }
-      }
+    if (bookingId) {
+      // TODO: Load booking from database API instead of localStorage
+      console.log('Loading booking from database:', bookingId);
     }
-  }, [bookingId, setFormData]);
+  }, [bookingId]);
 
   // Hybrid logic: if bookingId is present, use localStorage; else use Zustand (formData, etc.)
   const displayData = bookingId && externalBooking ? {
@@ -375,64 +346,6 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
         showPopup && <BookingConfirmPopUp 
           onClose={() => { 
             setShowPopup(false);
-            // Save the booking to localStorage when popup is closed
-            if (typeof window !== 'undefined') {
-              try {
-                const booking = {
-                  id: flNumber,
-                  shipmentId: null,
-                  poNumber: selectedPOs.map(po => `PO ${po.poId.replace(/^PO ?/, '')}`).join(', '),
-                  productName: formData.productName,
-                  hsCode: formData.hsCode,
-                  consignee: formData.consigneeValue,
-                  shipper: formData.shipperValue,
-                  origin: formData.originPort,
-                  destination: formData.destinationPort,
-                  originPort: formData.originPort,
-                  destinationPort: formData.destinationPort,
-                  shipmentType: formData.shipmentTypeValue,
-                  shipmentTypeValue: formData.shipmentTypeValue,
-                  containerType: formData.containerTypeValue,
-                  containerTypeValue: formData.containerTypeValue,
-                  incoterms: formData.incotermsValue,
-                  incotermsValue: formData.incotermsValue,
-                  cargoReadyDate: formData.cargoReadyDate,
-                  dangerousGoods: formData.dangerousGoods,
-                  weight: formData.weight,
-                  volume: formData.volume,
-                  pieces: Number(formData.packageCount) || 0,
-                  status: 'Booked',
-                  eta: formData.targetDeliveryDate || '',
-                  createdAt: new Date().toISOString(),
-                  shipmentName: formData.shipmentName,
-                  requireShipmentTags: formData.requireShipmentTags,
-                  skuNumber: formData.skuNumber,
-                  originLocation: formData.originLocation,
-                  destinationLocation: formData.destinationLocation,
-                  containerQuantity: formData.containerQuantity,
-                  transportModeValue: formData.transportModeValue,
-                  packageType: formData.packageTypeValue || formData.packageType,
-                  goodsDescription: formData.goodsDescription,
-                  truckType: formData.truckType,
-                  truckQuantity: formData.truckQuantity,
-                  // Properly format selectedPOs for storage
-                  selectedPOs: selectedPOs.map(po => ({
-                    poId: po.poId,
-                    selectedItems: Array.isArray(po.selectedItems) ? po.selectedItems : Array.from(po.selectedItems),
-                    bookedQuantities: po.bookedQuantities || {}
-                  })),
-                };
-                const prev = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
-                const updated = [...prev, booking];
-                localStorage.setItem('confirmedBookings', JSON.stringify(updated));
-                console.log('Saved booking to localStorage:', booking);
-                
-                // Dispatch storage event to notify other components
-                window.dispatchEvent(new Event('storage'));
-              } catch (error) {
-                console.error('Error saving booking:', error);
-              }
-            }
           }} 
           bookingData={{
             shipmentId: displayData.shipmentId,
@@ -721,24 +634,40 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
                         {displayData.shipmentTypeValue === 'fcl' && (
                           <>
                             <div>
-                              <span className="text-gray-500">Container Type:</span>
-                              <span className="ml-2 text-gray-900">{displayData.containerTypeValue || displayData.containerType || '-'}</span>
-                            </div>
-                            <div>
-                              <span className="text-gray-500">Container Quantity:</span>
-                              <span className="ml-2 text-gray-900">{displayData.containerQuantity || '-'}</span>
+                              <span className="text-gray-500">Container Types:</span>
+                              <div className="ml-2">
+                                {displayData.containerTypes && displayData.containerTypes.length > 0 ? (
+                                  <div className="flex flex-wrap gap-1">
+                                    {displayData.containerTypes.map((containerType: any, index: number) => (
+                                      <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                                        {containerType.quantity} x {containerType.type}
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-900">{displayData.containerTypeValue || displayData.containerType || '-'}</span>
+                                )}
+                              </div>
                             </div>
                           </>
                         )}
                         {displayData.shipmentTypeValue === 'ftl' && (
                           <>
                             <div>
-                              <span className="text-gray-500">Truck Type:</span>
-                              <span className="ml-2 text-gray-900">{displayData.truckType || '-'}</span>
-                            </div>
-                            <div>
-                              <span className="text-gray-500">Truck Quantity:</span>
-                              <span className="ml-2 text-gray-900">{displayData.truckQuantity || '-'}</span>
+                              <span className="text-gray-500">Truck Types:</span>
+                              <div className="ml-2">
+                                {displayData.truckTypes && displayData.truckTypes.length > 0 ? (
+                                  <div className="flex flex-wrap gap-1">
+                                    {displayData.truckTypes.map((truckType: any, index: number) => (
+                                      <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                                        {truckType.quantity} x {truckType.type}
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-900">{displayData.truckType || '-'}</span>
+                                )}
+                              </div>
                             </div>
                           </>
                         )}

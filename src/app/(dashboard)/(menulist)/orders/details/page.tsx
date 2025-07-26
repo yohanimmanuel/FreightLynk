@@ -152,8 +152,16 @@ const ClientDetailsUI = () => {
       await usePOStore.getState().updatePurchaseOrder(updatedPO.id, updatedPO);
       await usePOStore.getState().upsertPODetails(updatedData.poNumber, updatedPODetails);
 
-      console.log('Save completed - redirecting to orders');
-      router.push('/orders');
+      console.log('Save completed - checking return destination');
+      
+      // Check if user came from booking creation flow
+      const returnToBookingCreation = sessionStorage.getItem('returnToBookingCreation');
+      if (returnToBookingCreation === 'true') {
+        sessionStorage.removeItem('returnToBookingCreation');
+        router.push('/bookings/create');
+      } else {
+        router.push('/orders');
+      }
       
     } catch (error) {
       console.error('Error saving PO:', error);
@@ -162,7 +170,14 @@ const ClientDetailsUI = () => {
   };
 
   const handleCancel = () => {
-    router.push('/orders');
+    // Check if user came from booking creation flow
+    const returnToBookingCreation = sessionStorage.getItem('returnToBookingCreation');
+    if (returnToBookingCreation === 'true') {
+      sessionStorage.removeItem('returnToBookingCreation');
+      router.push('/bookings/create');
+    } else {
+      router.push('/orders');
+    }
   };
 
   if (loading) {
@@ -175,7 +190,7 @@ const ClientDetailsUI = () => {
 
   return (
     <ProtectedRoute allowedRoles={[UserRole.CLIENT, UserRole.ADMIN]}>
-      <div className="p-6">
+      <div className="">
     <PODetails
       poData={poData}
       onSave={handleSave}

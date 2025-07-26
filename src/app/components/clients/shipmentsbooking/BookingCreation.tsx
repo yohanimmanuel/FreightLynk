@@ -198,8 +198,26 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
   };
 
   // Update handleInputChange to use setFormData from the store
-  const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData({ ...formData, [field]: value });
+  const handleInputChange = (field: string, value: string | boolean | any[]) => {
+    // If transport mode is changing, reset shipment type and related fields
+    if (field === 'transportModeValue') {
+      const updatedFormData = {
+        ...formData,
+        [field]: value,
+        // Reset shipment type when transport mode changes
+        shipmentTypeValue: '',
+        // Reset container/truck related fields
+        containerTypeValue: '',
+        containerQuantity: '',
+        truckType: '',
+        truckQuantity: '',
+        truckTypes: [],
+        containerTypes: []
+      };
+      setFormData(updatedFormData);
+    } else {
+      setFormData({ ...formData, [field]: value });
+    }
   };
 
   // Handle edit order
@@ -208,7 +226,7 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
     if (!selectedPO) return;
 
     const poItems = poDetails.filter(
-      item => item.poOrderNumber === parseInt(poId.replace('PO', ''))
+      item => item.poOrderNumber === poId.replace('PO', '')
     );
 
     // Format dates properly for the form
@@ -240,8 +258,10 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
       mustArriveBy: poData.mustArriveBy
     });
 
+    // Store PO data and return URL for booking creation context
     sessionStorage.setItem('currentPO', JSON.stringify(poData));
-    router.push('/orders/details');
+    sessionStorage.setItem('returnToBookingCreation', 'true');
+    router.push(`/orders/details?poId=${poId}`);
   };
 
   // Get selected PO details
@@ -250,7 +270,7 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
       .map(poSelection => {
         const po = purchaseOrders.find(p => p.id === poSelection.poId);
         if (!po) return null;
-        const poNum = parseInt(poSelection.poId.replace('PO', ''));
+        const poNum = poSelection.poId.replace('PO', '');
         const items = poDetails.filter(item =>
           poSelection.selectedItems.includes(item.id) &&
           item.poOrderNumber === poNum
@@ -283,8 +303,35 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
     // Transport Details
     if (!formData.transportModeValue) newErrors.transportModeValue = 'Transport mode is required.';
     if (!formData.shipmentTypeValue) newErrors.shipmentTypeValue = 'Shipment type is required.';
-    if (!formData.containerTypeValue) newErrors.containerTypeValue = 'Container type is required.';
     if (!formData.incotermsValue) newErrors.incotermsValue = 'Incoterms is required.';
+    
+    // Validate truck types for FTL
+    if (formData.transportModeValue === 'land' && formData.shipmentTypeValue === 'ftl') {
+      if (!formData.truckTypes || formData.truckTypes.length === 0) {
+        newErrors.truckTypes = 'At least one truck type is required for FTL.';
+      } else {
+        const invalidTruckTypes = formData.truckTypes.some((truckType: any) => 
+          !truckType.type.trim() || !truckType.quantity || truckType.quantity <= 0
+        );
+        if (invalidTruckTypes) {
+          newErrors.truckTypes = 'All truck types must have both type and quantity specified.';
+        }
+      }
+    }
+    
+    // Validate container types for FCL
+    if (formData.shipmentTypeValue === 'fcl') {
+      if (!formData.containerTypes || formData.containerTypes.length === 0) {
+        newErrors.containerTypes = 'At least one container type is required for FCL.';
+      } else {
+        const invalidContainerTypes = formData.containerTypes.some((containerType: any) => 
+          !containerType.type.trim() || !containerType.quantity || containerType.quantity <= 0
+        );
+        if (invalidContainerTypes) {
+          newErrors.containerTypes = 'All container types must have both type and quantity specified.';
+        }
+      }
+    }
     // Origin
     if (!formData.originLocation.trim()) newErrors.originLocation = 'Origin location is required.';
     if (!formData.originPort.trim()) newErrors.originPort = 'Origin port is required.';
@@ -300,7 +347,6 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
     if (!formData.weight.trim()) newErrors.weight = 'Weight is required.';
     if (!formData.volume.trim()) newErrors.volume = 'Volume is required.';
     if (!formData.packageCount.trim()) newErrors.packageCount = 'Package count is required.';
-    if (formData.shipmentTypeValue === 'fcl' && !formData.containerQuantity.trim()) newErrors.containerQuantity = 'Container quantity is required.';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -349,6 +395,30 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
 
   const purchaseOrders = usePOStore(state => state.purchaseOrders);
   const poDetails = usePOStore(state => state.poDetails);
+  const fetchPurchaseOrders = usePOStore(state => state.fetchPurchaseOrders);
+  const fetchPODetails = usePOStore(state => state.fetchPODetails);
+
+  // Load purchase orders on component mount
+  useEffect(() => {
+    fetchPurchaseOrders();
+  }, [fetchPurchaseOrders]);
+
+  // Load PO details for available purchase orders
+  useEffect(() => {
+    const loadPODetails = async () => {
+      for (const po of purchaseOrders) {
+        try {
+          await fetchPODetails(po.id);
+        } catch (error) {
+          console.error('Failed to fetch PO details for', po.id, error);
+        }
+      }
+    };
+
+    if (purchaseOrders.length > 0) {
+      loadPODetails();
+    }
+  }, [purchaseOrders, fetchPODetails]);
 
   return (
     <div className="max-w-4xl mx-auto p-2 bg-white">
@@ -585,43 +655,85 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
                 <p className="text-xs text-red-500 mt-1">{errors.shipmentTypeValue}</p>
               )}
             </div>
-            {/* Truck Type and Quantity for FTL */}
+            {/* Truck Types and Quantities for FTL */}
             {formData.transportModeValue === 'land' && formData.shipmentTypeValue === 'ftl' && (
-              <div className="flex gap-2 items-center">
-                <div className="w-24">
-                  <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Qty <span className="text-red-500">*</span>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-medium text-gray-700">
+                    Truck Types & Quantities <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={formData.truckQuantity || ''}
-                    onChange={(e) => handleInputChange('truckQuantity', e.target.value)}
-                    className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.truckQuantity ? 'border-red-500' : ''}`}
-                    placeholder="Qty"
-                  />
-                  {hasSubmitted && errors.truckQuantity && (
-                    <p className="text-xs text-red-500 mt-1">{errors.truckQuantity}</p>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newTruckType = {
+                        id: Date.now(),
+                        type: '',
+                        quantity: ''
+                      };
+                      const updatedTruckTypes = [...(formData.truckTypes || []), newTruckType];
+                      handleInputChange('truckTypes', updatedTruckTypes);
+                    }}
+                    className="flex items-center gap-1 px-4 py-2 text-xs bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                  >
+                    <Plus size={12} />
+                    Add Truck Type
+                  </button>
                 </div>
-                <div className="flex-1">
-                  <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Truck Type <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.truckType || ''}
-                    onChange={(e) => handleInputChange('truckType', e.target.value)}
-                    className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.truckType ? 'border-red-500' : ''}`}
-                    placeholder="Enter truck type (e.g. 20ft, 40ft, Reefer, Flatbed, etc.)"
-                  />
-                  {hasSubmitted && errors.truckType && (
-                    <p className="text-xs text-red-500 mt-1">{errors.truckType}</p>
-                  )}
-                </div>
+                
+                {(formData.truckTypes || []).length === 0 ? (
+                  <div className="text-xs text-gray-500 italic">No truck types added yet. Click "Add Truck Type" to add one.</div>
+                ) : (
+                  <div className="space-y-2">
+                    {(formData.truckTypes || []).map((truckType: any, index: number) => (
+                      <div key={truckType.id} className="flex gap-2 items-center">
+                        <div className="w-24">
+                          <input
+                            type="number"
+                            min="1"
+                            value={truckType.quantity || ''}
+                            onChange={(e) => {
+                              const updatedTruckTypes = [...(formData.truckTypes || [])];
+                              updatedTruckTypes[index].quantity = e.target.value;
+                              handleInputChange('truckTypes', updatedTruckTypes);
+                            }}
+                            className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.truckQuantity ? 'border-red-500' : ''}`}
+                            placeholder="Qty"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={truckType.type || ''}
+                            onChange={(e) => {
+                              const updatedTruckTypes = [...(formData.truckTypes || [])];
+                              updatedTruckTypes[index].type = e.target.value;
+                              handleInputChange('truckTypes', updatedTruckTypes);
+                            }}
+                            className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.truckType ? 'border-red-500' : ''}`}
+                            placeholder="Enter truck type (e.g. Flatbed, Reefer, etc.)"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updatedTruckTypes = (formData.truckTypes || []).filter((_: any, i: number) => i !== index);
+                            handleInputChange('truckTypes', updatedTruckTypes);
+                          }}
+                          className="p-2 text-red-500 hover:text-red-700 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {hasSubmitted && errors.truckTypes && (
+                  <p className="text-xs text-red-500 mt-1">{errors.truckTypes}</p>
+                )}
               </div>
             )}
-            {/* Container Type for FCL, Cargo & Load Specs for LCL/LTL */}
+            {/* Container Types and Quantities for FCL, Cargo & Load Specs for LCL/LTL */}
             {formData.transportModeValue === 'land' && formData.shipmentTypeValue === 'ltl' ? (
               <div className="text-xs text-gray-600 mt-3 mb-2">
                 Specify your cargo & load details below for consolidation and handling.
@@ -632,34 +744,91 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
               </div>
             ) : (
               formData.shipmentTypeValue === 'fcl' && (
-              <div className="flex gap-2 items-center">
-                  <input
-                    type="number"
-                    min="1"
-                    value={formData.containerQuantity}
-                    onChange={(e) => handleInputChange('containerQuantity', e.target.value)}
-                    className={`w-20 p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.containerQuantity ? 'border-red-500' : ''}`}
-                    placeholder="Qty"
-                  />
-                {['20ft', '40ft', '40ft-hc', '45ft-hc'].map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    className={`flex-1 px-4 py-3 text-xs border rounded-lg transition-colors
-                      ${formData.containerTypeValue === type ? 'bg-blue-50 border-blue-500 text-blue-700 font-semibold' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
-                    onClick={() => handleInputChange('containerTypeValue', type)}
-                  >
-                    {type === '20ft' && '20 ft'}
-                    {type === '40ft' && '40 ft'}
-                    {type === '40ft-hc' && '40 ft HC'}
-                    {type === '45ft-hc' && '45 ft HC'}
-                  </button>
-                ))}
-              </div>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-xs font-medium text-gray-700">
+                      Container Types & Quantities <span className="text-red-500">*</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newContainerType = {
+                          id: Date.now(),
+                          type: '',
+                          quantity: ''
+                        };
+                        const updatedContainerTypes = [...(formData.containerTypes || []), newContainerType];
+                        handleInputChange('containerTypes', updatedContainerTypes);
+                      }}
+                      className="flex items-center gap-1 px-4 py-2 text-xs bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                    >
+                      <Plus size={12} />
+                      Add Container Type
+                    </button>
+                  </div>
+                  
+                  {(formData.containerTypes || []).length === 0 ? (
+                    <div className="text-xs text-gray-500 italic">No container types added yet. Click "Add Container Type" to add one.</div>
+                  ) : (
+                    <div className="space-y-2">
+                      {(formData.containerTypes || []).map((containerType: any, index: number) => (
+                        <div key={containerType.id} className="flex gap-2 items-center">
+                          <div className="w-20">
+                            <input
+                              type="number"
+                              min="1"
+                              value={containerType.quantity || ''}
+                              onChange={(e) => {
+                                const updatedContainerTypes = [...(formData.containerTypes || [])];
+                                updatedContainerTypes[index].quantity = e.target.value;
+                                handleInputChange('containerTypes', updatedContainerTypes);
+                              }}
+                              className={`w-full p-3 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${hasSubmitted && errors.containerQuantity ? 'border-red-500' : ''}`}
+                              placeholder="Qty"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex gap-2">
+                              {['20ft', '40ft', '40ft-hc', '45ft-hc'].map((type) => (
+                                <button
+                                  key={type}
+                                  type="button"
+                                  className={`flex-1 px-3 py-3 text-xs border rounded-lg transition-colors
+                                    ${containerType.type === type ? 'bg-blue-50 border-blue-500 text-blue-700 font-semibold' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                                  onClick={() => {
+                                    const updatedContainerTypes = [...(formData.containerTypes || [])];
+                                    updatedContainerTypes[index].type = type;
+                                    handleInputChange('containerTypes', updatedContainerTypes);
+                                  }}
+                                >
+                                  {type === '20ft' && '20 ft'}
+                                  {type === '40ft' && '40 ft'}
+                                  {type === '40ft-hc' && '40 ft HC'}
+                                  {type === '45ft-hc' && '45 ft HC'}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updatedContainerTypes = (formData.containerTypes || []).filter((_: any, i: number) => i !== index);
+                              handleInputChange('containerTypes', updatedContainerTypes);
+                            }}
+                            className="p-2 text-red-500 hover:text-red-700 transition-colors"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {hasSubmitted && errors.containerTypes && (
+                    <p className="text-xs text-red-500 mt-1">{errors.containerTypes}</p>
+                  )}
+                </div>
               )
-            )}
-            {formData.shipmentTypeValue === 'fcl' && hasSubmitted && errors.containerQuantity && (
-              <p className="text-xs text-red-500 mt-1">{errors.containerQuantity}</p>
             )}
             {/* Incoterms (dropdown) */}
             <div>
@@ -1103,16 +1272,33 @@ const BookingCreation: React.FC<BookingCreationProps> = ({ onSubmitBooking }) =>
               <POManagementTable
                 mode='standalone'
                 onEditOrder={handleEditOrder}
-                onCreateBooking={(bookingData) => {
+                onCreateBooking={async (bookingData) => {
+                  console.log('BookingCreation onCreateBooking called with:', bookingData);
+                  
                   const normalized = bookingData.map((poSel: any) => ({
                     ...poSel,
                     bookedQuantities: Object.fromEntries(
                       Object.entries(poSel.bookedQuantities).map(([id, qty]: any) => [id, qty > 0 ? qty : 1]))
                   }));
                   
+                  console.log('Normalized booking data:', normalized);
+                  console.log('Current selectedPOs:', selectedPOs);
+                  
+                  // Ensure PO details are loaded for newly selected POs
+                  for (const poSel of normalized) {
+                    try {
+                      await fetchPODetails(poSel.poId);
+                    } catch (error) {
+                      console.error('Failed to fetch PO details for', poSel.poId, error);
+                    }
+                  }
+                  
                   const existingPOIds = new Set(selectedPOs.map((po: any) => po.poId));
                   const newPOs = normalized.filter((po: any) => !existingPOIds.has(po.poId));
                   const mergedPOs = [...selectedPOs, ...newPOs];
+                  
+                  console.log('Merged POs to set:', mergedPOs);
+                  
                   setSelectedPOs(mergedPOs);
                   setShowPOReview(true);
                   setShowPOSelection(false);

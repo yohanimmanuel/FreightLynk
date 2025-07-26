@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Search, Filter, Settings, Eye, EyeOff, Calendar, Package, MapPin, Ship, Clock, AlertTriangle, CheckCircle, XCircle, Minus, Download, Upload, Plus, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronDown } from 'lucide-react';
+import { Search, Filter, Settings, Eye, EyeOff, Calendar, Package, MapPin, Ship, Clock, AlertTriangle, CheckCircle, XCircle, Minus, Download, Upload, Plus, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronDown, Plane, Truck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 type Booking = {
@@ -21,8 +21,10 @@ type Booking = {
   volume: string;
   pieces: number;
   status: string;
-  eta: string;
+  targetDeliveryDate: string;
   transportModeValue?: string;
+  truckTypes?: any[];
+  containerTypes?: any[];
 };
 
 interface BookingTableProps {
@@ -77,7 +79,7 @@ const BookingTable: React.FC<BookingTableProps> = ({
           </span>
         );
       case 'cargoReadyDate':
-      case 'eta':
+      case 'targetDeliveryDate':
         return (
           <span className="flex items-center">
             <Calendar className="w-3 h-3 mr-1 text-gray-400" />
@@ -88,15 +90,39 @@ const BookingTable: React.FC<BookingTableProps> = ({
         // Use transportModeValue if present, fallback to transportMode
         let mode = (booking['transportModeValue']|| '').toLowerCase();
         let ModeIcon = Ship;
-        if (mode === 'air') ModeIcon = require('lucide-react').Plane;
-        else if (mode === 'road') ModeIcon = require('lucide-react').Truck;
-        else if (mode === 'sea') ModeIcon = require('lucide-react').Ship;
-        else ModeIcon = require('lucide-react').Package;
+        if (mode === 'air') ModeIcon = Plane;
+        else if (mode === 'road') ModeIcon = Truck;
+        else if (mode === 'sea') ModeIcon = Ship;
+        else ModeIcon = Package;
         return (
           <span className="flex items-center">
             <ModeIcon className="w-4 h-4 mr-1 text-gray-400" />
             {mode ? mode.toUpperCase() : ''}
           </span>
+        );
+      case 'truckTypes':
+        const truckTypes = booking.truckTypes || [];
+        if (truckTypes.length === 0) return '-';
+        return (
+          <div className="flex flex-wrap gap-1">
+            {truckTypes.map((truckType: any, index: number) => (
+              <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                {truckType.quantity} x {truckType.type}
+              </span>
+            ))}
+          </div>
+        );
+      case 'containerTypes':
+        const containerTypes = booking.containerTypes || [];
+        if (containerTypes.length === 0) return '-';
+        return (
+          <div className="flex flex-wrap gap-1">
+            {containerTypes.map((containerType: any, index: number) => (
+              <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                {containerType.quantity} x {containerType.type}
+              </span>
+            ))}
+          </div>
         );
       default:
         return booking[columnKey as keyof Booking] as string;
@@ -111,7 +137,7 @@ const BookingTable: React.FC<BookingTableProps> = ({
     { key: 'productName', label: 'Goods', width: '180px' },
     { key: 'origin', label: 'Origin', width: '140px' },
     { key: 'destination', label: 'Destination', width: '140px' },
-    { key: 'eta', label: 'Target Delivery Date', width: '120px' },
+    { key: 'targetDeliveryDate', label: 'Target Delivery Date', width: '120px' },
   ];
 
   // Pagination state
@@ -191,18 +217,20 @@ const BookingTable: React.FC<BookingTableProps> = ({
     { key: 'destination', label: 'Destination', mandatory: false, width: '140px' },
     { key: 'shipmentType', label: 'Shipment Type', mandatory: false, width: '120px' },
     { key: 'containerType', label: 'Container Type', mandatory: false, width: '140px' },
+    { key: 'truckTypes', label: 'Truck Types', mandatory: false, width: '160px' },
+    { key: 'containerTypes', label: 'Container Types', mandatory: false, width: '160px' },
     { key: 'incoterms', label: 'Incoterms', mandatory: false, width: '100px' },
     { key: 'dangerousGoods', label: 'Dangerous Goods', mandatory: false, width: '130px' },
     { key: 'weight', label: 'Weight', mandatory: false, width: '110px' },
     { key: 'volume', label: 'Volume', mandatory: false, width: '110px' },
     { key: 'pieces', label: 'Pieces', mandatory: false, width: '100px' },
     { key: 'cargoReadyDate', label: 'Cargo Ready Date', mandatory: false, width: '140px' },
-    { key: 'eta', label: 'Target Delivery Date', mandatory: false, width: '120px' },
+    { key: 'targetDeliveryDate', label: 'Target Delivery Date', mandatory: false, width: '120px' },
     { key: 'status', label: 'Status', mandatory: true, width: '120px' },
   ];
 
   // Default visible columns
-  const defaultVisibleColumns = ['id', 'poNumber', 'productName', 'shipper', 'consignee', 'origin', 'destination', 'shipmentType', 'status', 'eta', 'transportModeValue', 'incoterms'];
+  const defaultVisibleColumns = ['id', 'poNumber', 'productName', 'shipper', 'consignee', 'origin', 'destination', 'shipmentType', 'status', 'targetDeliveryDate', 'transportModeValue', 'incoterms'];
   
   const [visibleColumns, setVisibleColumns] = useState(defaultVisibleColumns);
   const [searchTerm, setSearchTerm] = useState('');

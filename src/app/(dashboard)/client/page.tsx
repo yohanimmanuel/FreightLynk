@@ -15,57 +15,15 @@ import { CalendarBooking } from '@/store/types';
 import { useBookingStore } from '@/store/bookingStore';
 import BookingTable from '@/app/components/clients/shipmentsbooking/BookingTable';
 
-type Booking = {
-  id: string;
-  shipmentId?: string;
-  poNumber: string;
-  productName: string;
-  hsCode: string;
-  consignee: string;
-  shipper: string;
-  origin: string;
-  destination: string;
-  shipmentType: string;
-  containerType: string;
-  incoterms: string;
-  cargoReadyDate: string;
-  dangerousGoods: boolean;
-  weight: string;
-  volume: string;
-  pieces: number;
-  status: string;
-  eta: string;
-  transportModeValue?: string;
-};
-
-
 const FreightLynkDashboard = () => {
  const router = useRouter();
 
-   // Use the same confirmedBookings logic as the Bookings page
-   const [confirmedBookings, setConfirmedBookings] = useState<any[]>([]);
-
-   const loadBookings = () => {
-     if (typeof window !== 'undefined') {
-       try {
-         const data = localStorage.getItem('confirmedBookings');
-         const bookings = data ? JSON.parse(data) : [];
-         setConfirmedBookings(bookings);
-       } catch (error) {
-         setConfirmedBookings([]);
-       }
-     }
-   };
+   // Use the Zustand store for bookings
+   const { confirmedBookings, isLoading, error, loadBookings } = useBookingStore();
 
    useEffect(() => {
      loadBookings();
-     window.addEventListener('storage', loadBookings);
-     const interval = setInterval(loadBookings, 1000);
-     return () => {
-       window.removeEventListener('storage', loadBookings);
-       clearInterval(interval);
-     };
-   }, []);
+   }, [loadBookings]);
 
   // Handle navigation to the bookings page
   const handleSeeAllBookings = () => {

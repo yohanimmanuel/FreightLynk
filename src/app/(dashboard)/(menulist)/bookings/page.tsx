@@ -10,66 +10,14 @@ import { CalendarBooking } from '@/store/types';
 import { useAuthStore, UserRole } from '@/store/authStore';
 import ProtectedRoute from '@/app/components/ProtectedRoute';
 
-// Booking type (should match BookingTable)
-type Booking = {
-  id: string;
-  shipmentId?: string;
-  poNumber: string;
-  productName: string;
-  hsCode: string;
-  consignee: string;
-  shipper: string;
-  origin: string;
-  destination: string;
-  shipmentType: string;
-  containerType: string;
-  incoterms: string;
-  cargoReadyDate: string;
-  dangerousGoods: boolean;
-  weight: string;
-  volume: string;
-  pieces: number;
-  status: string;
-  eta: string;
-  transportModeValue?: string;
-};
-
 const ClientUI = () => {
   const router = useRouter();
-  const [confirmedBookings, setConfirmedBookings] = useState<Booking[]>([]);
+  const { confirmedBookings, isLoading, error, loadBookings } = useBookingStore();
   
-  // Load confirmed bookings from localStorage
-  const loadBookings = () => {
-    if (typeof window !== 'undefined') {
-      try {
-        const data = localStorage.getItem('confirmedBookings');
-        const bookings = data ? JSON.parse(data) : [];
-        console.log('Loading bookings from localStorage:', bookings);
-        setConfirmedBookings(bookings);
-      } catch (error) {
-        console.error('Error loading bookings:', error);
-        setConfirmedBookings([]);
-      }
-    }
-  };
-
-  // Load bookings on mount and when storage changes
+  // Load bookings on mount
   useEffect(() => {
-    // Initial load
     loadBookings();
-
-    // Add event listeners
-    window.addEventListener('storage', loadBookings);
-
-    // Set up interval to check localStorage every second
-    const interval = setInterval(loadBookings, 1000);
-
-    // Cleanup
-    return () => {
-      window.removeEventListener('storage', loadBookings);
-      clearInterval(interval);
-    };
-  }, []);
+  }, [loadBookings]);
   
   const handleExportCSV = () => {
     // In a real app, this would generate and download a CSV file
@@ -86,19 +34,18 @@ const ClientUI = () => {
   };
 
   // Remove bookings handler
-  const handleRemoveBookings = (ids: string[]) => {
-    if (typeof window !== 'undefined') {
-      try {
-        const data = localStorage.getItem('confirmedBookings');
-        const bookings = data ? JSON.parse(data) : [];
-        const updated = bookings.filter((b: Booking) => !ids.includes(b.id));
-        localStorage.setItem('confirmedBookings', JSON.stringify(updated));
-        setConfirmedBookings(updated);
-        console.log('Removed bookings:', ids);
-        console.log('Updated bookings:', updated);
-      } catch (error) {
-        console.error('Error removing bookings:', error);
+  const handleRemoveBookings = async (ids: string[]) => {
+    try {
+      const { deleteExistingBooking } = useBookingStore.getState();
+      
+      // Delete each booking via API
+      for (const id of ids) {
+        await deleteExistingBooking(id);
       }
+      
+      console.log('Removed bookings:', ids);
+    } catch (error) {
+      console.error('Error removing bookings:', error);
     }
   };
 
@@ -119,6 +66,24 @@ const ClientUI = () => {
     ...b,
     transportMode: b.transportModeValue || '',
   }));
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-gray-600">Loading bookings...</div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-red-600">Error loading bookings: {error}</div>
+      </div>
+    );
+  }
 
   return (
     <div>
