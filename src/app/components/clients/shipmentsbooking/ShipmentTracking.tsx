@@ -175,6 +175,36 @@ const ShipmentTracking: React.FC = () => {
     }
   };
 
+  // Calculate progress based on milestone status
+  const calculateProgressFromMilestones = (milestones: any[]): number => {
+    if (!Array.isArray(milestones) || milestones.length === 0) {
+      return 0; // No milestones = 0% progress
+    }
+
+    const latestMilestone = milestones[milestones.length - 1];
+    const step = latestMilestone.step;
+
+    // Define progress percentages based on milestone steps
+    switch (step) {
+      case 'Quote Requested':
+        return 0;
+      case 'Quote Received':
+        return 10;
+      case 'Booking Confirmed':
+        return 25;
+      case 'Cargo Ready':
+        return 40;
+      case 'In Transit':
+        return 60;
+      case 'Arrived at Destination':
+        return 80;
+      case 'Delivered':
+        return 100;
+      default:
+        return 0;
+    }
+  };
+
 
   return (
     <div className="">
@@ -401,12 +431,12 @@ const ShipmentTracking: React.FC = () => {
                         </div>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2 relative">
-                        <div className={`h-2 rounded-full bg-blue-500`} style={{ width: `${selectedShipment.progress}%` }}></div>
+                        <div className={`h-2 rounded-full bg-blue-500`} style={{ width: `${calculateProgressFromMilestones(selectedShipment.milestones || [])}%` }}></div>
                         {/* Progress circle */}
                         <div
                           className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-white bg-blue-500 shadow"
                           style={{
-                            left: `calc(${selectedShipment.progress}% - 8px)`
+                            left: `calc(${calculateProgressFromMilestones(selectedShipment.milestones || [])}% - 8px)`
                           }}
                         ></div>
                       </div>
