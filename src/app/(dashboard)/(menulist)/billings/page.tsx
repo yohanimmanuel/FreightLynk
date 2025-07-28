@@ -12,7 +12,7 @@ const ClientUI = () => {
   const router = useRouter();
   const handleViewDetails = (item: any) => {
     useBillingStore.getState().setSelectedBilling(item);
-    router.push('/billings/details');
+    router.push(`/billings/details?id=${item.id}`);
   };
   return (
     <div className="px-2 py-2 md:px-4 md:py-4">

@@ -1,8 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { useBillingStore } from '@/store/billingData';
+import { formatBillingForDisplay } from '@/utils/billingApi';
 
-const BillingDetailsPage = ({ billingData, onBack }: { billingData: any, onBack: () => void }) => {
+const BillingDetailsPage = ({ billingId, onBack }: { billingId: string, onBack: () => void }) => {
   const [expandedCharges, setExpandedCharges] = useState(true);
+  const { selectedBilling, setSelectedBilling, loadBillings } = useBillingStore();
+  
+  // Load billing data if not already loaded
+  useEffect(() => {
+    if (!selectedBilling || selectedBilling.id !== billingId) {
+      loadBillings();
+    }
+  }, [billingId, selectedBilling, loadBillings]);
+  
+  // Find the billing data for the given ID
+  const billingData = selectedBilling?.id === billingId ? selectedBilling : null;
 
   if (!billingData) return null;
 
@@ -62,7 +75,7 @@ const BillingDetailsPage = ({ billingData, onBack }: { billingData: any, onBack:
               <div className="space-y-3">
                 <div>
                   <label className="text-xs font-medium text-gray-500">Booking ID</label>
-                  <p className="text-sm font-semibold text-[#007bff]">{billingData.bookingId}</p>
+                  <p className="text-sm font-semibold text-[#007bff]">{billingData.booking_id}</p>
                 </div>
                 <div>
                   <label className="text-xs font-medium text-gray-500">Issuer</label>
@@ -73,22 +86,22 @@ const BillingDetailsPage = ({ billingData, onBack }: { billingData: any, onBack:
               <div className="space-y-3">
                 <div>
                   <label className="text-xs font-medium text-gray-500">Billing Date</label>
-                  <p className="text-sm text-gray-900">{formatDate(billingData.billingDate)}</p>
+                  <p className="text-sm text-gray-900">{formatDate(billingData.billing_date)}</p>
                 </div>
                 <div>
                   <label className="text-xs font-medium text-gray-500">Due Date</label>
-                  <p className="text-sm text-gray-900">{formatDate(billingData.dueDate)}</p>
+                  <p className="text-sm text-gray-900">{formatDate(billingData.due_date)}</p>
                 </div>
               </div>
               {/* Column 3: Invoice Number + Payment Method */}
               <div className="space-y-3">
                 <div>
                   <label className="text-xs font-medium text-gray-500">Invoice Number</label>
-                  <p className="text-sm text-gray-900">{billingData.invoiceNumber}</p>
+                  <p className="text-sm text-gray-900">{billingData.invoice_number}</p>
                 </div>
                 <div>
                   <label className="text-xs font-medium text-gray-500">Payment Method</label>
-                  <p className="text-sm text-gray-900">{billingData.paymentMethod}</p>
+                  <p className="text-sm text-gray-900">{billingData.payment_method}</p>
                 </div>
               </div>
               {/* Column 4: Status + Amount Due */}
@@ -104,7 +117,7 @@ const BillingDetailsPage = ({ billingData, onBack }: { billingData: any, onBack:
                 </div>
                 <div>
                   <label className="text-xs font-medium text-gray-500">Amount Due</label>
-                  <p className={`text-lg font-bold ${billingData.status === 'Paid' ? 'text-green-500' : 'text-red-600'}`}>{formatCurrency(billingData.amountDue)}</p>
+                  <p className={`text-lg font-bold ${billingData.status === 'Paid' ? 'text-green-500' : 'text-red-600'}`}>{formatCurrency(billingData.amount_due)}</p>
                 </div>
               </div>
             </div>
@@ -164,7 +177,7 @@ const BillingDetailsPage = ({ billingData, onBack }: { billingData: any, onBack:
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-500">Invoice Notes</label>
-                <p className="text-sm text-gray-900 mt-1">{billingData.invoiceNotes || 'No additional notes'}</p>
+                <p className="text-sm text-gray-900 mt-1">{billingData.invoice_notes || 'No additional notes'}</p>
               </div>
             </div>
           </div>

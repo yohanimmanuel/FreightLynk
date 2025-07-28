@@ -15,26 +15,13 @@ const FreightLynkBilling: React.FC<BillingTableProps> = ({ onViewDetails }) => {
   const statusButtonRef = useRef(null);
   const statusDropdownRef = useRef(null);
 
-  // Get billing data and setBillings from store
-  const billings = useBillingStore((state) => state.billings);
-  const setBillings = useBillingStore((state) => state.setBillings);
+  // Get billing data and actions from store
+  const { billings, loadBillings, isLoading, error } = useBillingStore();
 
   // Fetch billing data from backend when component mounts
   useEffect(() => {
-    const fetchBillings = async () => {
-      try {
-        // Replace this with your actual API call
-        const response = await fetch('/api/billings');
-        const data = await response.json();
-        setBillings(data);
-      } catch (error) {
-        console.error('Failed to fetch billings:', error);
-        // Handle error appropriately (show error message, etc.)
-      }
-    };
-
-    fetchBillings();
-  }, [setBillings]);
+    loadBillings();
+  }, [loadBillings]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -59,7 +46,7 @@ const FreightLynkBilling: React.FC<BillingTableProps> = ({ onViewDetails }) => {
 
   // Filter and search logic
   const filteredData = billings.filter(item => {
-    const matchesSearch = item.bookingId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = item.booking_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          item.issuer.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'All Status' || item.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -85,12 +72,12 @@ const FreightLynkBilling: React.FC<BillingTableProps> = ({ onViewDetails }) => {
     if (onViewDetails) {
       onViewDetails(item);
     } else {
-      console.log('View billing details for:', item.bookingId);
+      console.log('View billing details for:', item.booking_id);
     }
   };
 
   const handlePay = (item: any) => {
-    console.log('Payment process for:', item.bookingId);
+    console.log('Payment process for:', item.booking_id);
     // Payment logic will be implemented later
   };
 
@@ -210,16 +197,16 @@ const FreightLynkBilling: React.FC<BillingTableProps> = ({ onViewDetails }) => {
               {currentData.map((item) => (
                 <tr key={item.id} className="text-xs">
                   <td className="py-4 px-4">
-                    <span className="font-medium text-[#007bff]">{item.bookingId}</span>
+                    <span className="font-medium text-[#007bff]">{item.booking_id}</span>
                   </td>
                   <td className="py-4 px-4">
                     <span className="text-gray-900">{item.issuer}</span>
                   </td>
                   <td className="py-4 px-4">
-                    <span className="text-gray-700">{formatDate(item.billingDate)}</span>
+                    <span className="text-gray-700">{formatDate(item.billing_date)}</span>
                   </td>
                   <td className="py-4 px-4">
-                    <span className="font-medium text-gray-900">{formatCurrency(item.amountDue)}</span>
+                    <span className="font-medium text-gray-900">{formatCurrency(item.amount_due)}</span>
                   </td>
                   <td className="py-4 px-4">
                     <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(item.status)}`}>{item.status}</span>
@@ -254,7 +241,7 @@ const FreightLynkBilling: React.FC<BillingTableProps> = ({ onViewDetails }) => {
           {currentData.map((item) => (
             <div key={item.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 flex flex-col gap-2">
               <div className="flex justify-between items-center">
-                <span className="font-medium text-[#007bff]">{item.bookingId}</span>
+                <span className="font-medium text-[#007bff]">{item.booking_id}</span>
                 <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(item.status)}`}>{item.status}</span>
               </div>
               <div className="flex flex-col gap-1 mt-2">
@@ -264,11 +251,11 @@ const FreightLynkBilling: React.FC<BillingTableProps> = ({ onViewDetails }) => {
                 </div>
                 <div className="flex justify-between text-xs">
                   <span className="text-gray-500">Billing Date</span>
-                  <span className="text-gray-900">{formatDate(item.billingDate)}</span>
+                  <span className="text-gray-900">{formatDate(item.billing_date)}</span>
                 </div>
                 <div className="flex justify-between text-xs">
                   <span className="text-gray-500">Amount Due</span>
-                  <span className="text-gray-900">{formatCurrency(item.amountDue)}</span>
+                  <span className="text-gray-900">{formatCurrency(item.amount_due)}</span>
                 </div>
               </div>
               <div className="flex gap-2 mt-2">

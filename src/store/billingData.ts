@@ -1,6 +1,7 @@
 // billingData.ts - shared billing data and store for BillingTable and BillingDetails
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { fetchBillings, createBilling, updateBilling, deleteBilling, formatBillingForAPI, formatBillingForDisplay, type Billing } from '@/utils/billingApi';
 
 // Define the billing data types
 export interface BillingCharge {
@@ -60,39 +61,89 @@ const mockBilling: BillingItem = {
 
 // Zustand store
 export interface BillingStore {
-  billings: BillingItem[];
-  selectedBilling: BillingItem | null;
-  setSelectedBilling: (billing: BillingItem) => void;
+  // Backend data
+  billings: Billing[];
+  selectedBilling: Billing | null;
+  isLoading: boolean;
+  error: string | null;
+  
+  // Actions
+  setSelectedBilling: (billing: Billing) => void;
   clearSelectedBilling: () => void;
-  updateBilling: (updatedBilling: BillingItem) => void;
-  addBilling: (newBilling: BillingItem) => void;
-  deleteBilling: (id: number) => void;
-  setBillings: (billings: BillingItem[]) => void;
+  loadBillings: () => Promise<void>;
+  createNewBilling: (billingData: any) => Promise<{ success: boolean; id: string; invoiceNumber: string }>;
+  updateExistingBilling: (id: string, billingData: any) => Promise<void>;
+  deleteExistingBilling: (id: string) => Promise<void>;
+  setBillings: (billings: Billing[]) => void;
+  refreshBillings: () => Promise<void>;
 }
 
 // Create the store
 export const useBillingStore = create<BillingStore>()(
   persist(
-    (set) => ({
-      billings: [mockBilling], // Initialize with single mock entry
+    (set, get) => ({
+      billings: [],
       selectedBilling: null,
-      setSelectedBilling: (billing: BillingItem) => set({ selectedBilling: billing }),
+      isLoading: false,
+      error: null,
+      
+      setSelectedBilling: (billing: Billing) => set({ selectedBilling: billing }),
       clearSelectedBilling: () => set({ selectedBilling: null }),
-      updateBilling: (updatedBilling: BillingItem) => 
-        set((state) => ({
-          billings: state.billings.map(billing => 
-            billing.id === updatedBilling.id ? updatedBilling : billing
-          )
-        })),
-      addBilling: (newBilling: BillingItem) => 
-        set((state) => ({
-          billings: [...state.billings, newBilling]
-        })),
-      deleteBilling: (id: number) => 
-        set((state) => ({
-          billings: state.billings.filter(billing => billing.id !== id)
-        })),
-      setBillings: (billings: BillingItem[]) => set({ billings })
+      
+      loadBillings: async () => {
+        set({ isLoading: true, error: null });
+        try {
+          const billings = await fetchBillings();
+          set({ billings, isLoading: false });
+        } catch (error: any) {
+          set({ error: error.message, isLoading: false });
+        }
+      },
+      
+      createNewBilling: async (billingData: any) => {
+        set({ isLoading: true, error: null });
+        try {
+          const formattedData = formatBillingForAPI(billingData);
+          const result = await createBilling(formattedData);
+          await get().loadBillings(); // Refresh the list
+          set({ isLoading: false });
+          return result;
+        } catch (error: any) {
+          set({ error: error.message, isLoading: false });
+          throw error;
+        }
+      },
+      
+      updateExistingBilling: async (id: string, billingData: any) => {
+        set({ isLoading: true, error: null });
+        try {
+          const formattedData = formatBillingForAPI(billingData);
+          await updateBilling(id, formattedData);
+          await get().loadBillings(); // Refresh the list
+          set({ isLoading: false });
+        } catch (error: any) {
+          set({ error: error.message, isLoading: false });
+          throw error;
+        }
+      },
+      
+      deleteExistingBilling: async (id: string) => {
+        set({ isLoading: true, error: null });
+        try {
+          await deleteBilling(id);
+          await get().loadBillings(); // Refresh the list
+          set({ isLoading: false });
+        } catch (error: any) {
+          set({ error: error.message, isLoading: false });
+          throw error;
+        }
+      },
+      
+      setBillings: (billings: Billing[]) => set({ billings }),
+      
+      refreshBillings: async () => {
+        await get().loadBillings();
+      }
     }),
     { 
       name: 'billing-storage'

@@ -1,127 +1,93 @@
 'use client';
 
-import BillingDetails from "@/app/components/clients/quotefinancing/BillingDetails";
+import React, { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
+import BillingDetailsPage from '@/app/components/clients/quotefinancing/BillingDetails';
 import { useBillingStore } from '@/store/billingData';
-import { Download, CreditCard } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useAuthStore, UserRole } from '@/store/authStore';
-import ProtectedRoute from '@/app/components/ProtectedRoute';
 
-const ClientUI = () => {
-  const selectedBilling = useBillingStore((state: any) => state.selectedBilling);
+const BillingDetailsUI = () => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const billingId = searchParams.get('id');
+  const [isLoading, setIsLoading] = useState(true);
+  
+  const { billings, loadBillings, setSelectedBilling } = useBillingStore();
 
-  if (!selectedBilling) return null;
+  useEffect(() => {
+    if (billingId) {
+      loadBillings().then(() => {
+        const billing = billings.find(b => b.id === billingId);
+        if (billing) {
+          setSelectedBilling(billing);
+        }
+        setIsLoading(false);
+      });
+    }
+  }, [billingId, loadBillings, billings, setSelectedBilling]);
 
-  const handleDownloadInvoice = () => {
-    console.log('Downloading invoice PDF for:', selectedBilling.bookingId);
-    // PDF download logic will be implemented later
+  const handleBack = () => {
+    router.push('/billings');
   };
 
-  const handlePayNow = () => {
-    console.log('Initiating payment for:', selectedBilling.bookingId);
-    // Payment logic will be implemented later
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading billing details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!billingId) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-gray-600">No billing ID provided</p>
+          <button
+            onClick={handleBack}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Back to Billings
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-4">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white mb-2">
-        <div className="w-full">
-          <div className="flex items-center justify-between py-2">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-3">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Invoice Details</h2>
-                  <p className="text-sm text-gray-600">{selectedBilling.bookingId}</p>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={handleDownloadInvoice}
-                className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                <span>Download Invoice</span>
-              </button>
-              {(selectedBilling.status === 'Unpaid' || selectedBilling.status === 'Overdue' || selectedBilling.status === 'Failed') && (
-                <button
-                  onClick={handlePayNow}
-                  className="flex items-center space-x-2 px-4 py-2 text-sm bg-[#007bff] text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <CreditCard className="w-4 h-4" />
-                  <span>Pay Now</span>
-                </button>
-              )}
-            </div>
+      <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={handleBack}
+              className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>Back to Billings</span>
+            </button>
+          </div>
+          <div className="flex items-center space-x-4">
+            <button className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors">
+              Download Invoice
+            </button>
+            <button className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+              Pay Now
+            </button>
           </div>
         </div>
       </div>
-      <BillingDetails billingData={selectedBilling} onBack={() => {}} />
+
+      {/* Main Content */}
+      <div className="max-w-4xl mx-auto px-6 py-8">
+        <BillingDetailsPage billingId={billingId} onBack={handleBack} />
+      </div>
     </div>
   );
 };
 
-const ForwarderUI = () => {
-  return (
-    <div>
-      <h2>Forwarder</h2>
-      <p>Coming Soon...</p>
-    </div>
-  );
-};
-
-const LogisticsProviderUI = () => {
-  return (
-    <div>
-      <h2>Logistics Provider Invoice Interface</h2>
-      <p>Coming Soon...</p>
-    </div>
-  );
-};
-
-const AdminUI = () => {
-  return (
-    <div>
-      <h2>Admin Invoice Interface</h2>
-      <p>Coming Soon...</p>
-    </div>
-  );
-};
-
-const BillingDetailsPage = () => {
-  const { user } = useAuthStore();
-  const [roleBasedUI, setRoleBasedUI] = useState<React.ReactNode | null>(null);
-
-  useEffect(() => {
-    if (!user) return;
-
-    switch (user.role) {
-      case UserRole.ADMIN:
-        setRoleBasedUI(<AdminUI />);
-        break;
-      case UserRole.CLIENT:
-        setRoleBasedUI(<ClientUI />);
-        break;
-      case UserRole.FORWARDER:
-        setRoleBasedUI(<ForwarderUI />);
-        break;
-      case UserRole.LOGISTICS_PROVIDER:
-        setRoleBasedUI(<LogisticsProviderUI />);
-        break;
-      default:
-        setRoleBasedUI(<div>Access denied</div>);
-    }
-  }, [user]);
-
-  return (
-    <ProtectedRoute 
-      allowedRoles={[UserRole.ADMIN, UserRole.CLIENT, UserRole.FORWARDER, UserRole.LOGISTICS_PROVIDER]} 
-      requiredPermissions={['view_own_billings', 'manage_own_account']}
-    >
-      {roleBasedUI}
-    </ProtectedRoute>
-  );
-};
-
-export default BillingDetailsPage;
+export default BillingDetailsUI;
