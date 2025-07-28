@@ -21,7 +21,7 @@ const FreightLynkBilling: React.FC<BillingTableProps> = ({ onViewDetails }) => {
   // Fetch billing data from backend when component mounts
   useEffect(() => {
     loadBillings();
-  }, [loadBillings]);
+  }, []); // Empty dependency array - only run once on mount
 
   // Close dropdown on outside click
   useEffect(() => {

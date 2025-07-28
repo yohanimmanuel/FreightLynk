@@ -60,7 +60,7 @@ const BillingDetailsUI = () => {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <div className="px-6 py-4">
+      <div className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
@@ -75,7 +75,7 @@ const BillingDetailsUI = () => {
             <button className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors">
               Download Invoice
             </button>
-            <button className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+            <button className="px-4 py-2 text-sm bg-[#007bff] text-white rounded-md hover:bg-blue-700 transition-colors">
               Pay Now
             </button>
           </div>
