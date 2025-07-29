@@ -11,17 +11,27 @@ import PricingInvoiceForm from '@/app/components/forwarder/quotefinancing/Pricin
 const ClientUI = () => {
   const router = useRouter();
   const setBookingSubmitted = useBookingStore(state => state.setBookingSubmitted);
+  const bookingSubmitted = useBookingStore(state => state.bookingSubmitted);
 
   const handleSubmitBooking = () => {
     router.push('/bookings/review');
   };
 
   useEffect(() => {
+    // If booking is submitted, redirect to submitted page
+    if (bookingSubmitted) {
+      router.replace('/bookings/submitted');
+      return;
+    }
+
+    // Reset booking state when starting a new booking
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem('bookingSubmitted');
+      localStorage.removeItem('bookingSubmitted');
+      localStorage.removeItem('bookingFlNumber');
     }
     setBookingSubmitted(false);
-  }, [setBookingSubmitted]);
+  }, [setBookingSubmitted, bookingSubmitted, router]);
 
   return (
     <div>

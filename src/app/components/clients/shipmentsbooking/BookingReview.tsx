@@ -39,6 +39,7 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking }) => {
   const fetchPurchaseOrders = usePOStore(state => state.fetchPurchaseOrders);
   const fetchPODetails = usePOStore(state => state.fetchPODetails);
   const [shipmentName, setShipmentName] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Load purchase orders on component mount
   useEffect(() => {
@@ -114,7 +115,12 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking }) => {
 
   // When confirm button is clicked
   const handleConfirmClick = async () => {
+    if (isSubmitting) return; // Prevent double submission
+    
     try {
+      setIsSubmitting(true);
+      console.log('Confirm button clicked, starting booking creation...');
+      
       // Generate FL number if not exists
       if (!flNumber) {
         const bookingId = 'FLYNK-' + Math.floor(10000 + Math.random() * 90000);
@@ -128,10 +134,23 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking }) => {
       const result = await createNewBooking(formData, selectedPOs);
       console.log('Booking created successfully:', result);
 
+      // Set booking as submitted to prevent going back to review page
+      setBookingSubmitted(true);
+      console.log('Booking submitted state set to true');
+      
+      // Also store in localStorage to persist across page refreshes
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('bookingSubmitted', 'true');
+        localStorage.setItem('bookingFlNumber', result.flNumber || '');
+        console.log('Booking state saved to localStorage');
+      }
+
       // Navigate to confirmation page
+      console.log('Calling onConfirmBooking to navigate to confirmation page');
       onConfirmBooking && onConfirmBooking();
     } catch (error) {
       console.error('Error creating booking:', error);
+      setIsSubmitting(false);
       // You might want to show an error message to the user here
     }
   };
@@ -419,10 +438,11 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking }) => {
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden p-4 flex flex-col gap-2">
             <div className="font-semibold text-sm text-gray-900 mb-2">New Shipment</div>
             <button 
-              className="w-full px-6 py-3 text-sm bg-[#007bff] text-white font-semibold rounded-lg hover:bg-blue-700 mb-2"
+              className="w-full px-6 py-3 text-sm bg-[#007bff] text-white font-semibold rounded-lg hover:bg-blue-700 mb-2 disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={handleConfirmClick}
+              disabled={isSubmitting}
             >
-              Confirm Booking
+              {isSubmitting ? 'Creating Booking...' : 'Confirm Booking'}
             </button>
             <label className="flex items-center gap-2 text-xs text-gray-700">
               <input type="checkbox" className="rounded" />

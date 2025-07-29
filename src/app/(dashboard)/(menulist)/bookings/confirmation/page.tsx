@@ -1,14 +1,36 @@
 'use client';
 
 import BookingConfirm from "@/app/components/clients/shipmentsbooking/BookingConfirm";
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuthStore, UserRole } from '@/store/authStore';
+import { useBookingStore } from '@/store/bookingStore';
 import ProtectedRoute from '@/app/components/ProtectedRoute';
 
 const ClientUI = () => {
   const searchParams = useSearchParams();
   const bookingId = searchParams.get('id') || undefined;
+  const router = useRouter();
+  const bookingSubmitted = useBookingStore(state => state.bookingSubmitted);
+
+  console.log('Confirmation page loaded with:', { bookingId, bookingSubmitted });
+
+  // Prevent going back to review page after booking submission
+  useEffect(() => {
+    const handlePopState = () => {
+      if (bookingSubmitted) {
+        // If user tries to go back and booking is submitted, redirect to submitted page
+        router.replace('/bookings/submitted');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [bookingSubmitted, router]);
+
   return (
     <div>
       <BookingConfirm bookingId={bookingId} />

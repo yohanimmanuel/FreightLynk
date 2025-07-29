@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import BookingReview from "@/app/components/clients/shipmentsbooking/BookingReview";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useBookingStore } from '@/store/bookingStore';
 import { useAuthStore, UserRole } from '@/store/authStore';
 import ProtectedRoute from '@/app/components/ProtectedRoute';
@@ -11,17 +11,98 @@ const ClientUI = () => {
   const router = useRouter();
   const flNumber = useBookingStore(state => state.flNumber);
   const bookingSubmitted = useBookingStore(state => state.bookingSubmitted);
+  const formData = useBookingStore(state => state.formData);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Check if booking is already submitted
+    // Check if booking is already submitted, redirect to submitted page
     if (bookingSubmitted) {
+      console.log('Booking already submitted, redirecting to submitted page');
       router.replace('/bookings/submitted');
       return;
     }
+
+    // Also check localStorage for booking submission
+    if (typeof window !== 'undefined') {
+      const localStorageSubmitted = localStorage.getItem('bookingSubmitted');
+      if (localStorageSubmitted === 'true') {
+        console.log('Booking submitted detected in localStorage, redirecting');
+        router.replace('/bookings/submitted');
+        return;
+      }
+    }
+
+    // Check if there's no form data, redirect to create page
+    if (!formData || Object.keys(formData).length === 0) {
+      console.log('No form data, redirecting to create page');
+      router.replace('/bookings/create');
+      return;
+    }
+  }, [router, bookingSubmitted, formData]);
+
+  // Additional check on component mount
+  useEffect(() => {
+    // Check if there's a booking ID in URL (user trying to access existing booking)
+    const bookingId = searchParams.get('id');
+    if (bookingId) {
+      console.log('Booking ID in URL detected, redirecting to confirmation page');
+      router.replace(`/bookings/confirmation?id=${bookingId}`);
+      return;
+    }
+  }, [router, searchParams]);
+
+  // Prevent going back to this page after booking submission
+  useEffect(() => {
+    const handlePopState = () => {
+      // Check localStorage for booking submission when user tries to go back
+      if (typeof window !== 'undefined') {
+        const localStorageSubmitted = localStorage.getItem('bookingSubmitted');
+        if (localStorageSubmitted === 'true') {
+          console.log('Booking submitted detected in localStorage during popstate, redirecting');
+          router.replace('/bookings/submitted');
+        }
+      }
+    };
+
+    // Also check if bookingSubmitted is true in current state
+    if (bookingSubmitted) {
+      console.log('Booking submitted detected in state during popstate, redirecting');
+      router.replace('/bookings/submitted');
+    }
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
   }, [router, bookingSubmitted]);
 
+  // Block browser back button more aggressively
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check localStorage for booking submission when user tries keyboard navigation
+      if (typeof window !== 'undefined') {
+        const localStorageSubmitted = localStorage.getItem('bookingSubmitted');
+        if (localStorageSubmitted === 'true' && (e.key === 'Backspace' || e.altKey)) {
+          e.preventDefault();
+          router.replace('/bookings/submitted');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [router]);
+
   const handleConfirmBooking = () => {
-    router.push('/bookings/confirmation');
+    console.log('handleConfirmBooking called, navigating to confirmation page');
+    // Add a small delay to ensure state is updated
+    setTimeout(() => {
+      router.push('/bookings/confirmation');
+    }, 100);
   };
 
   return (

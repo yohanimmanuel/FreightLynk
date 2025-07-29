@@ -7,6 +7,15 @@ import ProtectedRoute from '@/app/components/ProtectedRoute';
 
 const ClientUI = () => {
   const router = useRouter();
+  
+  // Clear booking state when user reaches submitted page
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('bookingSubmitted');
+      localStorage.removeItem('bookingFlNumber');
+    }
+  }, []);
+  
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white">
       <div className="bg-white border border-gray-200 rounded-lg p-8 shadow-md flex flex-col items-center">

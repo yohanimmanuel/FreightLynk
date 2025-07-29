@@ -190,46 +190,18 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
 
   useEffect(() => {
     if (bookingSubmitted) {
-      // Create booking via API
-      const createBookingAsync = async () => {
-        try {
-          const { createNewBooking } = useBookingStore.getState();
-          const result = await createNewBooking(formData, selectedPOs);
-          
-          console.log('Successfully created booking:', result);
-          
-          // Update FL number with the one from API
-          if (result.flNumber) {
-            setFlNumber(result.flNumber);
-          }
-          
-          // Clear booking data from sessionStorage
-          if (typeof window !== 'undefined') {
-            sessionStorage.removeItem('bookingData');
-          }
-          
-          // Navigate to submitted page
-          router.replace('/bookings/submitted');
-          
-          // Clear state after navigation
-          setTimeout(() => {
-            setFormData({});
-            setSelectedPOs([]);
-            setTradeRole('shipper');
-            setFlNumber('');
-            setBookingSubmitted(false);
-          }, 100);
-        } catch (error) {
-          console.error('Error creating booking:', error);
-          // Handle error - maybe show error message to user
-          // For now, still redirect but could show error state
-          router.replace('/bookings/submitted');
-        }
-      };
-
-      createBookingAsync();
+      // Booking is already created in BookingReview component
+      // Don't clear bookingSubmitted state - keep it to prevent going back
+      // Only clear other form data
+      setTimeout(() => {
+        setFormData({});
+        setSelectedPOs([]);
+        setTradeRole('shipper');
+        setFlNumber('');
+        // Keep bookingSubmitted = true to prevent going back to review page
+      }, 100);
     }
-  }, [bookingSubmitted, router, formData, selectedPOs, setFormData, setSelectedPOs, setTradeRole, setFlNumber, setBookingSubmitted]);
+  }, [bookingSubmitted, setFormData, setSelectedPOs, setTradeRole, setFlNumber]);
 
   // Check if this is a new booking or viewing an existing one
   useEffect(() => {

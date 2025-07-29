@@ -28,6 +28,13 @@ const ClientUI = () => {
     const bookingStore = useBookingStore.getState();
     bookingStore.clearBooking();
     bookingStore.setBookingSubmitted(false);
+    
+    // Clear localStorage when starting new booking
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('bookingSubmitted');
+      localStorage.removeItem('bookingFlNumber');
+    }
+    
     // Debug log to confirm state is empty
     console.log('After clearBooking:', bookingStore.formData, bookingStore.selectedPOs, bookingStore.bookingSubmitted);
     router.push('/bookings/create');

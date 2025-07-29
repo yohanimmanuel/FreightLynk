@@ -49,6 +49,7 @@ import {
 } from 'lucide-react';
 
 import { useMenuContext } from '@/app/(dashboard)/layout';
+import { useBookingStore } from '@/store/bookingStore';
 
 type MenuItem = {
   icon: any;
@@ -408,16 +409,44 @@ const Menu = () => {
               {/* Create Booking Button - Show for all client section pages */}
               {isClientSection && (
                 isCollapsed ? (
-                  <Link
-                    href="/bookings/create?new=1"
+                  <button
+                    onClick={() => {
+                      // Clear booking state when starting new booking from sidebar
+                      const bookingStore = useBookingStore.getState();
+                      bookingStore.clearBooking();
+                      bookingStore.setBookingSubmitted(false);
+                      
+                      // Clear localStorage
+                      if (typeof window !== 'undefined') {
+                        localStorage.removeItem('bookingSubmitted');
+                        localStorage.removeItem('bookingFlNumber');
+                      }
+                      
+                      // Navigate to create page
+                      window.location.href = '/bookings/create';
+                    }}
                     className="flex items-center justify-center p-2 rounded-lg bg-[#007bff] text-white hover:bg-blue-600 transition-colors duration-200 shadow-sm"
                     title="Create Booking"
                   >
                     <Plus size={22} />
-                  </Link>
+                  </button>
                 ) : (
-                  <Link
-                    href="/bookings/create?new=1"
+                  <button
+                    onClick={() => {
+                      // Clear booking state when starting new booking from sidebar
+                      const bookingStore = useBookingStore.getState();
+                      bookingStore.clearBooking();
+                      bookingStore.setBookingSubmitted(false);
+                      
+                      // Clear localStorage
+                      if (typeof window !== 'undefined') {
+                        localStorage.removeItem('bookingSubmitted');
+                        localStorage.removeItem('bookingFlNumber');
+                      }
+                      
+                      // Navigate to create page
+                      window.location.href = '/bookings/create';
+                    }}
                     className="flex items-center justify-center px-4 py-2.5 rounded-lg
                              bg-[#007bff] text-white font-medium w-full
                              hover:bg-blue-600 transition-colors duration-200
@@ -425,7 +454,7 @@ const Menu = () => {
                   >
                     <Plus size={18} className="mr-2" />
                     Create Booking
-                  </Link>
+                  </button>
                 )
               )}
               {i.items
