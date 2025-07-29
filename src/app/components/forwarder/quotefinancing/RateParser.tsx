@@ -17,6 +17,7 @@ interface HeaderMappingInfo {
 interface ParsedRate {
   [key: string]: any;
   id: number;
+  mode?: string;
   provider?: string;
   agent?: string;
   origin?: string;
@@ -199,11 +200,11 @@ const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose, mode = 
           const normalizedHeader = header.trim().toLowerCase();
           const normalizedStdKey = stdKey.trim(); // preserve camelCase
           const actualKey = Object.keys(row).find(k => k.trim().toLowerCase() === normalizedHeader);
-          if (actualKey) norm[normalizedStdKey] = row[actualKey];
+          if (actualKey) {
+            norm[normalizedStdKey] = row[actualKey];
+          }
         }
       }
-      // Debug log: print normalized object for each row
-      if (index === 0) console.log('DEBUG: Normalized row:', norm);
       rates.push({
         ...norm,
         id: index,
@@ -240,8 +241,53 @@ const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose, mode = 
   };
 
   const convertToRateFormat = (parsedRate: ParsedRate): Rate => {
+    // Convert user input to standardized tab modes
+    let standardizedMode = parsedRate.mode || mode;
+    
+    // Map common mode variations to standardized tab modes
+    const modeMapping: Record<string, string> = {
+      // Ocean/FCL variations
+      'OCEAN': 'FCL',
+      'OCEAN FREIGHT': 'FCL',
+      'FULL CONTAINER': 'FCL',
+      'FULL CONTAINER LOAD': 'FCL',
+      'FCL': 'FCL',
+      'FULL': 'FCL',
+      
+      // LCL variations
+      'LCL': 'LCL',
+      'LESS THAN CONTAINER': 'LCL',
+      'LESS THAN CONTAINER LOAD': 'LCL',
+      'PARTIAL': 'LCL',
+      'LESS': 'LCL',
+      
+      // Air variations
+      'AIR': 'AIR',
+      'AIR FREIGHT': 'AIR',
+      'AIR CARGO': 'AIR',
+      'AIRPLANE': 'AIR',
+      'AIRCRAFT': 'AIR',
+      
+      // FTL variations
+      'FTL': 'FTL',
+      'FULL TRUCK': 'FTL',
+      'FULL TRUCKLOAD': 'FTL',
+      'TRUCK FULL': 'FTL',
+      
+      // LTL variations
+      'LTL': 'LTL',
+      'LESS THAN TRUCK': 'LTL',
+      'LESS THAN TRUCKLOAD': 'LTL',
+      'TRUCK PARTIAL': 'LTL'
+    };
+    
+    // Convert to uppercase for comparison and map to standardized mode
+    const upperMode = standardizedMode.toUpperCase();
+    standardizedMode = modeMapping[upperMode] || mode; // fallback to current tab mode
+    
     return {
       id: typeof parsedRate.id === 'number' ? parsedRate.id : Date.now(),
+      mode: standardizedMode,
       provider: parsedRate.provider || '',
       agent: parsedRate.agent || '',
       origin: parsedRate.origin || '',
@@ -289,7 +335,6 @@ const RateParser: React.FC<RateParserProps> = ({ onRatesParsed, onClose, mode = 
       truckType: parsedRate.truckType || '',
       rate: parsedRate.rate || '',
       status: parsedRate.status || '',
-      mode,
     };
   };
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, Upload, Download, Plus, Search as SearchIcon, Ship, Plane, Truck, Trash2, X as XIcon } from 'lucide-react';
 import RateParser from './RateParser';
 import { Rate } from '../../../../store/forwarderquote';
@@ -7,6 +7,7 @@ import { useQuoteRateStore } from '../../../../store/forwarderquote';
 // Mode-to-columns configuration for dynamic table rendering
 const MODE_COLUMN_CONFIGS = {
   FCL: [
+    { key: 'mode', label: 'Transport Mode' },
     { key: 'provider', label: 'Provider' },
     { key: 'agent', label: 'Agent' },
     { key: 'origin', label: 'Origin' },
@@ -45,6 +46,7 @@ const MODE_COLUMN_CONFIGS = {
     { key: 'action', label: 'Action' },
   ],
   LCL: [
+    { key: 'mode', label: 'Transport Mode' },
     { key: 'provider', label: 'Provider' },
     { key: 'agent', label: 'Agent' },
     { key: 'origin', label: 'Origin' },
@@ -74,6 +76,7 @@ const MODE_COLUMN_CONFIGS = {
     { key: 'action', label: 'Action' },
   ],
   AIR: [
+    { key: 'mode', label: 'Transport Mode' },
     { key: 'provider', label: 'Provider' },
     { key: 'agent', label: 'Agent' },
     { key: 'originAirport', label: 'Origin Airport' },
@@ -107,6 +110,7 @@ const MODE_COLUMN_CONFIGS = {
     { key: 'action', label: 'Action' },
   ],
   FTL: [
+    { key: 'mode', label: 'Transport Mode' },
     { key: 'provider', label: 'Provider' },
     { key: 'agent', label: 'Agent' },
     { key: 'origin', label: 'Origin' },
@@ -136,6 +140,7 @@ const MODE_COLUMN_CONFIGS = {
     { key: 'action', label: 'Action' },
   ],
   LTL: [
+    { key: 'mode', label: 'Transport Mode' },
     { key: 'provider', label: 'Provider' },
     { key: 'agent', label: 'Agent' },
     { key: 'origin', label: 'Origin' },
@@ -187,6 +192,7 @@ const getModeIcon = (mode: string) => {
 // Placeholder data structure for a rate row - ONLY new standardized fields from STANDARD_FIELDS
 const BLANK_RATE: Rate = {
   id: 0,
+  mode: '',
   provider: '',
   agent: '',
   origin: '',
@@ -208,8 +214,8 @@ const BLANK_RATE: Rate = {
   remark: '',
   commodity: '',
   createdBy: '',
-      validFrom: '',
-      validTo: '',
+  validFrom: '',
+  validTo: '',
   createdOn: '',
   type: '',
   createType: '',
@@ -242,18 +248,38 @@ interface RateModalFormProps {
   onClose: () => void;
   initialData: Rate | null;
   mode: Mode;
-  onSave: (data: Rate) => void;
+  onSave: (data: Rate) => Promise<void>;
 }
 
 function RateModalForm({ open, onClose, initialData, mode, onSave }: RateModalFormProps) {
   const [form, setForm] = useState<Rate>(initialData || BLANK_RATE);
+  const [saving, setSaving] = useState(false);
+  
   // Ensure form is updated when initialData or open changes
   React.useEffect(() => {
-    setForm(initialData || BLANK_RATE);
-  }, [initialData, open]);
+    if (initialData) {
+      setForm(initialData);
+    } else {
+      setForm({ ...BLANK_RATE, mode }); // Pre-populate mode for new rates
+    }
+  }, [initialData, open, mode]);
+  
   const columns = MODE_COLUMN_CONFIGS[mode] || [];
   if (!open) return null;
-    return (
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await onSave(form);
+    } catch (error) {
+      console.error('Error saving rate:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+  
+  return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full p-4 max-h-[80vh] overflow-y-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-2 ">
@@ -262,25 +288,28 @@ function RateModalForm({ open, onClose, initialData, mode, onSave }: RateModalFo
             <XIcon className="w-5 h-5" />
             </button>
           </div>
-        <form onSubmit={e => { e.preventDefault(); onSave(form); }}>
+        <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-2 gap-4">
             {columns.filter((col) => col.key !== 'action').map((col) => (
               <div key={col.key}>
                 <label className="block text-xs font-medium text-gray-500 mb-1">{col.label}</label>
                 <input
-                  className="w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`w-full px-3 py-2 border text-xs text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${col.key === 'mode' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   value={form[col.key as keyof Rate] || ''}
                   onChange={e => setForm(f => ({ ...f, [col.key as keyof Rate]: e.target.value }))}
                   name={col.key}
                   type="text"
                   placeholder={col.label}
+                  readOnly={col.key === 'mode'}
                 />
                 </div>
               ))}
             </div>
           <div className="flex justify-end gap-2 mt-6 border-t border-gray-200 pt-4">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-200">Cancel</button>
-            <button type="submit" className="px-4 py-2 text-sm text-white bg-[#007bff] rounded-lg hover:bg-blue-700">Save</button>
+            <button type="button" onClick={onClose} disabled={saving} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-200 disabled:opacity-50">Cancel</button>
+            <button type="submit" disabled={saving} className="px-4 py-2 text-sm text-white bg-[#007bff] rounded-lg hover:bg-blue-700 disabled:opacity-50">
+              {saving ? 'Saving...' : 'Save'}
+            </button>
             </div>
         </form>
         </div>
@@ -291,12 +320,32 @@ function RateModalForm({ open, onClose, initialData, mode, onSave }: RateModalFo
 export default function RateTable() {
   const [mode, setMode] = useState<Mode>('FCL');
   const rates = useQuoteRateStore(state => state.rates);
-  const setRates = useQuoteRateStore(state => state.setRates);
+  const loadRates = useQuoteRateStore(state => state.loadRates);
+  const addRate = useQuoteRateStore(state => state.addRate);
+  const addRates = useQuoteRateStore(state => state.addRates);
+  const updateRate = useQuoteRateStore(state => state.updateRate);
+  const deleteRate = useQuoteRateStore(state => state.deleteRate);
   const [showAdd, setShowAdd] = useState(false);
   const [editIdx, setEditIdx] = useState<number | null>(null);
   const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
   const itemsPerPage = 10;
   const columns = MODE_COLUMN_CONFIGS[mode] || [];
+
+  // Load rates when component mounts or mode changes
+  useEffect(() => {
+    const fetchRates = async () => {
+      setLoading(true);
+      try {
+        await loadRates(mode);
+      } catch (error) {
+        console.error('Error loading rates:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRates();
+  }, [mode, loadRates]);
 
   // Search, status, and column visibility state
   const [search, setSearch] = useState('');
@@ -313,7 +362,7 @@ export default function RateTable() {
 
   // Filtered and searched rates
   const filteredRates = rates.filter(rate => {
-    // Only show rates for the current mode
+    // Only show rates for the current mode tab
     if (!rate.mode || rate.mode !== mode) return false;
     // Status filter logic placeholder (customize as needed)
     let statusMatch = true;
@@ -331,10 +380,35 @@ export default function RateTable() {
   const allSelected = selectedRates.length === paginatedRates.length && paginatedRates.length > 0;
 
   // Bulk remove handler
-  const handleBulkRemove = () => {
-    setRates(rates.filter((_, idx) => !selectedRates.includes(idx)));
-    setSelectedRates([]);
-    setShowRemoveModal(false);
+  const [removing, setRemoving] = useState(false);
+  
+  const handleBulkRemove = async () => {
+    setRemoving(true);
+    try {
+      const ratesToDelete = selectedRates.map(idx => rates[idx]).filter(Boolean);
+      
+      // Delete rates one by one to handle individual failures
+      const results = await Promise.allSettled(
+        ratesToDelete.map(rate => deleteRate(rate.id))
+      );
+      
+      // Check for any failures
+      const failures = results.filter(result => result.status === 'rejected');
+      if (failures.length > 0) {
+        console.warn(`${failures.length} rates failed to delete:`, failures);
+        // Reload rates from API to sync state with database
+        await loadRates(mode);
+      }
+      
+      setSelectedRates([]);
+      setShowRemoveModal(false);
+    } catch (error) {
+      console.error('Error removing rates:', error);
+      // Reload rates from API to sync state with database
+      await loadRates(mode);
+    } finally {
+      setRemoving(false);
+    }
   };
 
   return (
@@ -483,7 +557,9 @@ export default function RateTable() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-            {paginatedRates.length === 0 ? (
+            {loading ? (
+              <tr><td colSpan={columns.length+1} className="text-center py-8 text-gray-400">Loading rates...</td></tr>
+            ) : paginatedRates.length === 0 ? (
               <tr><td colSpan={columns.length+1} className="text-center py-8 text-gray-400">No rates found.</td></tr>
             ) : paginatedRates.map((rate, idx) => {
               const globalIdx = (page-1)*itemsPerPage+idx;
@@ -532,13 +608,24 @@ export default function RateTable() {
           <button onClick={()=>setPage(p=>Math.min(Math.ceil(filteredRates.length/itemsPerPage),p+1))} disabled={page===Math.ceil(filteredRates.length/itemsPerPage)||filteredRates.length===0} className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">{'>'}</button>
                         </div>
                     </div>
-      <RateModalForm open={showAdd} onClose={()=>setShowAdd(false)} initialData={null} mode={mode} onSave={data=>{
-        setRates([...rates, { ...data, mode }]);
-        setShowAdd(false);
+      <RateModalForm open={showAdd} onClose={()=>setShowAdd(false)} initialData={null} mode={mode} onSave={async (data)=>{
+        try {
+          await addRate({ ...data, mode });
+          setShowAdd(false);
+        } catch (error) {
+          console.error('Error adding rate:', error);
+        }
       }} />
-      <RateModalForm open={editIdx!==null} onClose={()=>setEditIdx(null)} initialData={editIdx!==null?rates[editIdx]:null} mode={mode} onSave={data=>{
-        setRates(rates.map((item,i)=>i===editIdx?{ ...data, mode: item.mode || mode }:item));
-        setEditIdx(null);
+      <RateModalForm open={editIdx!==null} onClose={()=>setEditIdx(null)} initialData={editIdx!==null?rates[editIdx]:null} mode={mode} onSave={async (data)=>{
+        try {
+          const rateToUpdate = rates[editIdx!];
+          if (rateToUpdate) {
+            await updateRate({ ...data, id: rateToUpdate.id, mode: rateToUpdate.mode || mode });
+            setEditIdx(null);
+          }
+        } catch (error) {
+          console.error('Error updating rate:', error);
+        }
       }} />
       {showRemoveModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
@@ -548,15 +635,17 @@ export default function RateTable() {
             <div className="flex justify-end gap-2 mt-4">
                   <button
                 onClick={() => setShowRemoveModal(false)}
-                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-200"
+                disabled={removing}
+                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-200 disabled:opacity-50"
                   >
                     Cancel
                   </button>
                   <button 
                 onClick={handleBulkRemove}
-                className="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700"
+                disabled={removing}
+                className="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
               >
-                Remove
+                {removing ? 'Removing...' : 'Remove'}
                   </button>
             </div>
           </div>
@@ -566,12 +655,14 @@ export default function RateTable() {
         <RateParser
           mode={mode}
           onClose={() => setShowImport(false)}
-          onRatesParsed={importedRates => {
-            setRates([
-              ...rates,
-              ...importedRates.map(r => ({ ...r, mode }))
-            ]);
-            setShowImport(false);
+          onRatesParsed={async (importedRates) => {
+            try {
+              // Use bulk add to ensure proper ID handling
+              await addRates(importedRates);
+              setShowImport(false);
+            } catch (error) {
+              console.error('Error importing rates:', error);
+            }
           }}
         />
       )}

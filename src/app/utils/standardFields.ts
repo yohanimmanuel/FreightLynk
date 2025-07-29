@@ -1,6 +1,7 @@
 // Standard fields for each mode for import mapping and validation
 export const STANDARD_FIELDS = {
   FCL: [
+    { key: 'mode', label: 'Transport Mode', required: false },
     { key: 'provider', label: 'Provider', required: false },
     { key: 'agent', label: 'Agent', required: false },
     { key: 'origin', label: 'Origin', required: false },
@@ -38,6 +39,7 @@ export const STANDARD_FIELDS = {
     { key: 'frequency', label: 'Frequency', required: false },
   ],
   LCL: [
+    { key: 'mode', label: 'Transport Mode', required: false },
     { key: 'provider', label: 'Provider', required: false },
     { key: 'agent', label: 'Agent', required: false },
     { key: 'origin', label: 'Origin', required: false },
@@ -66,6 +68,7 @@ export const STANDARD_FIELDS = {
     { key: 'frequency', label: 'Frequency', required: false },
   ],
   AIR: [
+    { key: 'mode', label: 'Transport Mode', required: false },
     { key: 'provider', label: 'Provider', required: false },
     { key: 'agent', label: 'Agent', required: false },
     { key: 'originAirport', label: 'Origin Airport', required: false },
@@ -96,6 +99,7 @@ export const STANDARD_FIELDS = {
     { key: 'frequency', label: 'Frequency', required: false },
   ],
   FTL: [
+    { key: 'mode', label: 'Transport Mode', required: false },
     { key: 'provider', label: 'Provider', required: false },
     { key: 'agent', label: 'Agent', required: false },
     { key: 'origin', label: 'Origin', required: false },
@@ -124,6 +128,7 @@ export const STANDARD_FIELDS = {
     { key: 'frequency', label: 'Frequency', required: false },
   ],
   LTL: [
+    { key: 'mode', label: 'Transport Mode', required: false },
     { key: 'origin', label: 'Origin', required: false },
     { key: 'destination', label: 'Destination', required: false },
     // LTL Load

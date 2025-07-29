@@ -1,9 +1,10 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { ratesApi } from '@/utils/ratesApi';
 
 // Rate interface (single source of truth) - ONLY new standardized fields from STANDARD_FIELDS
 export interface Rate {
   id: number;
+  mode?: string;
   provider?: string;
   agent?: string;
   origin?: string;
@@ -51,7 +52,6 @@ export interface Rate {
   truckType?: string;
   rate?: string;
   status?: string;
-  mode?: string; // Added for mode filtering in RateTable
 }
 
 // Quote interface (simplified version of Rate)
@@ -218,9 +218,11 @@ export interface QuoteRateStore {
   
   // Rate actions
   setRates: (rates: Rate[]) => void;
-  addRate: (rate: Rate) => void;
-  updateRate: (updatedRate: Rate) => void;
-  deleteRate: (id: number) => void;
+  addRate: (rate: Rate) => Promise<void>;
+  addRates: (rates: Rate[]) => Promise<Rate[]>;
+  updateRate: (updatedRate: Rate) => Promise<void>;
+  deleteRate: (id: number) => Promise<void>;
+  loadRates: (mode?: string) => Promise<void>;
   setSelectedRate: (rate: Rate | null) => void;
   
   // Quote actions
@@ -239,52 +241,120 @@ export interface QuoteRateStore {
 }
 
 // Create the store
-export const useQuoteRateStore = create<QuoteRateStore>()(
-  persist(
-    (set, get) => ({
-      rates: [],
-      quotes: [],
-      selectedRate: null,
-      selectedQuote: null,
-      currentDraftQuote: null,
-      setRates: (rates) => set({ rates }),
-      addRate: (rate) => set((state) => ({ rates: [...state.rates, rate] })),
-      updateRate: (updatedRate) => set((state) => ({
-        rates: state.rates.map(rate => rate.id === updatedRate.id ? updatedRate : rate)
-        })),
-      deleteRate: (id) => set((state) => ({
-          rates: state.rates.filter(rate => rate.id !== id)
-        })),
-      setSelectedRate: (rate) => set({ selectedRate: rate }),
-      setQuotes: (quotes) => set({ quotes }),
-      addQuote: (quote) => set((state) => {
-        const existingIndex = state.quotes.findIndex(q => q.id === quote.id);
-        let updatedQuotes;
-        if (existingIndex !== -1) {
-          // Update existing quote
-          updatedQuotes = [...state.quotes];
-          updatedQuotes[existingIndex] = quote;
-        } else {
-          // Add new quote
-          updatedQuotes = [...state.quotes, quote];
-        }
-        return { quotes: updatedQuotes };
-      }),
-      updateQuote: (updatedQuote) => set((state) => ({
-        quotes: state.quotes.map(quote => quote.id === updatedQuote.id ? updatedQuote : quote)
-        })),
-      deleteQuote: (id) => set((state) => ({
-          quotes: state.quotes.filter(quote => quote.id !== id)
-        })),
-      setSelectedQuote: (quote) => set({ selectedQuote: quote }),
-      setCurrentDraftQuote: (quote) => set({ currentDraftQuote: quote }),
-      updateCurrentDraftQuote: (updates) => set(state => ({ currentDraftQuote: { ...state.currentDraftQuote, ...updates } as Quote }) as Partial<QuoteRateStore>),
-      clearCurrentDraftQuote: () => set({ currentDraftQuote: null }),
-      generateQuotesFromRates: () => set({ quotes: [] }),
-      updateQuotesFromRates: () => set({ quotes: [] }),
-    }),
-    {
-      name: 'quote-rate-storage'
+export const useQuoteRateStore = create<QuoteRateStore>()((set, get) => ({
+  rates: [],
+  quotes: [],
+  selectedRate: null,
+  selectedQuote: null,
+  currentDraftQuote: null,
+  
+  // Rate actions with API integration
+  setRates: (rates: Rate[]) => set({ rates }),
+  
+  addRate: async (rate: Rate) => {
+    try {
+      const result = await ratesApi.createRate(rate);
+      if (result.success && result.id) {
+        const newRate = { ...rate, id: result.id };
+        set((state) => ({ rates: [...state.rates, newRate] }));
+      }
+    } catch (error) {
+      console.error('Error adding rate:', error);
+      throw error;
     }
-  )
-);
+  },
+
+  // Bulk add rates for import functionality
+  addRates: async (rates: Rate[]) => {
+    try {
+      const results = await Promise.allSettled(
+        rates.map(rate => ratesApi.createRate(rate))
+      );
+      
+      const successfulRates: Rate[] = [];
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled' && result.value.success && result.value.id) {
+          successfulRates.push({ ...rates[index], id: result.value.id });
+        }
+      });
+      
+      if (successfulRates.length > 0) {
+        set((state) => ({ rates: [...state.rates, ...successfulRates] }));
+      }
+      
+      return successfulRates;
+    } catch (error) {
+      console.error('Error adding rates:', error);
+      throw error;
+    }
+  },
+  
+  updateRate: async (updatedRate: Rate) => {
+    try {
+      const result = await ratesApi.updateRate(updatedRate.id, updatedRate);
+      if (result.success) {
+        set((state) => ({
+          rates: state.rates.map(rate => rate.id === updatedRate.id ? updatedRate : rate)
+        }));
+      }
+    } catch (error) {
+      console.error('Error updating rate:', error);
+      throw error;
+    }
+  },
+  
+  deleteRate: async (id: number) => {
+    try {
+      const result = await ratesApi.deleteRate(id);
+      if (result.success) {
+        set((state) => ({
+          rates: state.rates.filter(rate => rate.id !== id)
+        }));
+      }
+    } catch (error) {
+      console.error('Error deleting rate:', error);
+      throw error;
+    }
+  },
+  
+  // Load rates from API
+  loadRates: async (mode?: string) => {
+    try {
+      const rates = await ratesApi.getRates(mode);
+      set({ rates });
+    } catch (error) {
+      console.error('Error loading rates:', error);
+      throw error;
+    }
+  },
+  
+  setSelectedRate: (rate: Rate | null) => set({ selectedRate: rate }),
+  
+  // Quote actions (keeping existing functionality)
+  setQuotes: (quotes: Quote[]) => set({ quotes }),
+  addQuote: (quote: Quote) => set((state) => {
+    const existingIndex = state.quotes.findIndex(q => q.id === quote.id);
+    let updatedQuotes;
+    if (existingIndex !== -1) {
+      // Update existing quote
+      updatedQuotes = [...state.quotes];
+      updatedQuotes[existingIndex] = quote;
+    } else {
+      // Add new quote
+      updatedQuotes = [...state.quotes, quote];
+    }
+    return { quotes: updatedQuotes };
+  }),
+  updateQuote: (updatedQuote: Quote) => set((state) => ({
+    quotes: state.quotes.map(quote => quote.id === updatedQuote.id ? updatedQuote : quote)
+  })),
+  deleteQuote: (id: string) => set((state) => ({
+    quotes: state.quotes.filter(quote => quote.id !== id)
+  })),
+  setSelectedQuote: (quote: Quote | null) => set({ selectedQuote: quote }),
+  setCurrentDraftQuote: (quote: Quote | null) => set({ currentDraftQuote: quote }),
+  updateCurrentDraftQuote: (updates: Partial<Quote>) => set(state => ({ currentDraftQuote: { ...state.currentDraftQuote, ...updates } as Quote }) as Partial<QuoteRateStore>),
+  clearCurrentDraftQuote: () => set({ currentDraftQuote: null }),
+  generateQuotesFromRates: () => set({ quotes: [] }),
+  updateQuotesFromRates: () => set({ quotes: [] }),
+}));
