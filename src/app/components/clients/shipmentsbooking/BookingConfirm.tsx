@@ -55,6 +55,17 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
   const setFlNumber = useBookingStore(state => state.setFlNumber);
   const bookingSubmitted = useBookingStore(state => state.bookingSubmitted);
   const setBookingSubmitted = useBookingStore(state => state.setBookingSubmitted);
+  
+  // Get the generated booking ID from the booking store
+  const [generatedBookingId, setGeneratedBookingId] = useState<string>('');
+  
+  useEffect(() => {
+    // Use the flNumber from the store if available
+    if (flNumber) {
+      setGeneratedBookingId(flNumber);
+      console.log('Using booking ID from store:', flNumber);
+    }
+  }, [flNumber]);
   const purchaseOrders = usePOStore(state => state.purchaseOrders);
   const poDetails = usePOStore(state => state.poDetails);
   const fetchPurchaseOrders = usePOStore(state => state.fetchPurchaseOrders);
@@ -275,7 +286,7 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
     // Ensure selectedPOs is properly formatted for POSummaryTable
     selectedPOs: Array.isArray(externalBooking.selectedPOs) ? externalBooking.selectedPOs : [],
   } : {
-    id: flNumber,
+    id: generatedBookingId || flNumber,
     shipmentId: null,
     poNumber: selectedPOs.map(po => `PO ${po.poId.replace(/^PO ?/, '')}`).join(', '),
     productName: formData.productName,
@@ -388,7 +399,12 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
                 </>
               ) : (
                 <>
-                  <h1 className="text-2xl font-bold text-gray-900 mb-1">{displayData?.shipmentName || ''}</h1>
+                  <div className="mb-1">
+                    <div className="text-sm font-mono font-bold text-[#007bff] mb-1">
+                      {displayData?.id || displayData?.shipmentId || flNumber || 'FL-XXXXXX'}
+                    </div>
+                    <h1 className="text-2xl font-bold text-gray-900">{displayData?.shipmentName || ''}</h1>
+                  </div>
                   <button
                     className="text-blue-600 hover:text-blue-800"
                     onClick={() => setIsEditingTitle(true)}

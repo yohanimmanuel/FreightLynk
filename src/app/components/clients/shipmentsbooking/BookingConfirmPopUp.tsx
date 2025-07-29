@@ -25,10 +25,20 @@ interface BookingConfirmProps {
 
 const BookingConfirmPopUp: React.FC<BookingConfirmProps> = ({ onClose = () => {}, bookingData }) => {
   const [selectedNextAction, setSelectedNextAction] = useState<string>('');
+  const [generatedBookingId, setGeneratedBookingId] = useState<string>('');
   const formData = useBookingStore(state => state.formData);
   const selectedPOs = useBookingStore(state => state.selectedPOs);
   const flNumber = useBookingStore(state => state.flNumber);
   const setBookingSubmitted = useBookingStore(state => state.setBookingSubmitted);
+  
+  // Get the generated booking ID from the booking store
+  useEffect(() => {
+    // Use the flNumber from the store if available
+    if (flNumber) {
+      setGeneratedBookingId(flNumber);
+      console.log('BookingConfirmPopUp: Using booking ID from store:', flNumber);
+    }
+  }, [flNumber]);
 
   useEffect(() => {
     import('canvas-confetti').then((module) => {
@@ -49,8 +59,8 @@ const BookingConfirmPopUp: React.FC<BookingConfirmProps> = ({ onClose = () => {}
     onClose();
   };
 
-  // Use bookingData if provided, otherwise use Zustand state
-  const shipmentId = bookingData?.shipmentId || flNumber;
+  // Use bookingData if provided, otherwise use generated booking ID from localStorage, fallback to flNumber
+  const shipmentId = bookingData?.shipmentId || generatedBookingId || flNumber;
   const poNumber = bookingData?.poNumber || (selectedPOs && selectedPOs.length > 0 ? 
     selectedPOs.map(po => `PO ${po.poId.replace(/^PO ?/, '')}`).join(', ') : '-');
   const originPort = bookingData?.originPort || formData?.originPort || '-';
@@ -61,7 +71,12 @@ const BookingConfirmPopUp: React.FC<BookingConfirmProps> = ({ onClose = () => {}
       <div className="bg-white rounded-lg max-w-3xl w-full max-h-[80vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-4">
-          <h2 className="text-lg font-bold text-gray-900">Booking submitted</h2>
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Booking submitted</h2>
+            {formData?.shipmentName && (
+              <div className="text-sm text-gray-600 mt-1">{formData.shipmentName}</div>
+            )}
+          </div>
           <button 
             onClick={handleClose}
             className="text-gray-400 hover:text-gray-600"

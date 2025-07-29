@@ -134,16 +134,15 @@ const BookingReview: React.FC<BookingReviewProps> = ({ onConfirmBooking }) => {
       const result = await createNewBooking(formData, selectedPOs);
       console.log('Booking created successfully:', result);
 
+      // Set the generated booking ID in the store
+      if (result.flNumber) {
+        setFlNumber(result.flNumber);
+        console.log('Booking ID set in store:', result.flNumber);
+      }
+
       // Set booking as submitted to prevent going back to review page
       setBookingSubmitted(true);
       console.log('Booking submitted state set to true');
-      
-      // Also store in localStorage to persist across page refreshes
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('bookingSubmitted', 'true');
-        localStorage.setItem('bookingFlNumber', result.flNumber || '');
-        console.log('Booking state saved to localStorage');
-      }
 
       // Navigate to confirmation page
       console.log('Calling onConfirmBooking to navigate to confirmation page');

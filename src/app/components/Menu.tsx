@@ -416,12 +416,6 @@ const Menu = () => {
                       bookingStore.clearBooking();
                       bookingStore.setBookingSubmitted(false);
                       
-                      // Clear localStorage
-                      if (typeof window !== 'undefined') {
-                        localStorage.removeItem('bookingSubmitted');
-                        localStorage.removeItem('bookingFlNumber');
-                      }
-                      
                       // Navigate to create page
                       window.location.href = '/bookings/create';
                     }}
@@ -437,12 +431,6 @@ const Menu = () => {
                       const bookingStore = useBookingStore.getState();
                       bookingStore.clearBooking();
                       bookingStore.setBookingSubmitted(false);
-                      
-                      // Clear localStorage
-                      if (typeof window !== 'undefined') {
-                        localStorage.removeItem('bookingSubmitted');
-                        localStorage.removeItem('bookingFlNumber');
-                      }
                       
                       // Navigate to create page
                       window.location.href = '/bookings/create';

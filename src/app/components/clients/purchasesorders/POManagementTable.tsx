@@ -286,7 +286,7 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setShowBookingModal(false)}
-                  className="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
+                  className="px-4 py-2 text-sm text-gray-600 bg-white rounded-lg border border-gray-300 hover:bg-gray-100"
                 >
                   Cancel
                 </button>

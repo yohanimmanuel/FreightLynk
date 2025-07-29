@@ -22,16 +22,6 @@ const ClientUI = () => {
       return;
     }
 
-    // Also check localStorage for booking submission
-    if (typeof window !== 'undefined') {
-      const localStorageSubmitted = localStorage.getItem('bookingSubmitted');
-      if (localStorageSubmitted === 'true') {
-        console.log('Booking submitted detected in localStorage, redirecting');
-        router.replace('/bookings/submitted');
-        return;
-      }
-    }
-
     // Check if there's no form data, redirect to create page
     if (!formData || Object.keys(formData).length === 0) {
       console.log('No form data, redirecting to create page');
@@ -54,21 +44,12 @@ const ClientUI = () => {
   // Prevent going back to this page after booking submission
   useEffect(() => {
     const handlePopState = () => {
-      // Check localStorage for booking submission when user tries to go back
-      if (typeof window !== 'undefined') {
-        const localStorageSubmitted = localStorage.getItem('bookingSubmitted');
-        if (localStorageSubmitted === 'true') {
-          console.log('Booking submitted detected in localStorage during popstate, redirecting');
-          router.replace('/bookings/submitted');
-        }
+      // Check if bookingSubmitted is true in current state
+      if (bookingSubmitted) {
+        console.log('Booking submitted detected in state during popstate, redirecting');
+        router.replace('/bookings/submitted');
       }
     };
-
-    // Also check if bookingSubmitted is true in current state
-    if (bookingSubmitted) {
-      console.log('Booking submitted detected in state during popstate, redirecting');
-      router.replace('/bookings/submitted');
-    }
 
     window.addEventListener('popstate', handlePopState);
 
@@ -80,13 +61,10 @@ const ClientUI = () => {
   // Block browser back button more aggressively
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Check localStorage for booking submission when user tries keyboard navigation
-      if (typeof window !== 'undefined') {
-        const localStorageSubmitted = localStorage.getItem('bookingSubmitted');
-        if (localStorageSubmitted === 'true' && (e.key === 'Backspace' || e.altKey)) {
-          e.preventDefault();
-          router.replace('/bookings/submitted');
-        }
+      // Check if bookingSubmitted is true when user tries keyboard navigation
+      if (bookingSubmitted && (e.key === 'Backspace' || e.altKey)) {
+        e.preventDefault();
+        router.replace('/bookings/submitted');
       }
     };
 
@@ -95,7 +73,7 @@ const ClientUI = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [router]);
+  }, [router, bookingSubmitted]);
 
   const handleConfirmBooking = () => {
     console.log('handleConfirmBooking called, navigating to confirmation page');

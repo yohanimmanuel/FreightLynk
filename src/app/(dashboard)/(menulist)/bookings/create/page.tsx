@@ -25,11 +25,6 @@ const ClientUI = () => {
     }
 
     // Reset booking state when starting a new booking
-    if (typeof window !== 'undefined') {
-      sessionStorage.removeItem('bookingSubmitted');
-      localStorage.removeItem('bookingSubmitted');
-      localStorage.removeItem('bookingFlNumber');
-    }
     setBookingSubmitted(false);
   }, [setBookingSubmitted, bookingSubmitted, router]);
 
