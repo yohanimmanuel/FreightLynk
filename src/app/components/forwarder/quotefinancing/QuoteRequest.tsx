@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Search, ChevronDown, X, Menu, Ship, Box, Plane, Truck, Upload, Download, CheckCircle, XCircle } from 'lucide-react';
-import { useQuoteRateStore, mockForwarderQuotes } from '@/store/forwarderquote';
+import { useQuoteStore, mockForwarderQuotes } from '@/store/forwarderquote';
 import { useInvoiceSend } from './useInvoiceSend';
 import { useClientQuoteStore } from '@/store/clientquotes';
 import { useBookingStore } from '@/store/bookingStore';
@@ -215,7 +215,7 @@ export default function QuoteRequest({ role = 'forwarder', hasBookings = true }:
   const [successType, setSuccessType] = useState<'success' | 'error' | null>(null);
 
   // Use forwarder or client store based on role
-  const forwarderStore = useQuoteRateStore();
+  const forwarderStore = useQuoteStore();
   const clientStore = useClientQuoteStore();
   const bookingStore = useBookingStore();
 

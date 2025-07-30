@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Quote, QuoteAdditionalInfo, QuoteParty, useQuoteRateStore } from './forwarderquote';
+import { Quote, QuoteAdditionalInfo, QuoteParty, useQuoteStore } from './forwarderquote';
 
 // Define the search result interface
 export interface QuoteSearchResult {
@@ -320,7 +320,7 @@ export const useQuoteSearchStore = create<QuoteSearchStore>()(
             const to = selectedQuoteDetails?.to;
             const info = additionalInfo;
             const newQuote = convertToQuote(searchResult, containerType, priceRange, from, to, info);
-            const quoteStore = useQuoteRateStore.getState();
+            const quoteStore = useQuoteStore.getState();
             quoteStore.addQuote(newQuote);
             return newQuote.id;
           } catch (error) {

@@ -3,10 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useAuthStore, UserRole } from '@/store/authStore';
 import ProtectedRoute from '@/app/components/ProtectedRoute';
-import QuoteAdditionalInfo from '@/app/components/forwarder/quotefinancing/QuoteAdditionalInfo';
 import QuoteInvoice from '@/app/components/forwarder/quotefinancing/Quoteinvoice';
 import { useSearchParams } from 'next/navigation';
-import { useQuoteRateStore } from '@/store/forwarderquote';
+import { useQuoteStore } from '@/store/forwarderquote';
 import { useQuoteSearchStore } from '@/store/quotesearchdata';
 
 const ClientUI = () => {
@@ -21,7 +20,7 @@ const ClientUI = () => {
 const ForwarderUI = () => {
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
-  const quotes = useQuoteRateStore(state => state.quotes);
+  const quotes = useQuoteStore(state => state.quotes);
   const setSelectedQuoteDetails = useQuoteSearchStore(state => state.setSelectedQuoteDetails);
 
   useEffect(() => {

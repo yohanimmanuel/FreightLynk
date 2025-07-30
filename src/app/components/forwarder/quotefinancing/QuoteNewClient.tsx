@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { partnerDirectory } from '../../../../store/partnerCompanyData';
 import { useRouter } from 'next/navigation';
-import { useQuoteRateStore } from '../../../../store/forwarderquote';
+import { useQuoteStore } from '../../../../store/forwarderquote';
 import { useQuoteSearchStore } from '../../../../store/quotesearchdata';
 
 // Filter only clients
@@ -10,7 +10,7 @@ const clients = partnerDirectory;
 
 export default function QuoteNewClient() {
   // Clear draft on mount
-  const clearCurrentDraftQuote = useQuoteRateStore(state => state.clearCurrentDraftQuote);
+  const clearCurrentDraftQuote = useQuoteStore(state => state.clearCurrentDraftQuote);
   React.useEffect(() => {
     clearCurrentDraftQuote();
   }, [clearCurrentDraftQuote]);

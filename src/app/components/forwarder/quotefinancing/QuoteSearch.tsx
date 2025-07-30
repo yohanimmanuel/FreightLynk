@@ -5,6 +5,7 @@ import { Search, Calendar, MapPin, Package, Filter, ChevronDown, Check, CheckSqu
 import { useQuoteSearchStore, QuoteSearchResult } from '../../../../store/quotesearchdata';
 import { useRouter } from 'next/navigation';
 import truckTypeSynonymsRaw from '../../../utils/truckTypeSynonyms.json';
+import { useQuoteStore } from '../../../../store/forwarderquote';
 const truckTypeSynonyms: Record<string, string[]> = truckTypeSynonymsRaw as Record<string, string[]>;
 
 const QuoteSearch = () => {
@@ -17,6 +18,7 @@ const QuoteSearch = () => {
     selectedContact
   } = useQuoteSearchStore();
   const router = useRouter();
+  const addQuote = useQuoteStore(state => state.addQuote);
   
   const [searchParams, setSearchParams] = useState({
     origin: '',
@@ -506,37 +508,70 @@ const QuoteSearch = () => {
     else if (appliedLclVolume) badge = `${appliedLclVolume} cbm`;
     // Build the quote object with client/contact, id, and validUntil
     const quoteObj = {
-      ...quoteResult,
+      id: `QR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      lane: `${appliedSearchParams.origin} - ${appliedSearchParams.destination}`,
+      mode: (appliedTransportMode === 'Sea' ? 'ocean' : appliedTransportMode === 'Air' ? 'air' : 'road') as 'ocean' | 'air' | 'road',
+      modeLabel,
+      containertype: appliedCargoTab === 'FCL' ? Object.keys(appliedFclQuantities).filter(key => appliedFclQuantities[key] > 0) : [],
+      currency: 'USD',
+      baseRate: 0, // Will be calculated from tableRows
+      price: '0',
+      transitTime: quoteResult.transitTime || '',
+      provider: quoteResult.provider || '',
+      validity: quoteResult.validUntil || '',
+      status: 'draft' as const,
+      origin: appliedSearchParams.origin,
+      destination: appliedSearchParams.destination,
+      incoterms: '',
+      remark: '',
+      serviceType: `${appliedSearchParams.originType || 'Port'} to ${appliedSearchParams.destinationType || 'Port'}`,
+      transitPort: quoteResult.transitPort || '',
+      client: selectedClient?.name || '',
+      isTariff: false,
+      profit: '0',
+      createdBy: '',
+      createdDate: new Date().toISOString(),
+      notes: '',
+      details: badge ? [badge] : [],
+      truckType: [],
+      weightVolume: appliedCargoTab === 'LCL' ? [`${appliedLclWeight}kg / ${appliedLclVolume}cbm`] : [],
+      additionalCost: 0,
+      additionalCostDescription: '',
+      totalAmount: 0,
+      finalTotalAmount: 0,
+      from: {
+        company: '',
+        address: '',
+        phone: '',
+        preparedBy: '',
+        mobile: '',
+        email: '',
+      },
       to: selectedClient && selectedContact ? {
         company: selectedClient.name,
         address: selectedClient.address,
         phone: selectedClient.phone,
         contact: selectedContact.name,
-      } : {},
-      id: `QT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-      validUntil: quoteResult.validUntil,
-      transportMode: appliedTransportMode,
-      cargoTab: appliedCargoTab,
-      fclQuantities: appliedFclQuantities,
-      lclWeight: appliedLclWeight,
-      lclVolume: appliedLclVolume,
-      searchParams: appliedSearchParams,
-      modeLabel,
-      cargoLabel,
+      } : {
+        company: '',
+        address: '',
+        phone: '',
+        contact: '',
+      },
       tableRows,
-      provider: quoteResult.provider,
-      originType: appliedSearchParams.originType,
-      destinationType: appliedSearchParams.destinationType,
-      serviceType: `${appliedSearchParams.originType || 'Port'} to ${appliedSearchParams.destinationType || 'Port'}`,
-      transitPort: quoteResult.transitPort,
-      // Ensure logo is properly set from the search result
-      logo: quoteResult.logo,
-      companyLogo: quoteResult.logo, // Also set companyLogo for consistency
-      // Initialize additionalInfo as empty object - will be populated in QuoteAdditionalInfo step
       additionalInfo: {},
-      details: badge ? [badge] : [], // standardized badge
+      companyBranch: '',
+      companyName: '',
+      companyLogo: quoteResult.logo || '',
+      shipmentType: appliedCargoTab,
+      shipmentTypeDescription: cargoLabel,
+      validUntil: quoteResult.validUntil || '',
+      originAirport: appliedSearchParams.originType === 'Airport' ? appliedSearchParams.origin : '',
+      destinationAirport: appliedSearchParams.destinationType === 'Airport' ? appliedSearchParams.destination : '',
     };
     setSelectedQuoteDetails(quoteObj);
+    // Add the quote to the store (which will save to API)
+    addQuote(quoteObj);
     router.push('/quotes/list/addinfo');
   };
 

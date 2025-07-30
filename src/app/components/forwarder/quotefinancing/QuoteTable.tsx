@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Search, ChevronDown, Ship, Box, Plane, Truck, ChevronLeft, ChevronRight, Menu, Download, Upload, Eye, Edit as EditIcon, Trash2, X as XIcon, X } from 'lucide-react';
-import { useQuoteRateStore } from '../../../../store/forwarderquote';
+import { useQuoteStore } from '../../../../store/forwarderquote';
 import { useClientQuoteStore } from '@/store/clientquotes';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '../../../../store/authStore';
@@ -158,7 +158,7 @@ function formatDisplayDate(dateString: string) {
 
 export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' | 'client' }) {
   // Forwarder store
-  const forwarderStore = useQuoteRateStore();
+  const forwarderStore = useQuoteStore();
   // Client store
   const clientStore = useClientQuoteStore();
   const { user } = useAuthStore();
@@ -167,10 +167,19 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
   // Choose the correct store based on role
   const quotes: any[] = role === 'forwarder' ? forwarderStore.quotes : clientStore.quotes;
   const setQuotes = role === 'forwarder' ? forwarderStore.setQuotes : clientStore.setQuotes;
+  const loadQuotes = role === 'forwarder' ? forwarderStore.loadQuotes : undefined;
+  const deleteQuote = role === 'forwarder' ? forwarderStore.deleteQuote : undefined;
   // For client: Accept/Reject actions
   const updateQuoteStatus = role === 'client' ? clientStore.updateQuoteStatus : undefined;
 
   console.log('QuoteTable quotes:', quotes);
+
+  // Load quotes from API on component mount
+  useEffect(() => {
+    if (role === 'forwarder' && loadQuotes) {
+      loadQuotes();
+    }
+  }, [role, loadQuotes]);
 
   const [tab, setTab] = useState('all');
   const [filter, setFilter] = useState('all');
@@ -580,10 +589,23 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  setQuotes(quotes.filter(q => !selected.includes(q.id)));
-                  setSelected([]);
-                  setShowRemoveModal(false);
+                onClick={async () => {
+                  if (role === 'forwarder' && deleteQuote) {
+                    try {
+                      // Delete each selected quote from the API
+                      await Promise.all(selected.map(id => deleteQuote(id)));
+                      setSelected([]);
+                      setShowRemoveModal(false);
+                    } catch (error) {
+                      console.error('Error deleting quotes:', error);
+                      // You might want to show an error message to the user here
+                    }
+                  } else {
+                    // Fallback for client role or when deleteQuote is not available
+                    setQuotes(quotes.filter(q => !selected.includes(q.id)));
+                    setSelected([]);
+                    setShowRemoveModal(false);
+                  }
                 }}
                 className="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700"
               >

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Upload, FileText, X, AlertCircle, CheckCircle, Download, Eye } from 'lucide-react';
-import { Rate } from '../../../../store/forwarderquote';
+import { Rate } from '../../../../store/forwarderrates';
 import { parseFile, ParsedRow } from '../../../utils/fileParser';
 import { mapHeadersFuzzy, saveUserMapping } from '../../../utils/aiHeaderMapper';
 import fieldSynonyms from '../../../utils/fieldSynonyms.json';

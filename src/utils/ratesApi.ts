@@ -1,4 +1,4 @@
-import { Rate } from '@/store/forwarderquote';
+import { Rate } from '@/store/forwarderrates';
 
 const API_BASE = '/api/rates';
 

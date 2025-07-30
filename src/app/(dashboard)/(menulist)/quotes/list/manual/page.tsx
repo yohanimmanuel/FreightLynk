@@ -3,17 +3,16 @@
 import React from 'react';
 import QuoteInvoice from '../../../../../components/forwarder/quotefinancing/Quoteinvoice';
 import { useQuoteSearchStore } from '../../../../../../store/quotesearchdata';
-import { useQuoteRateStore } from '../../../../../../store/forwarderquote';
+import { useQuoteStore } from '../../../../../../store/forwarderquote';
 
 const ManualQuotationPage = () => {
   const { setSelectedQuoteDetails } = useQuoteSearchStore();
-  const { setCurrentDraftQuote } = useQuoteRateStore();
+  const { setCurrentDraftQuote } = useQuoteStore();
 
   // Create a blank quote object for manual quotation
   React.useEffect(() => {
     const generateQuoteId = () => {
-      const now = new Date();
-      return `QT-${now.getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      return `QR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     };
 
     const formatDate = (date: Date) => {
@@ -22,8 +21,36 @@ const ManualQuotationPage = () => {
 
     const blankQuote = {
       id: generateQuoteId(),
-      createdOn: formatDate(new Date()),
-      validUntil: '',
+      lane: '',
+      mode: 'ocean' as 'ocean' | 'air' | 'road',
+      modeLabel: '',
+      containertype: [],
+      currency: 'USD',
+      baseRate: 0,
+      price: '0',
+      transitTime: '',
+      provider: '',
+      validity: '',
+      status: 'draft' as const,
+      origin: '',
+      destination: '',
+      incoterms: '',
+      remark: '',
+      serviceType: '',
+      transitPort: '',
+      client: '',
+      isTariff: false,
+      profit: '0',
+      createdBy: '',
+      createdDate: formatDate(new Date()),
+      notes: '',
+      details: [],
+      truckType: [],
+      weightVolume: [],
+      additionalCost: 0,
+      additionalCostDescription: '',
+      totalAmount: 0,
+      finalTotalAmount: 0,
       from: {
         company: '',
         address: '',
@@ -38,61 +65,27 @@ const ManualQuotationPage = () => {
         phone: '',
         contact: '',
       },
-      origin: '',
-      destination: '',
-      transitPort: '',
-      serviceType: '',
-      remark: '',
+      tableRows: [],
       additionalInfo: {
         shipmentType: '',
-        shipmentTypeDescription: '',
         cargoReadyDate: '',
         etd: '',
-        incoterm: '',
-        freightTerm: '',
+        incoterms: '',
+        freightTerms: '',
         ofPriceFeedback: '',
-        note: '',
+        notes: '',
         companyBranch: '',
         commodities: '',
         isTariff: false,
       },
-      tableRows: [],
-      mode: 'ocean' as 'ocean' | 'air' | 'road',
-      modeLabel: '',
-      provider: '',
-      currency: 'USD',
-      price: '0',
-      status: 'draft' as 'draft' | 'sent' | 'requested' | 'expired',
-      createdBy: '',
-      createdDate: formatDate(new Date()),
-      incoterms: '',
-      notes: '',
-      details: [],
-      containertype: [],
-      truckType: [],
-      weightVolume: [],
-      isTariff: false,
-      client: '',
-      transitTime: '',
-      validFrom: '',
-      originAirport: '',
-      destinationAirport: '',
+      companyBranch: '',
       companyName: '',
       companyLogo: '',
       shipmentType: '',
       shipmentTypeDescription: '',
-      profit: '',
-      lane: '',
-      baseRate: 0,
-      validity: '',
-      logo: '',
-      transportMode: '',
-      cargoTab: '',
-      fclQuantities: {},
-      lclWeight: '',
-      lclVolume: '',
-      searchParams: {},
-      cargoLabel: '',
+      validUntil: '',
+      originAirport: '',
+      destinationAirport: '',
     };
 
     setSelectedQuoteDetails(blankQuote);

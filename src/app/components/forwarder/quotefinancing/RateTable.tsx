@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, Upload, Download, Plus, Search as SearchIcon, Ship, Plane, Truck, Trash2, X as XIcon } from 'lucide-react';
 import RateParser from './RateParser';
-import { Rate } from '../../../../store/forwarderquote';
-import { useQuoteRateStore } from '../../../../store/forwarderquote';
+import { Rate } from '../../../../store/forwarderrates';
+import { useRateStore } from '../../../../store/forwarderrates';
 
 // Mode-to-columns configuration for dynamic table rendering
 const MODE_COLUMN_CONFIGS = {
@@ -319,12 +319,12 @@ function RateModalForm({ open, onClose, initialData, mode, onSave }: RateModalFo
 
 export default function RateTable() {
   const [mode, setMode] = useState<Mode>('FCL');
-  const rates = useQuoteRateStore(state => state.rates);
-  const loadRates = useQuoteRateStore(state => state.loadRates);
-  const addRate = useQuoteRateStore(state => state.addRate);
-  const addRates = useQuoteRateStore(state => state.addRates);
-  const updateRate = useQuoteRateStore(state => state.updateRate);
-  const deleteRate = useQuoteRateStore(state => state.deleteRate);
+  const rates = useRateStore(state => state.rates);
+  const loadRates = useRateStore(state => state.loadRates);
+  const addRate = useRateStore(state => state.addRate);
+  const addRates = useRateStore(state => state.addRates);
+  const updateRate = useRateStore(state => state.updateRate);
+  const deleteRate = useRateStore(state => state.deleteRate);
   const [showAdd, setShowAdd] = useState(false);
   const [editIdx, setEditIdx] = useState<number | null>(null);
   const [page, setPage] = useState(1);

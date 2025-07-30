@@ -3,7 +3,7 @@ import { useQuoteSearchStore, QuoteSearchResult } from '../../../../store/quotes
 import { useAuthStore } from '../../../../store/authStore';
 import { Edit, Send, Plus, Download, CheckCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useQuoteRateStore } from '../../../../store/forwarderquote';
+import { useQuoteStore } from '../../../../store/forwarderquote';
 import { partnerDirectory } from '../../../../store/partnerCompanyData';
 import QuoteInvoiceHeader from './QuoteInvoiceHeader';
 import QuoteInvoiceDetails from './QuoteInvoiceDetails';
@@ -35,11 +35,12 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
   const { user } = useAuthStore();
   const router = useRouter();
   const quote = selectedQuoteDetails;
-  const addQuote = useQuoteRateStore(state => state.addQuote);
-  const quotes = useQuoteRateStore(state => state.quotes);
-  const setQuotes = useQuoteRateStore(state => state.setQuotes);
-  const currentDraftQuote = useQuoteRateStore(state => state.currentDraftQuote);
-  const setCurrentDraftQuote = useQuoteRateStore(state => state.setCurrentDraftQuote);
+  const addQuote = useQuoteStore(state => state.addQuote);
+  const quotes = useQuoteStore(state => state.quotes);
+  const setQuotes = useQuoteStore(state => state.setQuotes);
+  const currentDraftQuote = useQuoteStore(state => state.currentDraftQuote);
+  const setCurrentDraftQuote = useQuoteStore(state => state.setCurrentDraftQuote);
+  const updateQuote = useQuoteStore(state => state.updateQuote);
   // If no quote is selected, show a message
   if (!quote) return <div className="text-center text-gray-500 py-12">No quote selected. Please select a quote from the search results.</div>;
 
@@ -283,7 +284,14 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       additionalCost,
       additionalCostDescription,
     };
-    addQuote(newQuote);
+    
+    // Save to API if quote has an ID (existing quote), otherwise add new quote
+    if (quote.id) {
+      updateQuote(newQuote);
+    } else {
+      addQuote(newQuote);
+    }
+    
     if (Array.isArray(quotes)) {
       const idx = quotes.findIndex((q) => q.id === newQuote.id);
       const updatedQuotes = idx !== -1 ? [...quotes.slice(0, idx), newQuote, ...quotes.slice(idx + 1)] : [...quotes, newQuote];

@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useQuoteSearchStore } from '../../../../store/quotesearchdata';
+import { useQuoteStore } from '../../../../store/forwarderquote';
 
 const TABS = ['Export', 'Import', 'Domestic', 'Other'];
 const SHIPMENT_MODES = ['SEA FCL', 'SEA LCL', 'AIR LCL', 'LAND FTL', 'LAND LTL'];
@@ -10,6 +11,7 @@ const FREIGHT_TERMS = ['Prepaid', 'Collect', 'Third Party'];
 
 export default function QuoteAdditionalInfo() {
   const { setAdditionalInfo, shipmentType, setShipmentType, shipmentTypeDescription, setShipmentTypeDescription, selectedQuoteDetails, setSelectedQuoteDetails } = useQuoteSearchStore();
+  const updateQuote = useQuoteStore(state => state.updateQuote);
   const [tab, setTab] = useState('Export');
   const [showShipmentModeDropdown, setShowShipmentModeDropdown] = useState(false);
   const [shipmentMode, setShipmentMode] = useState(SHIPMENT_MODES[0]);
@@ -279,7 +281,7 @@ export default function QuoteAdditionalInfo() {
           onClick={() => {
             // Ensure shipmentType and shipmentTypeDescription are set on both the quote and additionalInfo
             if (selectedQuoteDetails) {
-              setSelectedQuoteDetails({
+              const updatedQuote = {
                 ...selectedQuoteDetails,
                 shipmentType: tab,
                 shipmentTypeDescription: tab === 'Other' ? shipmentTypeDescription : '',
@@ -288,7 +290,10 @@ export default function QuoteAdditionalInfo() {
                   shipmentType: tab,
                   shipmentTypeDescription: tab === 'Other' ? shipmentTypeDescription : '',
                 }
-              });
+              };
+              setSelectedQuoteDetails(updatedQuote);
+              // Update the quote in the store (which will save to API)
+              updateQuote(updatedQuote);
             }
             router.push('/quotes/list/invoice');
           }}
