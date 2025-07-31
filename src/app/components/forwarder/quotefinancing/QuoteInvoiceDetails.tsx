@@ -159,21 +159,25 @@ const QuoteInvoiceDetails = ({
                 )}
               </div>
             )}
-            {/* Mode (always editable) */}
+            {/* Mode (editable only in edit mode) */}
             <div className="flex justify-between text-xs items-center">
               <span className="text-gray-500">Mode:</span>
-              <select
-                className="border rounded px-2 py-1 text-xs"
-                value={editQuote.modeLabel || editQuote.mode || ''}
-                onChange={e => setEditQuote((prev: any) => ({ ...prev, modeLabel: e.target.value }))}
-              >
-                <option value="">Select</option>
-                <option value="SEA FCL">SEA FCL</option>
-                <option value="SEA LCL">SEA LCL</option>
-                <option value="AIR LCL">AIR LCL</option>
-                <option value="LAND FTL">LAND FTL</option>
-                <option value="LAND LTL">LAND LTL</option>
-              </select>
+              {!isEditing ? (
+                <span className="font-semibold">{editQuote.modeLabel || editQuote.mode || '-'}</span>
+              ) : (
+                <select
+                  className="border rounded px-2 py-1 text-xs"
+                  value={editQuote.modeLabel || editQuote.mode || ''}
+                  onChange={e => setEditQuote((prev: any) => ({ ...prev, modeLabel: e.target.value }))}
+                >
+                  <option value="">Select</option>
+                  <option value="SEA FCL">SEA FCL</option>
+                  <option value="SEA LCL">SEA LCL</option>
+                  <option value="AIR LCL">AIR LCL</option>
+                  <option value="LAND FTL">LAND FTL</option>
+                  <option value="LAND LTL">LAND LTL</option>
+                </select>
+              )}
             </div>
             {/* Transit Time */}
             <div className="flex justify-between text-xs items-center">

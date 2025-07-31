@@ -266,12 +266,22 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       portOfDischarge: quote.portOfDischarge || quote.destination || '',
     });
     setEditTableRows(quote.tableRows ? JSON.parse(JSON.stringify(quote.tableRows)) : []);
+    setAdditionalCost(quote.additionalCost || 0);
+    setAdditionalCostDescription(quote.additionalCostDescription || '');
+    console.log('HANDLE EDIT - Additional Cost Debug:', {
+      quoteAdditionalCost: quote.additionalCost,
+      quoteAdditionalCostDescription: quote.additionalCostDescription,
+      setAdditionalCostValue: quote.additionalCost || 0,
+      setAdditionalCostDescriptionValue: quote.additionalCostDescription || ''
+    });
     setOriginalState({
       from: { ...editFrom },
       to: { ...editTo },
       remark: editRemark,
       additionalInfo: { ...editAdditionalInfo },
       tableRows: quote.tableRows ? JSON.parse(JSON.stringify(quote.tableRows)) : [],
+      additionalCost: quote.additionalCost || 0,
+      additionalCostDescription: quote.additionalCostDescription || '',
     });
     setIsEditing(true);
   };
@@ -282,6 +292,8 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       setEditRemark(originalState.remark);
       setEditAdditionalInfo(originalState.additionalInfo);
       setEditTableRows(originalState.tableRows ? JSON.parse(JSON.stringify(originalState.tableRows)) : []);
+      setAdditionalCost(originalState.additionalCost || 0);
+      setAdditionalCostDescription(originalState.additionalCostDescription || '');
     }
     setIsEditing(false);
   };
@@ -1014,14 +1026,24 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                     transitTime: editQuote.transitTime,
                     validUntil: editQuote.validUntil,
                     mode: (() => {
-                      const m = (selectedQuoteDetails?.modeLabel || quote.mode || '').toUpperCase();
-                      if (m.includes('SEA') && m.includes('FCL')) return 'SEA FCL';
-                      if (m.includes('SEA') && m.includes('LCL')) return 'SEA LCL';
-                      if (m.includes('AIR') && m.includes('LCL')) return 'AIR LCL';
-                      if (m.includes('AIR')) return 'AIR';
-                      if (m.includes('LAND') && m.includes('FTL')) return 'LAND FTL';
-                      if (m.includes('LAND') && m.includes('LTL')) return 'LAND LTL';
-                      return m;
+                      // Prioritize the actual mode from search results or edit state
+                      const actualMode = editQuote.modeLabel || selectedQuoteDetails?.modeLabel || quote.modeLabel || '';
+                      if (actualMode) {
+                        const m = actualMode.toUpperCase();
+                        if (m.includes('SEA') && m.includes('FCL')) return 'SEA FCL';
+                        if (m.includes('SEA') && m.includes('LCL')) return 'SEA LCL';
+                        if (m.includes('AIR') && m.includes('LCL')) return 'AIR LCL';
+                        if (m.includes('AIR')) return 'AIR';
+                        if (m.includes('LAND') && m.includes('FTL')) return 'LAND FTL';
+                        if (m.includes('LAND') && m.includes('LTL')) return 'LAND LTL';
+                        return m;
+                      }
+                      // Fallback to basic mode mapping
+                      const basicMode = editQuote.mode || selectedQuoteDetails?.mode || quote.mode || '';
+                      if (basicMode === 'ocean') return 'OCEAN';
+                      if (basicMode === 'air') return 'AIR';
+                      if (basicMode === 'road') return 'LAND';
+                      return basicMode.toUpperCase();
                     })(),
                     modeLabel: editQuote.mode || selectedQuoteDetails?.modeLabel || quote.modeLabel || quote.mode || '',
                     details: detailsBadges,
@@ -1047,6 +1069,14 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                     originalQuoteId: quote.id,
                     updatedQuoteId: updatedQuote.id,
                     areEqual: quote.id === updatedQuote.id
+                  });
+                  console.log('ADDITIONAL COST DEBUG:', {
+                    additionalCost,
+                    additionalCostDescription,
+                    quoteAdditionalCost: quote.additionalCost,
+                    quoteAdditionalCostDescription: quote.additionalCostDescription,
+                    isEditing,
+                    isManualQuotation
                   });
                   
                   // Prevent duplicate submissions
