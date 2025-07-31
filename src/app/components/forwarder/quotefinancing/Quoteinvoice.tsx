@@ -91,9 +91,15 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
     transitPort: quote.transitPort || '',
     serviceType: quote.serviceType || '',
     mode: quote.mode || '',
+    modeLabel: quote.modeLabel || quote.mode || '',
     transitTime: quote.transitTime || '',
     validUntil: quote.validUntil || '',
+    validFrom: quote.validFrom || '',
+    departure: quote.departure || '',
+    arrival: quote.arrival || '',
     provider: quote.provider || '',
+    portOfLoading: quote.portOfLoading || quote.origin || '',
+    portOfDischarge: quote.portOfDischarge || quote.destination || '',
   });
 
   // Add local editTableRows state - start with quote.tableRows, will be updated by useEffects
@@ -249,9 +255,15 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       transitPort: quote.transitPort || '',
       serviceType: quote.serviceType || '',
       mode: quote.mode || '',
+      modeLabel: quote.modeLabel || quote.mode || '',
       transitTime: quote.transitTime || '',
       validUntil: quote.validUntil || '',
+      validFrom: quote.validFrom || '',
+      departure: quote.departure || '',
+      arrival: quote.arrival || '',
       provider: quote.provider || '',
+      portOfLoading: quote.portOfLoading || quote.origin || '',
+      portOfDischarge: quote.portOfDischarge || quote.destination || '',
     });
     setEditTableRows(quote.tableRows ? JSON.parse(JSON.stringify(quote.tableRows)) : []);
     setOriginalState({
@@ -611,9 +623,15 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       transitPort: quote.transitPort || '',
       serviceType: quote.serviceType || '',
       mode: quote.mode || '',
+      modeLabel: quote.modeLabel || quote.mode || '',
       transitTime: quote.transitTime || '',
       validUntil: quote.validUntil || '',
+      validFrom: quote.validFrom || '',
+      departure: quote.departure || '',
+      arrival: quote.arrival || '',
       provider: quote.provider || '',
+      portOfLoading: quote.portOfLoading || quote.origin || '',
+      portOfDischarge: quote.portOfDischarge || quote.destination || '',
     });
     setAdditionalCost(quote.additionalCost || 0);
     setAdditionalCostDescription(quote.additionalCostDescription || '');

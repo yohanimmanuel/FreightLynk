@@ -58,6 +58,8 @@ export interface Quote {
   remark: string;
   serviceType?: string;
   transitPort?: string;
+  portOfLoading?: string;
+  portOfDischarge?: string;
   client?: string;
   isTariff?: boolean;
   profit?: string;
@@ -92,6 +94,9 @@ export interface Quote {
   shipmentType?: string;
   shipmentTypeDescription?: string;
   validUntil?: string;
+  validFrom?: string;
+  departure?: string;
+  arrival?: string;
   originAirport?: string;
   destinationAirport?: string;
 }

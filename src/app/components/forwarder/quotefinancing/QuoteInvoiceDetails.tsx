@@ -50,12 +50,12 @@ const QuoteInvoiceDetails = ({
             <div className="flex justify-between text-xs">
               <span className="text-gray-500">Port of Loading:</span>
               {!isEditing ? (
-                <span className="font-semibold">{quote.origin}</span>
+                <span className="font-semibold">{quote.portOfLoading || quote.origin}</span>
               ) : (
                 <input
                   className="border rounded px-2 py-1 text-xs w-32"
-                  value={editQuote.origin}
-                  onChange={e => setEditQuote((prev: any) => ({ ...prev, origin: e.target.value }))}
+                  value={editQuote.portOfLoading || editQuote.origin}
+                  onChange={e => setEditQuote((prev: any) => ({ ...prev, portOfLoading: e.target.value }))}
                   placeholder="e.g. Singapore Port"
                 />
               )}
@@ -63,12 +63,12 @@ const QuoteInvoiceDetails = ({
             <div className="flex justify-between text-xs">
               <span className="text-gray-500">Port of Discharge:</span>
               {!isEditing ? (
-                <span className="font-semibold">{quote.destination}</span>
+                <span className="font-semibold">{quote.portOfDischarge || quote.destination}</span>
               ) : (
                 <input
                   className="border rounded px-2 py-1 text-xs w-32"
-                  value={editQuote.destination}
-                  onChange={e => setEditQuote((prev: any) => ({ ...prev, destination: e.target.value }))}
+                  value={editQuote.portOfDischarge || editQuote.destination}
+                  onChange={e => setEditQuote((prev: any) => ({ ...prev, portOfDischarge: e.target.value }))}
                   placeholder="e.g. Los Angeles Port"
                 />
               )}
@@ -164,8 +164,8 @@ const QuoteInvoiceDetails = ({
               <span className="text-gray-500">Mode:</span>
               <select
                 className="border rounded px-2 py-1 text-xs"
-                value={editQuote.mode}
-                onChange={e => setEditQuote((prev: any) => ({ ...prev, mode: e.target.value }))}
+                value={editQuote.modeLabel || editQuote.mode || ''}
+                onChange={e => setEditQuote((prev: any) => ({ ...prev, modeLabel: e.target.value }))}
               >
                 <option value="">Select</option>
                 <option value="SEA FCL">SEA FCL</option>

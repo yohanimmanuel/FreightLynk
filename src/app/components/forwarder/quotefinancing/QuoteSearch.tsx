@@ -522,7 +522,7 @@ const QuoteSearch = () => {
     // Build the quote object with client/contact, id, and validUntil
     const quoteObj = {
       id: `QR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Generate new ID for new quote from search
-      lane: `${appliedSearchParams.origin} - ${appliedSearchParams.destination}`,
+      lane: `${quoteResult.origin} - ${quoteResult.destination}`,
       mode: (appliedTransportMode === 'Sea' ? 'ocean' : appliedTransportMode === 'Air' ? 'air' : 'road') as 'ocean' | 'air' | 'road',
       modeLabel,
       containertype: appliedCargoTab === 'FCL' ? Object.keys(appliedFclQuantities).filter(key => appliedFclQuantities[key] > 0) : [],
@@ -533,12 +533,15 @@ const QuoteSearch = () => {
       provider: quoteResult.provider || '',
       validity: quoteResult.validUntil || '',
       status: 'draft' as const,
-      origin: appliedSearchParams.origin,
-      destination: appliedSearchParams.destination,
+      origin: quoteResult.origin,
+      destination: quoteResult.destination,
       incoterms: '',
-      remark: '',
+      remark: quoteResult.remark || '', // Extract remark from search result
       serviceType: `${appliedSearchParams.originType || 'Port'} to ${appliedSearchParams.destinationType || 'Port'}`,
       transitPort: quoteResult.transitPort || '',
+      // Add port-specific fields from search results
+      portOfLoading: quoteResult.origin,
+      portOfDischarge: quoteResult.destination,
       client: selectedClient?.name || '',
       isTariff: false,
       profit: '0',
@@ -579,6 +582,9 @@ const QuoteSearch = () => {
       shipmentType: appliedCargoTab,
       shipmentTypeDescription: cargoLabel,
       validUntil: quoteResult.validUntil || '',
+      validFrom: quoteResult.validFrom || '', // Extract validFrom from search result
+      departure: quoteResult.departure || '', // Extract departure date from search result
+      arrival: quoteResult.arrival || '', // Extract arrival date from search result
       originAirport: appliedSearchParams.originType === 'Airport' ? appliedSearchParams.origin : '',
       destinationAirport: appliedSearchParams.destinationType === 'Airport' ? appliedSearchParams.destination : '',
     };
