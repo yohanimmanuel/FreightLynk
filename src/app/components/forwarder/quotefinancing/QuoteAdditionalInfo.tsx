@@ -278,7 +278,7 @@ export default function QuoteAdditionalInfo() {
           Back
         </button>
         <button 
-          onClick={() => {
+          onClick={async () => {
             // Ensure shipmentType and shipmentTypeDescription are set on both the quote and additionalInfo
             if (selectedQuoteDetails) {
               const updatedQuote = {
@@ -292,8 +292,10 @@ export default function QuoteAdditionalInfo() {
                 }
               };
               setSelectedQuoteDetails(updatedQuote);
-              // Update the quote in the store (which will save to API)
-              updateQuote(updatedQuote);
+              
+              // Just update the quote details in the search store
+              // Don't save to database yet - wait until final submission in QuoteInvoice
+              console.log('Updated quote details in search store:', selectedQuoteDetails.id);
             }
             router.push('/quotes/list/invoice');
           }}

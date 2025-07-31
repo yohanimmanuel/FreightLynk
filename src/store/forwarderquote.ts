@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getQuotes, createQuote, updateQuote, deleteQuote } from '@/utils/quotesApi';
+import { getQuotes, createQuote, updateQuote as updateQuoteApi, deleteQuote } from '@/utils/quotesApi';
 
 // Quote interface and related types
 export interface QuoteParty {
@@ -183,18 +183,28 @@ export const useQuoteStore = create<QuoteStore>((set, get) => ({
   
   addQuote: async (quote: Quote) => {
     try {
+      console.log('Store addQuote: Starting to add quote:', quote.id);
       const result = await createQuote(quote);
+      console.log('Store addQuote: API result:', result);
+      
       if (result.success && result.id) {
         const newQuote = { ...quote, id: result.id };
+        console.log('Store addQuote: New quote with API ID:', newQuote.id);
+        
         set((state) => {
           const existingIndex = state.quotes.findIndex(q => q.id === newQuote.id);
+          console.log('Store addQuote: Existing index:', existingIndex, 'Current quotes count:', state.quotes.length);
+          
           let updatedQuotes;
           if (existingIndex !== -1) {
+            console.log('Store addQuote: Updating existing quote at index:', existingIndex);
             updatedQuotes = [...state.quotes];
             updatedQuotes[existingIndex] = newQuote;
           } else {
+            console.log('Store addQuote: Adding new quote to store');
             updatedQuotes = [...state.quotes, newQuote];
           }
+          console.log('Store addQuote: Final quotes count:', updatedQuotes.length);
           return { quotes: updatedQuotes };
         });
       }
@@ -206,7 +216,7 @@ export const useQuoteStore = create<QuoteStore>((set, get) => ({
 
   updateQuote: async (updatedQuote: Quote) => {
     try {
-      const result = await updateQuote(updatedQuote.id, updatedQuote);
+      const result = await updateQuoteApi(updatedQuote.id, updatedQuote);
       if (result.success) {
         set((state) => ({
           quotes: state.quotes.map(quote => quote.id === updatedQuote.id ? updatedQuote : quote)

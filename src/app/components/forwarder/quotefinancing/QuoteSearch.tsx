@@ -66,6 +66,10 @@ const QuoteSearch = () => {
 
   const [showResults, setShowResults] = useState(false);
   const [loading, setLoading] = useState(false);
+  
+  // Add submission state tracking to prevent duplicate submissions
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittedQuoteIds, setSubmittedQuoteIds] = useState<Set<string>>(new Set());
 
   // Add applied state for search
   const [appliedTransportMode, setAppliedTransportMode] = useState(transportMode);
@@ -304,7 +308,16 @@ const QuoteSearch = () => {
   }
 
   // When a quote is selected (example: in your select button handler)
-  const handleSelectQuote = (quoteResult: QuoteSearchResult, index: number) => {
+  const handleSelectQuote = async (quoteResult: QuoteSearchResult, index: number) => {
+    // Prevent duplicate submissions
+    if (isSubmitting) {
+      console.log('Quote selection already in progress, ignoring duplicate click');
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
     setSelectedQuote(index);
     setSelectedQuoteId(quoteResult.id);
     // Build modeLabel and cargoLabel for invoice
@@ -508,7 +521,7 @@ const QuoteSearch = () => {
     else if (appliedLclVolume) badge = `${appliedLclVolume} cbm`;
     // Build the quote object with client/contact, id, and validUntil
     const quoteObj = {
-      id: `QR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `QR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Generate new ID for new quote from search
       lane: `${appliedSearchParams.origin} - ${appliedSearchParams.destination}`,
       mode: (appliedTransportMode === 'Sea' ? 'ocean' : appliedTransportMode === 'Air' ? 'air' : 'road') as 'ocean' | 'air' | 'road',
       modeLabel,
@@ -570,10 +583,14 @@ const QuoteSearch = () => {
       destinationAirport: appliedSearchParams.destinationType === 'Airport' ? appliedSearchParams.destination : '',
     };
     setSelectedQuoteDetails(quoteObj);
-    // Add the quote to the store (which will save to API)
-    addQuote(quoteObj);
+    // Don't save to database yet - wait until final submission
     router.push('/quotes/list/addinfo');
-  };
+  } catch (error) {
+    console.error('Error selecting quote:', error);
+    // Reset submission state on error
+    setIsSubmitting(false);
+  }
+};
 
   // Normalize ftlTrucks to canonical types using all available truck types from searchResults
   const allAvailableTruckTypes = Array.from(new Set(searchResults.flatMap(result => Object.keys(result.ftlRates || {}))));
@@ -1083,10 +1100,11 @@ const QuoteSearch = () => {
                 {/* 4. Actions Column */}
                 <div className="flex flex-col justify-center items-center py-2 px-4 lg:col-span-1">
                           <button
+                          disabled={isSubmitting}
                           onClick={() => handleSelectQuote(result, idx)}
-                          className={`w-full px-4 py-2 rounded-md transition-colors text-sm font-medium flex items-center justify-center gap-2 bg-[#007bff] hover:bg-blue-700 text-white border border-[#007bff]`}
+                          className={`w-full px-4 py-2 rounded-md transition-colors text-sm font-medium flex items-center justify-center gap-2 bg-[#007bff] hover:bg-blue-700 text-white border border-[#007bff] disabled:bg-gray-400 disabled:cursor-not-allowed`}
                                   >
-                          Select
+                          {isSubmitting ? 'Selecting...' : 'Select'}
                                   </button>
                               </div>
                             </div>

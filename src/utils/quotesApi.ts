@@ -56,6 +56,7 @@ export const createQuote = async (quote: Partial<Quote>): Promise<{ success: boo
 
 export const updateQuote = async (id: string, quote: Partial<Quote>): Promise<{ success: boolean; message: string }> => {
   try {
+    console.log('updateQuote API call:', { id, quote });
     const response = await fetch(`/api/quotes?id=${id}`, {
       method: 'PUT',
       headers: {
@@ -64,11 +65,17 @@ export const updateQuote = async (id: string, quote: Partial<Quote>): Promise<{ 
       body: JSON.stringify(quote),
     });
     
+    console.log('updateQuote response status:', response.status);
+    
     if (!response.ok) {
-      throw new Error('Failed to update quote');
+      const errorText = await response.text();
+      console.error('updateQuote error response:', errorText);
+      throw new Error(`Failed to update quote: ${response.status} ${errorText}`);
     }
     
-    return await response.json();
+    const result = await response.json();
+    console.log('updateQuote success:', result);
+    return result;
   } catch (error) {
     console.error('Error updating quote:', error);
     throw error;

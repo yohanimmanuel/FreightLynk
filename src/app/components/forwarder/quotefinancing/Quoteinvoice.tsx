@@ -35,6 +35,15 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
   const { user } = useAuthStore();
   const router = useRouter();
   const quote = selectedQuoteDetails;
+  
+  // Debug: Log quote changes
+  useEffect(() => {
+    console.log('QuoteInvoice: Quote object changed', {
+      quoteId: quote?.id,
+      isManualQuotation,
+      quoteObject: quote
+    });
+  }, [quote?.id, isManualQuotation]);
   const addQuote = useQuoteStore(state => state.addQuote);
   const quotes = useQuoteStore(state => state.quotes);
   const setQuotes = useQuoteStore(state => state.setQuotes);
@@ -87,8 +96,19 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
     provider: quote.provider || '',
   });
 
-  // Add local editTableRows state
-  const [editTableRows, setEditTableRows] = useState<Array<any>>(quote.tableRows ? JSON.parse(JSON.stringify(quote.tableRows)) : []);
+  // Add local editTableRows state - start with quote.tableRows, will be updated by useEffects
+  const [editTableRows, setEditTableRows] = useState<Array<any>>(() => {
+    console.log('INITIALIZING editTableRows:', {
+      quoteTableRows: quote.tableRows,
+      selectedQuoteDetailsTableRows: selectedQuoteDetails?.tableRows
+    });
+    const sourceTableRows = quote.tableRows || selectedQuoteDetails?.tableRows;
+    return sourceTableRows ? JSON.parse(JSON.stringify(sourceTableRows)) : [];
+  });
+  
+  // Add submission state tracking to prevent duplicate submissions
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittedQuoteIds, setSubmittedQuoteIds] = useState<Set<string>>(new Set());
 
   // Functions for manual quotation table management
   const addTableRow = () => {
@@ -189,7 +209,24 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
   }, [isManualQuotation, selectedQuoteDetails]);
 
   // Generate quoteId ONCE for both invoice and table, using draft if available
-  const [quoteId] = useState(() => currentDraftQuote?.id || (typeof quote.id === 'string' ? quote.id : generateQuoteId()));
+  const [quoteId] = useState(() => {
+    console.log('QuoteInvoice: Generating quoteId', {
+      isManualQuotation,
+      quoteId: quote.id,
+      currentDraftQuoteId: currentDraftQuote?.id,
+      quoteIdType: typeof quote.id
+    });
+    
+    // For quote search flow, always use the quote's existing ID
+    if (!isManualQuotation && quote.id) {
+      console.log('QuoteInvoice: Using existing quote ID from search flow:', quote.id);
+      return quote.id;
+    }
+    // For manual quotes, use draft ID or generate new one
+    const finalId = currentDraftQuote?.id || (typeof quote.id === 'string' ? quote.id : generateQuoteId());
+    console.log('QuoteInvoice: Using ID for manual quote:', finalId);
+    return finalId;
+  });
   const hasAddedQuote = useRef<string | null>(null);
 
   // --- Handlers ---
@@ -285,12 +322,9 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       additionalCostDescription,
     };
     
-    // Save to API if quote has an ID (existing quote), otherwise add new quote
-    if (quote.id) {
-      updateQuote(newQuote);
-    } else {
-      addQuote(newQuote);
-    }
+    // Frontend-only save - no API calls, just update local state
+    // Database operations only happen on submit
+    console.log('Frontend save - updating local state only');
     
     if (Array.isArray(quotes)) {
       const idx = quotes.findIndex((q) => q.id === newQuote.id);
@@ -334,125 +368,161 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
     
     // Weight/volume badge for LCL, AIR, LTL
     let weightVolumeBadge = '';
-    if (isManualQuotation && (mode.includes('SEA') && mode.includes('LCL') || mode.includes('AIR') || mode.includes('LAND') && mode.includes('LTL'))) {
-      const desc = tableRows[0]?.description || '';
+    
+    // Use editTableRows for consistency with the save function
+    const rowsToUse = editTableRows.length > 0 ? editTableRows : tableRows;
+    console.log('SAVE FUNCTION DEBUG - Data sources:', {
+      editTableRowsLength: editTableRows.length,
+      editTableRows: editTableRows,
+      tableRowsLength: tableRows.length,
+      tableRows: tableRows,
+      rowsToUseLength: rowsToUse.length,
+      rowsToUse: rowsToUse
+    });
+    
+    // FALLBACK: If rowsToUse is empty, try to get data from quote.tableRows directly
+    let finalRowsToUse = rowsToUse;
+    if (rowsToUse.length === 0 && quote.tableRows && quote.tableRows.length > 0) {
+      console.log('FALLBACK: Using quote.tableRows directly:', quote.tableRows);
+      finalRowsToUse = quote.tableRows;
+    }
+    
+    // First try to extract from finalRowsToUse description (works for both manual and search flow)
+    if (finalRowsToUse.length > 0 && finalRowsToUse[0]?.description) {
+      const desc = finalRowsToUse[0].description;
+      console.log('WEIGHT/VOLUME EXTRACTION DEBUG: Found description:', desc);
       // Try to extract 'X kg' and 'Y cbm' from the description
       const weightMatch = desc.match(/(\d+(?:\.\d+)?)\s*kg/i);
       const volumeMatch = desc.match(/(\d+(?:\.\d+)?)\s*cbm/i);
       if (weightMatch) weightVolumeBadge = `${weightMatch[1]} kg`;
       if (volumeMatch) weightVolumeBadge = `${weightVolumeBadge} / ${volumeMatch[1]} cbm`;
-    } else {
-    const weight = editAdditionalInfo.lclWeight || quote.lclWeight || '';
-    const volume = editAdditionalInfo.lclVolume || quote.lclVolume || '';
-    if (weight && volume) {
-      weightVolumeBadge = `${weight} kg / ${volume} cbm`;
-    } else if (weight) {
-      weightVolumeBadge = `${weight} kg`;
-    } else if (volume) {
-      weightVolumeBadge = `${volume} cbm`;
-      }
+      console.log('WEIGHT/VOLUME EXTRACTION DEBUG: Extracted badge:', weightVolumeBadge);
     }
+    
+    // If no weight/volume found in rowsToUse, fall back to additional info
+    if (!weightVolumeBadge) {
+      const weight = editAdditionalInfo.lclWeight || quote.lclWeight || '';
+      const volume = editAdditionalInfo.lclVolume || quote.lclVolume || '';
+      if (weight && volume) {
+        weightVolumeBadge = `${weight} kg / ${volume} cbm`;
+      } else if (weight) {
+        weightVolumeBadge = `${weight} kg`;
+      } else if (volume) {
+        weightVolumeBadge = `${volume} cbm`;
+      }
+      console.log('WEIGHT/VOLUME EXTRACTION DEBUG: Using additional info:', weightVolumeBadge);
+    }
+    
+    // Debug weight/volume badge construction
+    console.log('WEIGHT/VOLUME BADGE DEBUG:', {
+      isManualQuotation,
+      mode,
+      tableRowsDescription: tableRows[0]?.description,
+      editTableRowsDescription: editTableRows[0]?.description,
+      rowsToUseDescription: rowsToUse[0]?.description,
+      editAdditionalInfo: { lclWeight: editAdditionalInfo.lclWeight, lclVolume: editAdditionalInfo.lclVolume },
+      quote: { lclWeight: quote.lclWeight, lclVolume: quote.lclVolume },
+      weightVolumeBadge,
+      modeChecks: {
+        isFCL: mode.includes('SEA') && mode.includes('FCL'),
+        isLCL: mode.includes('SEA') && mode.includes('LCL'),
+        isAIR: mode.includes('AIR'),
+        isFTL: mode.includes('LAND') && mode.includes('FTL'),
+        isLTL: mode.includes('LAND') && mode.includes('LTL')
+      }
+    });
 
     // Create details badges based on mode
     let detailsBadges = [];
-    if (isManualQuotation && (mode.includes('SEA') && mode.includes('LCL') || mode.includes('AIR') || mode.includes('LAND') && mode.includes('LTL'))) {
-      // Manual quoting: show only the description of the first table row as the badge
-      const descBadge = tableRows[0]?.description?.trim();
-      detailsBadges = descBadge ? [descBadge] : [];
-    } else if (mode.includes('SEA') && mode.includes('FCL')) {
+    if (mode.includes('SEA') && mode.includes('FCL')) {
       detailsBadges = [...containerTypeBadges];
     } else if (mode.includes('LAND') && mode.includes('FTL')) {
       detailsBadges = [...truckTypeBadges]; // Now uses 'item' field
     } else if (mode.includes('SEA') && mode.includes('LCL') || mode.includes('AIR') || mode.includes('LAND') && mode.includes('LTL')) {
+      // For LCL/AIR/LTL, show weight/volume badge if available
       detailsBadges = weightVolumeBadge ? [weightVolumeBadge] : [];
     } else {
-      // For 'ALL' tab, show only the mode-specific information (no mixing)
-      if (mode.includes('SEA') && mode.includes('FCL')) {
-        detailsBadges = [...containerTypeBadges];
-      } else if (mode.includes('LAND') && mode.includes('FTL')) {
-        detailsBadges = [...truckTypeBadges]; // Now uses 'item' field
-      } else if (mode.includes('SEA') && mode.includes('LCL') || mode.includes('AIR') || mode.includes('LAND') && mode.includes('LTL')) {
-        detailsBadges = weightVolumeBadge ? [weightVolumeBadge] : [];
-      } else {
-        // Fallback: show container types if available, otherwise weight/volume
-        detailsBadges = containerTypeBadges.length > 0 ? [...containerTypeBadges] : (weightVolumeBadge ? [weightVolumeBadge] : []);
-      }
+      // Fallback: show container types if available, otherwise weight/volume
+      detailsBadges = containerTypeBadges.length > 0 ? [...containerTypeBadges] : (weightVolumeBadge ? [weightVolumeBadge] : []);
     }
 
-    // For manual quoting and LCL/AIR/LTL, extract lclWeight/lclVolume from first table row description
+    // Extract lclWeight/lclVolume from finalRowsToUse description for all quotes
     let lclWeight = '';
     let lclVolume = '';
-    if (isManualQuotation && (mode.includes('SEA') && mode.includes('LCL') || mode.includes('AIR') || mode.includes('LAND') && mode.includes('LTL'))) {
-      const desc = tableRows[0]?.description || '';
+    if (finalRowsToUse.length > 0 && finalRowsToUse[0]?.description) {
+      const desc = finalRowsToUse[0].description;
       // Try to extract 'X kg' and 'Y cbm' from the description
       const weightMatch = desc.match(/(\d+(?:\.\d+)?)\s*kg/i);
       const volumeMatch = desc.match(/(\d+(?:\.\d+)?)\s*cbm/i);
       if (weightMatch) lclWeight = weightMatch[1];
       if (volumeMatch) lclVolume = volumeMatch[1];
+      console.log('LCL WEIGHT/VOLUME EXTRACTION DEBUG: Extracted:', { lclWeight, lclVolume });
     } else {
       lclWeight = editAdditionalInfo.lclWeight || quote.lclWeight || '';
       lclVolume = editAdditionalInfo.lclVolume || quote.lclVolume || '';
+      console.log('LCL WEIGHT/VOLUME EXTRACTION DEBUG: Using additional info:', { lclWeight, lclVolume });
     }
 
-    // After extracting lclWeight and lclVolume, recompute detailsBadges for manual quoting LCL/AIR/LTL
-    if (isManualQuotation && (mode.includes('SEA') && mode.includes('LCL') || mode.includes('AIR') || mode.includes('LAND') && mode.includes('LTL'))) {
-      let badge = '';
-      if (lclWeight && lclVolume) badge = `${lclWeight} kg / ${lclVolume} cbm`;
-      else if (lclWeight) badge = `${lclWeight} kg`;
-      else if (lclVolume) badge = `${lclVolume} cbm`;
-      detailsBadges = badge ? [badge] : [];
-    }
-
-    // Parse lclWeight and lclVolume from the first row's description
-    let lclWeightParsed = '';
-    let lclVolumeParsed = '';
-    if (editTableRows.length > 0 && editTableRows[0].description) {
-      const desc = editTableRows[0].description;
-      const weightMatch = desc.match(/(\d+(?:\.\d+)?)\s*kg/i);
-      const volumeMatch = desc.match(/(\d+(?:\.\d+)?)\s*cbm/i);
-      if (weightMatch) lclWeightParsed = weightMatch[1];
-      if (volumeMatch) lclVolumeParsed = volumeMatch[1];
-    }
-    let badge = '';
-    if (lclWeightParsed && lclVolumeParsed) badge = `${lclWeightParsed} kg / ${lclVolumeParsed} cbm`;
-    else if (lclWeightParsed) badge = `${lclWeightParsed} kg`;
-    else if (lclVolumeParsed) badge = `${lclVolumeParsed} cbm`;
+    // Use the already extracted lclWeight and lclVolume
+    let lclWeightParsed = lclWeight;
+    let lclVolumeParsed = lclVolume;
 
     // Unified badge logic for all modes
     let detailsField: string[] = [];
     let truckTypeField: string[] = [];
     let containerTypeField: string[] = [];
     let weightVolumeField: string[] = [];
+    
+    // Always capture weight/volume data when available, regardless of mode
+    if (weightVolumeBadge) {
+      weightVolumeField = [weightVolumeBadge];
+    }
+    
     if (mode.includes('SEA') && mode.includes('FCL')) {
       detailsField = [...containerTypeBadges];
       containerTypeField = [...containerTypeBadges];
       truckTypeField = [];
-      weightVolumeField = [];
     } else if (mode.includes('LAND') && mode.includes('FTL')) {
       detailsField = [...truckTypeBadges]; // Now uses 'item' field
       truckTypeField = [...truckTypeBadges]; // Now uses 'item' field
       containerTypeField = [];
-      weightVolumeField = [];
     } else if (mode.includes('SEA') && mode.includes('LCL') || mode.includes('AIR') || mode.includes('LAND') && mode.includes('LTL')) {
       detailsField = weightVolumeBadge ? [weightVolumeBadge] : [];
-      weightVolumeField = weightVolumeBadge ? [weightVolumeBadge] : [];
       containerTypeField = [];
       truckTypeField = [];
     } else {
       detailsField = containerTypeBadges.length > 0 ? [...containerTypeBadges] : (weightVolumeBadge ? [weightVolumeBadge] : []);
       containerTypeField = containerTypeBadges.length > 0 ? [...containerTypeBadges] : [];
       truckTypeField = truckTypeBadges.length > 0 ? [...truckTypeBadges] : [];
-      weightVolumeField = weightVolumeBadge ? [weightVolumeBadge] : [];
     }
 
     // Debug log to confirm fields
     console.log('QUOTE SAVE DEBUG:', {
       id: quote.id,
       mode,
+      weightVolumeBadge,
       detailsField,
       truckTypeField,
       containerTypeField,
-      weightVolumeField
+      weightVolumeField,
+      tableRows: tableRows.map((row: any) => ({ description: row.description, item: row.item })),
+      modeChecks: {
+        isFCL: mode.includes('SEA') && mode.includes('FCL'),
+        isLCL: mode.includes('SEA') && mode.includes('LCL'),
+        isAIR: mode.includes('AIR'),
+        isFTL: mode.includes('LAND') && mode.includes('FTL'),
+        isLTL: mode.includes('LAND') && mode.includes('LTL')
+      }
+    });
+    
+    // Debug the final quote object being sent
+    console.log('FINAL QUOTE OBJECT DEBUG:', {
+      weightVolume: weightVolumeField,
+      weightVolumeType: typeof weightVolumeField,
+      weightVolumeLength: Array.isArray(weightVolumeField) ? weightVolumeField.length : 'not array',
+      editTableRows: editTableRows,
+      editTableRowsLength: editTableRows.length,
+      firstRowDescription: editTableRows[0]?.description
     });
 
     // --- Compute totals including additional cost ---
@@ -548,6 +618,34 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
     setAdditionalCost(quote.additionalCost || 0);
     setAdditionalCostDescription(quote.additionalCostDescription || '');
   }, [quote?.id]);
+
+  // Update editTableRows when selectedQuoteDetails changes (for search flow quotes)
+  useEffect(() => {
+    console.log('selectedQuoteDetails useEffect triggered:', {
+      hasSelectedQuoteDetails: !!selectedQuoteDetails,
+      hasTableRows: !!selectedQuoteDetails?.tableRows,
+      tableRowsLength: selectedQuoteDetails?.tableRows?.length,
+      tableRows: selectedQuoteDetails?.tableRows
+    });
+    if (selectedQuoteDetails?.tableRows && selectedQuoteDetails.tableRows.length > 0) {
+      console.log('UPDATING editTableRows from selectedQuoteDetails:', selectedQuoteDetails.tableRows);
+      setEditTableRows(JSON.parse(JSON.stringify(selectedQuoteDetails.tableRows)));
+    }
+  }, [selectedQuoteDetails?.tableRows]);
+
+  // Update editTableRows when quote changes (for existing quotes)
+  useEffect(() => {
+    console.log('quote.tableRows useEffect triggered:', {
+      hasQuote: !!quote,
+      hasTableRows: !!quote?.tableRows,
+      tableRowsLength: quote?.tableRows?.length,
+      tableRows: quote?.tableRows
+    });
+    if (quote?.tableRows && quote.tableRows.length > 0) {
+      console.log('UPDATING editTableRows from quote.tableRows:', quote.tableRows);
+      setEditTableRows(JSON.parse(JSON.stringify(quote.tableRows)));
+    }
+  }, [quote?.tableRows]);
 
   // Reset form state after submission or when starting a new quote
   useEffect(() => {
@@ -720,7 +818,8 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
     return () => clearTimeout(timeout);
   }, [currentDraftQuote]);
 
-  const isAlreadySubmitted = quotes.some(q => q.id === currentDraftQuote?.id);
+  // Only consider it already submitted if the quote exists AND has a status other than 'draft'
+  const isAlreadySubmitted = quotes.some(q => q.id === quote.id && q.status !== 'draft');
 
   if (loadingDraft) {
     return (
@@ -763,8 +862,9 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
               <Edit className="w-4 h-4" /> Edit
             </button>
               <button
-                className="px-4 py-2 rounded-lg bg-[#FFA726] text-white font-medium hover:bg-[#fb8c00] transition-colors flex items-center gap-2"
-                onClick={() => {
+                disabled={isAlreadySubmitted || isSubmitting}
+                className="px-4 py-2 rounded-lg bg-[#FFA726] text-white font-medium hover:bg-[#fb8c00] transition-colors flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                onClick={async () => {
                   // Build the updated quote object directly
                   const safeFrom = {
                     company: editFrom.company || user?.companyName || 'Demo Company (FreightLynk LLC)',
@@ -855,8 +955,31 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                       detailsBadges = containerTypeBadges.length > 0 ? [...containerTypeBadges] : (weightVolumeBadge ? [weightVolumeBadge] : []);
                     }
                   }
+                  
+                  // Extract weight/volume for submit handler (same logic as save function)
+                  let submitWeightVolumeBadge = '';
+                  const submitRowsToUse = editTableRows.length > 0 ? editTableRows : tableRows;
+                  if (submitRowsToUse.length > 0 && submitRowsToUse[0]?.description) {
+                    const desc = submitRowsToUse[0].description;
+                    const weightMatch = desc.match(/(\d+(?:\.\d+)?)\s*kg/i);
+                    const volumeMatch = desc.match(/(\d+(?:\.\d+)?)\s*cbm/i);
+                    if (weightMatch) submitWeightVolumeBadge = `${weightMatch[1]} kg`;
+                    if (volumeMatch) submitWeightVolumeBadge = `${submitWeightVolumeBadge} / ${volumeMatch[1]} cbm`;
+                    console.log('SUBMIT HANDLER: Extracted weight/volume:', submitWeightVolumeBadge);
+                  }
+                  
+                  // Calculate price for submit handler (same logic as save function)
+                  const submitTotalAmount = submitRowsToUse.reduce((sum: number, row: any) => sum + (typeof row.amount === 'number' ? row.amount : 0), 0);
+                  const submitFinalTotalAmount = submitTotalAmount + (additionalCost || 0);
+                  console.log('SUBMIT HANDLER: Price calculation:', {
+                    submitTotalAmount,
+                    additionalCost,
+                    submitFinalTotalAmount,
+                    tableRows: submitRowsToUse.map((row: any) => ({ description: row.description, amount: row.amount }))
+                  });
                   const updatedQuote = {
                     ...quote, // spread first
+                    id: quote.id, // explicitly preserve the ID
                     provider: editQuote.provider || selectedQuoteDetails?.provider || quote.provider || '', // then override
                     from: { ...safeFrom },
                     to: { ...safeTo },
@@ -888,9 +1011,9 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                     client: safeTo.company || quote.client || '',
                     containertype: containerTypeBadges,
                     truckType: truckTypeBadges,
-                    weightVolume: weightVolumeBadge ? [weightVolumeBadge] : [],
+                    weightVolume: submitWeightVolumeBadge ? [submitWeightVolumeBadge] : [],
                     status: quote.status || 'draft',
-                    price: finalTotalAmount?.toString() || quote.price || '',
+                    price: submitFinalTotalAmount.toString(),
                     createdBy: user?.fullName || quote.createdBy || '',
                     incoterms: cleanedAdditionalInfo.incoterm || quote.incoterms || '',
                     notes: cleanedAdditionalInfo.note || quote.notes || '',
@@ -898,24 +1021,75 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                     // --- Ensure additional cost fields are always included ---
                     additionalCost: additionalCost,
                     additionalCostDescription: additionalCostDescription,
+                    totalAmount: submitTotalAmount,
+                    finalTotalAmount: submitFinalTotalAmount,
                   };
                   console.log('QUOTE SUBMIT DEBUG:', updatedQuote);
-                  addQuote(updatedQuote);
-                  // Fix: update quotes array directly if setQuotes does not accept a function
-                  const prevQuotes = quotes || [];
-                  const idx = prevQuotes.findIndex((q: any) => q.id === updatedQuote.id);
-                  if (idx !== -1) {
-                    const newQuotes = [...prevQuotes];
-                    newQuotes[idx] = updatedQuote;
-                    setQuotes(newQuotes);
-                  } else {
-                    setQuotes([updatedQuote, ...prevQuotes]);
+                  console.log('Quote ID check:', {
+                    originalQuoteId: quote.id,
+                    updatedQuoteId: updatedQuote.id,
+                    areEqual: quote.id === updatedQuote.id
+                  });
+                  
+                  // Prevent duplicate submissions
+                  if (isSubmitting) {
+                    console.log('Quote submission already in progress, ignoring duplicate click');
+                    return;
                   }
-                  router.push('/quotes/list');
+
+                  const quoteId = updatedQuote.id;
+                  
+                  // Check if this quote was already submitted in this session
+                  if (submittedQuoteIds.has(quoteId)) {
+                    console.log('Quote already submitted in this session:', quoteId);
+                    return;
+                  }
+                  
+                  setIsSubmitting(true);
+                  
+                  try {
+                    console.log('QuoteInvoice: Submitting quote to database:', quoteId);
+                    
+                    // Check if this quote was previously saved to database
+                    // We can determine this by checking if the quote has been submitted in this session
+                    // or if it has a non-draft status
+                    const wasPreviouslySubmitted = submittedQuoteIds.has(quoteId);
+                    const hasNonDraftStatus = quote.status && quote.status !== 'draft';
+                    
+                    if (wasPreviouslySubmitted || hasNonDraftStatus) {
+                      // Quote was previously submitted, update it
+                      console.log('Updating previously submitted quote:', quoteId);
+                      await updateQuote(updatedQuote);
+                    } else {
+                      // New quote, create it
+                      console.log('Creating new quote in database:', quoteId);
+                      await addQuote(updatedQuote);
+                    }
+                    
+                    // Mark this quote as submitted in this session
+                    setSubmittedQuoteIds(prev => new Set([...prev, quoteId]));
+                    
+                    // Update quotes array
+                    const prevQuotes = quotes || [];
+                    const idx = prevQuotes.findIndex((q: any) => q.id === updatedQuote.id);
+                    if (idx !== -1) {
+                      const newQuotes = [...prevQuotes];
+                      newQuotes[idx] = updatedQuote;
+                      setQuotes(newQuotes);
+                    } else {
+                      setQuotes([updatedQuote, ...prevQuotes]);
+                    }
+                    
+                    router.push('/quotes/list');
+                  } catch (error) {
+                    console.error('Error submitting quote:', error);
+                    // Reset submission state on error
+                    setIsSubmitting(false);
+                  }
                 }}
-                title={isAlreadySubmitted ? 'This quote has already been submitted.' : 'Submit this quote'}
+                title={isAlreadySubmitted ? 'This quote has already been submitted.' : isSubmitting ? 'Submitting...' : 'Submit this quote'}
               >
-                Submit
+                {isSubmitting ? 'Submitting...' : 'Submit'}
               </button>
               <button 
                 onClick={() => openSendConfirm(editTo.company)}

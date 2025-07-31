@@ -105,6 +105,35 @@ const generateQuoteId = () => {
   return `QR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 };
 
+// Helper function to check for duplicate quotes
+const checkForDuplicateQuote = (quoteData: any, userId: string) => {
+  // Check for recent quotes (within last 5 minutes) with similar data
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  
+  const existingQuote = db.prepare(`
+    SELECT id, created_at FROM quotes 
+    WHERE user_id = ? 
+    AND mode = ? 
+    AND origin = ? 
+    AND destination = ? 
+    AND provider = ? 
+    AND price = ? 
+    AND created_at > ?
+    ORDER BY created_at DESC 
+    LIMIT 1
+  `).get(
+    userId,
+    quoteData.mode || quoteData.Mode,
+    quoteData.origin || quoteData.Origin,
+    quoteData.destination || quoteData.Destination,
+    quoteData.provider || quoteData.Provider,
+    quoteData.price || quoteData.Price,
+    fiveMinutesAgo
+  );
+  
+  return existingQuote;
+};
+
 export async function GET(req: NextRequest) {
   try {
     const user = getCurrentUser(req);
@@ -276,10 +305,34 @@ export async function POST(req: NextRequest) {
     ensureQuotesTable();
 
     const quoteData = await req.json();
-    const quoteId = generateQuoteId();
+    // Use provided ID if it exists, otherwise generate new one
+    const quoteId = quoteData.id || generateQuoteId();
+    
+    console.log('POST /api/quotes: ID handling:', {
+      providedId: quoteData.id,
+      generatedId: generateQuoteId(),
+      finalId: quoteId,
+      hasProvidedId: !!quoteData.id
+    });
+
+    // Check if quote with this ID already exists
+    const existingQuote = db.prepare('SELECT id FROM quotes WHERE id = ?').get(quoteId);
+    if (existingQuote) {
+      console.log('POST /api/quotes: Quote with ID already exists:', quoteId);
+      return NextResponse.json({ 
+        success: true, 
+        id: quoteId,
+        message: 'Quote already exists' 
+      });
+    }
 
     console.log('POST /api/quotes: Creating quote', { quoteId, userId: currentUser.id });
     console.log('POST /api/quotes: Quote data received:', JSON.stringify(quoteData, null, 2));
+    console.log('POST /api/quotes: Weight/Volume data check:', {
+      weightVolume: quoteData.weightVolume,
+      weightVolumeType: typeof quoteData.weightVolume,
+      weightVolumeLength: Array.isArray(quoteData.weightVolume) ? quoteData.weightVolume.length : 'not array'
+    });
 
     // Validate required fields
     if (!quoteData.mode) {
@@ -287,19 +340,35 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Mode is required' }, { status: 400 });
     }
 
+         // Check for duplicate quotes
+     const duplicate = checkForDuplicateQuote(quoteData, currentUser.id);
+     if (duplicate) {
+       console.warn('POST /api/quotes: Duplicate quote detected. Returning existing quote.', {
+         existingQuoteId: (duplicate as any).id,
+         existingQuoteCreatedAt: (duplicate as any).created_at,
+         newQuoteId: quoteId,
+       });
+       return NextResponse.json({
+         success: true,
+         id: (duplicate as any).id,
+         message: 'Duplicate quote found. Returning existing quote.',
+       });
+     }
+
     // Insert quote into database
-    const result = db.prepare(`
-      INSERT INTO quotes (
-        id, user_id, lane, mode, mode_label, containertype, currency, base_rate, price,
-        transit_time, provider, validity, status, origin, destination, incoterms, remark,
-        service_type, transit_port, client, is_tariff, profit, created_by, created_date,
-        notes, details, truck_type, weight_volume, additional_cost, additional_cost_description,
-        total_amount, final_total_amount, from_company, from_address, from_phone, from_prepared_by,
-        from_mobile, from_email, to_company, to_address, to_phone, to_contact, table_rows,
-        additional_info, company_branch, company_name, company_logo, shipment_type,
-        shipment_type_description, valid_until, origin_airport, destination_airport
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
+    try {
+      const result = db.prepare(`
+        INSERT INTO quotes (
+          id, user_id, lane, mode, mode_label, containertype, currency, base_rate, price,
+          transit_time, provider, validity, status, origin, destination, incoterms, remark,
+          service_type, transit_port, client, is_tariff, profit, created_by, created_date,
+          notes, details, truck_type, weight_volume, additional_cost, additional_cost_description,
+          total_amount, final_total_amount, from_company, from_address, from_phone, from_prepared_by,
+          from_mobile, from_email, to_company, to_address, to_phone, to_contact, table_rows,
+          additional_info, company_branch, company_name, company_logo, shipment_type,
+          shipment_type_description, valid_until, origin_airport, destination_airport
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
       quoteId,
       currentUser.id,
       quoteData.lane || quoteData.Lane || null,
@@ -355,6 +424,10 @@ export async function POST(req: NextRequest) {
     );
 
     console.log('POST /api/quotes: Quote created successfully', { quoteId, userId: currentUser.id, result });
+    } catch (dbError) {
+      console.error('POST /api/quotes: Database insertion error:', dbError);
+      return NextResponse.json({ error: 'Failed to create quote in database' }, { status: 500 });
+    }
 
     return NextResponse.json({ 
       success: true, 
@@ -408,7 +481,13 @@ export async function PUT(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
-    console.log('PUT /api/quotes: Updating quote', { id, userId: currentUser.id, quoteData });
+         console.log('PUT /api/quotes: Updating quote', { id, userId: currentUser.id });
+     console.log('PUT /api/quotes: Quote data received:', JSON.stringify(quoteData, null, 2));
+     console.log('PUT /api/quotes: Weight/Volume data check:', {
+       weightVolume: quoteData.weightVolume,
+       weightVolumeType: typeof quoteData.weightVolume,
+       weightVolumeLength: Array.isArray(quoteData.weightVolume) ? quoteData.weightVolume.length : 'not array'
+     });
 
     if (!id) {
       return NextResponse.json({ error: 'Quote ID is required' }, { status: 400 });
@@ -493,10 +572,12 @@ export async function PUT(req: NextRequest) {
       currentUser.id
     );
 
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Quote updated successfully' 
-    });
+         console.log('PUT /api/quotes: Quote updated successfully', { id, userId: currentUser.id, result });
+     
+     return NextResponse.json({ 
+       success: true, 
+       message: 'Quote updated successfully' 
+     });
   } catch (error) {
     console.error('Error in PUT /api/quotes:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

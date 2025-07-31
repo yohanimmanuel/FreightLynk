@@ -256,7 +256,26 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
         return isTariffValue ? 'Yes' : 'No';
       }
       case 'provider': return q.provider;
-      case 'details': return q.details;
+      case 'details': {
+        // For LCL/AIR/LTL quotes, extract weight/volume from tableRows if details is empty
+        if (q.details && Array.isArray(q.details) && q.details.length > 0) {
+          return q.details;
+        }
+        
+        // Check if this is a LCL/AIR/LTL quote and extract from tableRows
+        const mode = (q.mode || q.modeLabel || '').toLowerCase();
+        if ((mode.includes('lcl') && mode.includes('sea')) || mode.includes('air') || (mode.includes('land') && mode.includes('ltl'))) {
+          if (q.tableRows && Array.isArray(q.tableRows) && q.tableRows.length > 0) {
+            const firstRow = q.tableRows[0];
+            if (firstRow.description) {
+              console.log('QuoteTable details: Extracting weight/volume from tableRows:', firstRow.description);
+              return [firstRow.description];
+            }
+          }
+        }
+        
+        return q.details || [];
+      }
       case 'containertype': return q.containertype;
       case 'origin': return q.origin;
       case 'destination': return q.destination;
@@ -285,18 +304,36 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
       case 'remark': return q.remark || q.invoiceRemark || '—';
       case 'notes': return q.notes || q.invoiceNotes || '—';
       case 'weightVolume': {
-        // For LCL, AIR, LTL quotes, construct weight/volume from multiple possible sources
+        console.log('QuoteTable getValue weightVolume:', {
+          quoteId: q.id,
+          weightVolume: q.weightVolume,
+          lclWeight: q.lclWeight,
+          lclVolume: q.lclVolume,
+          additionalInfo: q.additionalInfo
+        });
+        
+        // First check the weightVolume field (what's actually stored in DB)
+        if (q.weightVolume && Array.isArray(q.weightVolume) && q.weightVolume.length > 0) {
+          console.log('QuoteTable: Using weightVolume from DB:', q.weightVolume);
+          return q.weightVolume;
+        }
+        
+        // Fallback: construct weight/volume from multiple possible sources
         const weight = q.lclWeight || q.additionalInfo?.lclWeight || '';
         const volume = q.lclVolume || q.additionalInfo?.lclVolume || '';
         if (weight && volume) {
+          console.log('QuoteTable: Constructing weight/volume:', `${weight} kg / ${volume} cbm`);
           return [`${weight} kg / ${volume} cbm`];
         } else if (weight) {
+          console.log('QuoteTable: Using weight only:', `${weight} kg`);
           return [`${weight} kg`];
         } else if (volume) {
+          console.log('QuoteTable: Using volume only:', `${volume} cbm`);
           return [`${volume} cbm`];
         }
-        // Fallback to weightVolume field if it exists
-        return q.weightVolume || [];
+        
+        console.log('QuoteTable: No weight/volume data found');
+        return [];
       }
       case 'truckType': return q.truckType;
       case 'shipmentType': return q.shipmentType || q.additionalInfo?.shipmentType || '-';
@@ -677,15 +714,19 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
                   ) : col.key === 'details' || col.key === 'containertype' || col.key === 'truckType' || col.key === 'weightVolume' ? (
                     <td key={col.key} className="px-4 py-4 text-gray-900 whitespace-nowrap overflow-x-auto">
                       {(() => {
+                        const value = getValue(q, col.key);
                         let badges: string[] = [];
-                        if (Array.isArray(q[col.key])) {
-                          badges = q[col.key];
-                        } else if (typeof q[col.key] === 'string') {
-                          badges = q[col.key].split('  ').filter(Boolean);
+                        
+                        if (Array.isArray(value)) {
+                          badges = value;
+                        } else if (typeof value === 'string') {
+                          badges = value.split('  ').filter(Boolean);
                         }
+                        
                         if (badges.length === 0) {
                           return <span className="text-gray-400">-</span>;
                         }
+                        
                         const displayBadges = badges.slice(0, 3);
                         const extraCount = badges.length - 3;
                         return (
