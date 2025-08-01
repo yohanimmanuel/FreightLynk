@@ -5,7 +5,7 @@ import { useQuoteSearchStore } from '../../../../store/quotesearchdata';
 import { useQuoteStore } from '../../../../store/forwarderquote';
 
 const TABS = ['Export', 'Import', 'Domestic', 'Other'];
-const SHIPMENT_MODES = ['SEA FCL', 'SEA LCL', 'AIR LCL', 'LAND FTL', 'LAND LTL'];
+const SHIPMENT_MODES = ['SEA FCL', 'SEA LCL', 'AIR', 'LAND FTL', 'LAND LTL'];
 const INCOTERMS = ['FOB', 'CIF', 'EXW', 'DAP', 'DDP'];
 const FREIGHT_TERMS = ['Prepaid', 'Collect', 'Third Party'];
 

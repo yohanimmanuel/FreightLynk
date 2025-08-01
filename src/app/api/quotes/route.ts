@@ -94,6 +94,13 @@ const ensureQuotesTable = () => {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(user_id) REFERENCES users(id)
       );
+      
+      -- Create indexes for better performance
+      CREATE INDEX idx_quotes_user_id ON quotes(user_id);
+      CREATE INDEX idx_quotes_mode ON quotes(mode);
+      CREATE INDEX idx_quotes_origin_destination ON quotes(origin, destination);
+      CREATE INDEX idx_quotes_created_at ON quotes(created_at);
+      CREATE INDEX idx_quotes_status ON quotes(status);
     `);
     console.log('Created quotes table');
   } else {
@@ -110,24 +117,29 @@ const checkForDuplicateQuote = (quoteData: any, userId: string) => {
   // Check for recent quotes (within last 5 minutes) with similar data
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
   
+  // Only check for duplicates if we have the essential fields
+  const mode = quoteData.mode || quoteData.Mode;
+  const origin = quoteData.origin || quoteData.Origin;
+  const destination = quoteData.destination || quoteData.Destination;
+  
+  if (!mode || !origin || !destination) {
+    return null; // Skip duplicate check if essential fields are missing
+  }
+  
   const existingQuote = db.prepare(`
     SELECT id, created_at FROM quotes 
     WHERE user_id = ? 
     AND mode = ? 
     AND origin = ? 
     AND destination = ? 
-    AND provider = ? 
-    AND price = ? 
     AND created_at > ?
     ORDER BY created_at DESC 
     LIMIT 1
   `).get(
     userId,
-    quoteData.mode || quoteData.Mode,
-    quoteData.origin || quoteData.Origin,
-    quoteData.destination || quoteData.Destination,
-    quoteData.provider || quoteData.Provider,
-    quoteData.price || quoteData.Price,
+    mode,
+    origin,
+    destination,
     fiveMinutesAgo
   );
   
@@ -277,18 +289,22 @@ export async function POST(req: NextRequest) {
     if (!user) {
       console.log('POST /api/quotes: No user found, creating test user');
       const { addUser } = await import('../auth/userDb');
-      const testUserId = 'test-user-' + Date.now();
+      const testUserId = 'test-user-12345'; // Use consistent ID for testing
       try {
-        addUser({
-          id: testUserId,
-          username: 'testuser',
-          password: 'testpass',
-          role: 'forwarder',
-          fullName: 'Test User',
-          companyName: 'Test Company'
-        });
+        // Check if test user already exists
+        const existingUser = getUserById(testUserId);
+        if (!existingUser) {
+          addUser({
+            id: testUserId,
+            username: 'testuser',
+            password: 'testpass',
+            role: 'forwarder',
+            fullName: 'Test User',
+            companyName: 'Test Company'
+          });
+        }
         user = { id: testUserId, username: 'testuser', role: 'forwarder' } as any;
-        console.log('POST /api/quotes: Created test user:', user!.id);
+        console.log('POST /api/quotes: Using test user:', user!.id);
       } catch (error) {
         console.error('POST /api/quotes: Failed to create test user:', error);
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -320,11 +336,81 @@ export async function POST(req: NextRequest) {
     // Check if quote with this ID already exists
     const existingQuote = db.prepare('SELECT id FROM quotes WHERE id = ?').get(quoteId);
     if (existingQuote) {
-      console.log('POST /api/quotes: Quote with ID already exists:', quoteId);
+      console.log('POST /api/quotes: Quote with ID already exists, updating it:', quoteId);
+      
+      // Update the existing quote instead of creating a new one
+      const result = db.prepare(`
+        UPDATE quotes SET
+          lane = ?, mode = ?, mode_label = ?, containertype = ?, currency = ?, base_rate = ?,
+          price = ?, transit_time = ?, provider = ?, validity = ?, status = ?, origin = ?,
+          destination = ?, incoterms = ?, remark = ?, service_type = ?, transit_port = ?,
+          client = ?, is_tariff = ?, profit = ?, created_by = ?, created_date = ?, notes = ?,
+          details = ?, truck_type = ?, weight_volume = ?, additional_cost = ?, additional_cost_description = ?,
+          total_amount = ?, final_total_amount = ?, from_company = ?, from_address = ?, from_phone = ?,
+          from_prepared_by = ?, from_mobile = ?, from_email = ?, to_company = ?, to_address = ?,
+          to_phone = ?, to_contact = ?, table_rows = ?, additional_info = ?, company_branch = ?,
+          company_name = ?, company_logo = ?, shipment_type = ?, shipment_type_description = ?,
+          valid_until = ?, origin_airport = ?, destination_airport = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).run(
+        quoteData.lane || quoteData.Lane || null,
+        quoteData.mode || quoteData.Mode || null,
+        quoteData.modeLabel || quoteData.mode_label || quoteData.ModeLabel || null,
+        quoteData.containertype ? JSON.stringify(quoteData.containertype) : null,
+        quoteData.currency || quoteData.Currency || 'USD',
+        quoteData.baseRate || quoteData.base_rate || quoteData.BaseRate || 0,
+        quoteData.price || quoteData.Price || null,
+        quoteData.transitTime || quoteData.transit_time || quoteData.TransitTime || null,
+        quoteData.provider || quoteData.Provider || null,
+        quoteData.validity || quoteData.Validity || null,
+        quoteData.status || quoteData.Status || 'draft',
+        quoteData.origin || quoteData.Origin || null,
+        quoteData.destination || quoteData.Destination || null,
+        quoteData.incoterms || quoteData.Incoterms || null,
+        quoteData.remark || quoteData.Remark || null,
+        quoteData.serviceType || quoteData.service_type || quoteData.ServiceType || null,
+        quoteData.transitPort || quoteData.transit_port || quoteData.TransitPort || null,
+        quoteData.client || quoteData.Client || null,
+        quoteData.isTariff ? 1 : 0,
+        quoteData.profit || quoteData.Profit || null,
+        quoteData.createdBy || quoteData.created_by || quoteData.CreatedBy || null,
+        quoteData.createdDate || quoteData.created_date || quoteData.CreatedDate || null,
+        quoteData.notes || quoteData.Notes || null,
+        quoteData.details ? JSON.stringify(quoteData.details) : null,
+        quoteData.truckType ? JSON.stringify(quoteData.truckType) : null,
+        quoteData.weightVolume ? JSON.stringify(quoteData.weightVolume) : null,
+        quoteData.additionalCost || quoteData.additional_cost || quoteData.AdditionalCost || 0,
+        quoteData.additionalCostDescription || quoteData.additional_cost_description || quoteData.AdditionalCostDescription || null,
+        quoteData.totalAmount || quoteData.total_amount || quoteData.TotalAmount || 0,
+        quoteData.finalTotalAmount || quoteData.final_total_amount || quoteData.FinalTotalAmount || 0,
+        quoteData.from?.company || quoteData.From?.company || null,
+        quoteData.from?.address || quoteData.From?.address || null,
+        quoteData.from?.phone || quoteData.From?.phone || null,
+        quoteData.from?.preparedBy || quoteData.from?.prepared_by || quoteData.From?.preparedBy || null,
+        quoteData.from?.mobile || quoteData.From?.mobile || null,
+        quoteData.from?.email || quoteData.From?.email || null,
+        quoteData.to?.company || quoteData.To?.company || null,
+        quoteData.to?.address || quoteData.To?.address || null,
+        quoteData.to?.phone || quoteData.To?.phone || null,
+        quoteData.to?.contact || quoteData.To?.contact || null,
+        quoteData.tableRows ? JSON.stringify(quoteData.tableRows) : null,
+        quoteData.additionalInfo ? JSON.stringify(quoteData.additionalInfo) : null,
+        quoteData.companyBranch || quoteData.company_branch || quoteData.CompanyBranch || null,
+        quoteData.companyName || quoteData.company_name || quoteData.CompanyName || null,
+        quoteData.companyLogo || quoteData.company_logo || quoteData.CompanyLogo || null,
+        quoteData.shipmentType || quoteData.shipment_type || quoteData.ShipmentType || null,
+        quoteData.shipmentTypeDescription || quoteData.shipment_type_description || quoteData.ShipmentTypeDescription || null,
+        quoteData.validUntil || quoteData.valid_until || quoteData.ValidUntil || null,
+        quoteData.originAirport || quoteData.origin_airport || quoteData.OriginAirport || null,
+        quoteData.destinationAirport || quoteData.destination_airport || quoteData.DestinationAirport || null,
+        quoteId
+      );
+      
+      console.log('POST /api/quotes: Quote updated successfully', { quoteId, result });
       return NextResponse.json({ 
         success: true, 
         id: quoteId,
-        message: 'Quote already exists' 
+        message: 'Quote updated successfully' 
       });
     }
 
@@ -450,18 +536,22 @@ export async function PUT(req: NextRequest) {
     if (!user) {
       console.log('PUT /api/quotes: No user found, creating test user');
       const { addUser } = await import('../auth/userDb');
-      const testUserId = 'test-user-' + Date.now();
+      const testUserId = 'test-user-12345'; // Use consistent ID for testing
       try {
-        addUser({
-          id: testUserId,
-          username: 'testuser',
-          password: 'testpass',
-          role: 'forwarder',
-          fullName: 'Test User',
-          companyName: 'Test Company'
-        });
+        // Check if test user already exists
+        const existingUser = getUserById(testUserId);
+        if (!existingUser) {
+          addUser({
+            id: testUserId,
+            username: 'testuser',
+            password: 'testpass',
+            role: 'forwarder',
+            fullName: 'Test User',
+            companyName: 'Test Company'
+          });
+        }
         user = { id: testUserId, username: 'testuser', role: 'forwarder' } as any;
-        console.log('PUT /api/quotes: Created test user:', user!.id);
+        console.log('PUT /api/quotes: Using test user:', user!.id);
       } catch (error) {
         console.error('PUT /api/quotes: Failed to create test user:', error);
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

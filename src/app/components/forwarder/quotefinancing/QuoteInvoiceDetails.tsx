@@ -168,12 +168,19 @@ const QuoteInvoiceDetails = ({
                 <select
                   className="border rounded px-2 py-1 text-xs"
                   value={editQuote.modeLabel || editQuote.mode || ''}
-                  onChange={e => setEditQuote((prev: any) => ({ ...prev, modeLabel: e.target.value }))}
+                  onChange={e => {
+                    console.log('Mode selection changed:', {
+                      from: editQuote.modeLabel || editQuote.mode || '',
+                      to: e.target.value,
+                      editQuote: editQuote
+                    });
+                    setEditQuote((prev: any) => ({ ...prev, modeLabel: e.target.value }));
+                  }}
                 >
                   <option value="">Select</option>
                   <option value="SEA FCL">SEA FCL</option>
                   <option value="SEA LCL">SEA LCL</option>
-                  <option value="AIR LCL">AIR LCL</option>
+                  <option value="AIR">AIR</option>
                   <option value="LAND FTL">LAND FTL</option>
                   <option value="LAND LTL">LAND LTL</option>
                 </select>

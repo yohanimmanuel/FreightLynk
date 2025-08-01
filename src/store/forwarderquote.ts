@@ -167,7 +167,7 @@ export interface QuoteStore {
   
   // Quote actions
   setQuotes: (quotes: Quote[]) => void;
-  addQuote: (quote: Quote) => Promise<void>;
+  addQuote: (quote: Quote) => Promise<Quote>;
   updateQuote: (updatedQuote: Quote) => Promise<void>;
   deleteQuote: (id: string) => Promise<void>;
   loadQuotes: (mode?: string, status?: string) => Promise<void>;
@@ -193,26 +193,30 @@ export const useQuoteStore = create<QuoteStore>((set, get) => ({
       console.log('Store addQuote: API result:', result);
       
       if (result.success && result.id) {
-        const newQuote = { ...quote, id: result.id };
-        console.log('Store addQuote: New quote with API ID:', newQuote.id);
+        const updatedQuote = { ...quote, id: result.id };
+        console.log('Store addQuote: Quote with API ID:', updatedQuote.id);
         
         set((state) => {
-          const existingIndex = state.quotes.findIndex(q => q.id === newQuote.id);
+          const existingIndex = state.quotes.findIndex(q => q.id === updatedQuote.id);
           console.log('Store addQuote: Existing index:', existingIndex, 'Current quotes count:', state.quotes.length);
           
           let updatedQuotes;
           if (existingIndex !== -1) {
             console.log('Store addQuote: Updating existing quote at index:', existingIndex);
             updatedQuotes = [...state.quotes];
-            updatedQuotes[existingIndex] = newQuote;
+            updatedQuotes[existingIndex] = updatedQuote;
           } else {
             console.log('Store addQuote: Adding new quote to store');
-            updatedQuotes = [...state.quotes, newQuote];
+            updatedQuotes = [...state.quotes, updatedQuote];
           }
           console.log('Store addQuote: Final quotes count:', updatedQuotes.length);
           return { quotes: updatedQuotes };
         });
+        
+        // Return the updated quote with the API-generated ID
+        return updatedQuote;
       }
+      return quote; // Return original quote if API call failed
     } catch (error) {
       console.error('Error adding quote:', error);
       throw error;

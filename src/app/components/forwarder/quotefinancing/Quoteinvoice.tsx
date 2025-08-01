@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useQuoteSearchStore, QuoteSearchResult } from '../../../../store/quotesearchdata';
 import { useAuthStore } from '../../../../store/authStore';
 import { Edit, Send, Plus, Download, CheckCircle } from 'lucide-react';
@@ -127,34 +127,54 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
     // Sync editAdditionalInfo with quote.additionalInfo
     setEditAdditionalInfo({ ...quote?.additionalInfo });
     
-    // Sync editQuote with quote data
-    setEditQuote({
-      origin: quote?.origin || '',
-      destination: quote?.destination || '',
-      transitPort: quote?.transitPort || '',
-      serviceType: quote?.serviceType || '',
-      mode: quote?.mode || '',
-      modeLabel: quote?.modeLabel || quote?.mode || '',
-      transitTime: quote?.transitTime || '',
-      validUntil: quote?.validUntil || '',
-      validFrom: quote?.validFrom || '',
-      departure: quote?.departure || '',
-      arrival: quote?.arrival || '',
-      provider: quote?.provider || '',
-      portOfLoading: quote?.portOfLoading || quote?.origin || '',
-      portOfDischarge: quote?.portOfDischarge || quote?.destination || '',
+    // Sync editQuote with quote data - but preserve user's mode selection if they're editing
+    setEditQuote(prevEditQuote => {
+      const newEditQuote = {
+        origin: quote?.origin || '',
+        destination: quote?.destination || '',
+        transitPort: quote?.transitPort || '',
+        serviceType: quote?.serviceType || '',
+        mode: quote?.mode || '',
+        modeLabel: quote?.modeLabel || quote?.mode || '',
+        transitTime: quote?.transitTime || '',
+        validUntil: quote?.validUntil || '',
+        validFrom: quote?.validFrom || '',
+        departure: quote?.departure || '',
+        arrival: quote?.arrival || '',
+        provider: quote?.provider || '',
+        portOfLoading: quote?.portOfLoading || quote?.origin || '',
+        portOfDischarge: quote?.portOfDischarge || quote?.destination || '',
+      };
+      
+      // If user is actively editing and has made mode changes, preserve their selection
+      if (isEditing && prevEditQuote.modeLabel && prevEditQuote.modeLabel !== (quote?.modeLabel || quote?.mode || '')) {
+        console.log('PRESERVING USER MODE SELECTION:', {
+          userSelection: prevEditQuote.modeLabel,
+          quoteMode: quote?.modeLabel || quote?.mode || '',
+          isEditing
+        });
+        newEditQuote.modeLabel = prevEditQuote.modeLabel;
+        newEditQuote.mode = prevEditQuote.mode;
+      }
+      
+      return newEditQuote;
     });
     
     // Sync additional cost fields
     setAdditionalCost(quote?.additionalCost || 0);
     setAdditionalCostDescription(quote?.additionalCostDescription || '');
     
-    // Sync editTableRows with quote.tableRows
+    // Sync editTableRows with quote.tableRows - use structuredClone for better performance
     if (quote?.tableRows) {
-      setEditTableRows(JSON.parse(JSON.stringify(quote.tableRows)));
+      try {
+        setEditTableRows(structuredClone(quote.tableRows));
+      } catch (error) {
+        // Fallback to JSON method if structuredClone is not available
+        setEditTableRows(JSON.parse(JSON.stringify(quote.tableRows)));
+      }
     }
     
-  }, [quote?.id, quote?.from, quote?.to, quote?.remark, quote?.additionalInfo, quote?.origin, quote?.destination, quote?.transitPort, quote?.serviceType, quote?.mode, quote?.modeLabel, quote?.transitTime, quote?.validUntil, quote?.validFrom, quote?.departure, quote?.arrival, quote?.provider, quote?.portOfLoading, quote?.portOfDischarge, quote?.additionalCost, quote?.additionalCostDescription, quote?.tableRows, effectiveUser]);
+  }, [quote?.id, effectiveUser, isEditing]); // Reduced dependencies to only essential ones
 
   // State for editable quote fields
   const [editQuote, setEditQuote] = useState({
@@ -181,15 +201,22 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       selectedQuoteDetailsTableRows: selectedQuoteDetails?.tableRows
     });
     const sourceTableRows = quote.tableRows || selectedQuoteDetails?.tableRows;
-    return sourceTableRows ? JSON.parse(JSON.stringify(sourceTableRows)) : [];
+    if (!sourceTableRows) return [];
+    
+    try {
+      return structuredClone(sourceTableRows);
+    } catch (error) {
+      // Fallback to JSON method if structuredClone is not available
+      return JSON.parse(JSON.stringify(sourceTableRows));
+    }
   });
   
   // Add submission state tracking to prevent duplicate submissions
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedQuoteIds, setSubmittedQuoteIds] = useState<Set<string>>(new Set());
 
-  // Functions for manual quotation table management
-  const addTableRow = () => {
+  // Functions for manual quotation table management - optimized with useCallback
+  const addTableRow = useCallback(() => {
     const newRow = {
       chargeType: '',
       item: '',
@@ -201,28 +228,28 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       amount: 0,
     };
     
-    const updatedTableRows = [...editTableRows, newRow];
-    setEditTableRows(updatedTableRows);
-  };
+    setEditTableRows(prev => [...prev, newRow]);
+  }, []);
 
-  const removeTableRow = (index: number) => {
-    const updatedTableRows = editTableRows.filter((_: any, i: number) => i !== index);
-    setEditTableRows(updatedTableRows);
-  };
+  const removeTableRow = useCallback((index: number) => {
+    setEditTableRows(prev => prev.filter((_: any, i: number) => i !== index));
+  }, []);
 
-  const updateTableRow = (index: number, field: string, value: any) => {
-    const updatedTableRows = [...editTableRows];
-    updatedTableRows[index] = { ...updatedTableRows[index], [field]: value };
-    
-    // Recalculate amount if qty or baseRate changed
-    if (field === 'qty' || field === 'baseRate') {
-      const qty = field === 'qty' ? value : updatedTableRows[index].qty;
-      const baseRate = field === 'baseRate' ? value : updatedTableRows[index].baseRate;
-      updatedTableRows[index].amount = qty * baseRate;
-    }
-    
-    setEditTableRows(updatedTableRows);
-  };
+  const updateTableRow = useCallback((index: number, field: string, value: any) => {
+    setEditTableRows(prev => {
+      const updatedTableRows = [...prev];
+      updatedTableRows[index] = { ...updatedTableRows[index], [field]: value };
+      
+      // Recalculate amount if qty or baseRate changed
+      if (field === 'qty' || field === 'baseRate') {
+        const qty = field === 'qty' ? value : updatedTableRows[index].qty;
+        const baseRate = field === 'baseRate' ? value : updatedTableRows[index].baseRate;
+        updatedTableRows[index].amount = qty * baseRate;
+      }
+      
+      return updatedTableRows;
+    });
+  }, []);
 
   // Centralized empty form state for invoice
   const emptyFormState = {
@@ -337,7 +364,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       portOfLoading: quote.portOfLoading || quote.origin || '',
       portOfDischarge: quote.portOfDischarge || quote.destination || '',
     });
-    setEditTableRows(quote.tableRows ? JSON.parse(JSON.stringify(quote.tableRows)) : []);
+    setEditTableRows(quote.tableRows ? structuredClone(quote.tableRows) : []);
     setAdditionalCost(quote.additionalCost || 0);
     setAdditionalCostDescription(quote.additionalCostDescription || '');
     console.log('HANDLE EDIT - Additional Cost Debug:', {
@@ -351,7 +378,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       to: { ...editTo },
       remark: editRemark,
       additionalInfo: { ...editAdditionalInfo },
-      tableRows: quote.tableRows ? JSON.parse(JSON.stringify(quote.tableRows)) : [],
+      tableRows: quote.tableRows ? structuredClone(quote.tableRows) : [],
       additionalCost: quote.additionalCost || 0,
       additionalCostDescription: quote.additionalCostDescription || '',
     });
@@ -363,7 +390,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       setEditTo(originalState.to);
       setEditRemark(originalState.remark);
       setEditAdditionalInfo(originalState.additionalInfo);
-      setEditTableRows(originalState.tableRows ? JSON.parse(JSON.stringify(originalState.tableRows)) : []);
+      setEditTableRows(originalState.tableRows ? structuredClone(originalState.tableRows) : []);
       setAdditionalCost(originalState.additionalCost || 0);
       setAdditionalCostDescription(originalState.additionalCostDescription || '');
     }
@@ -645,16 +672,26 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       transitTime: editQuote.transitTime,
       validUntil: editQuote.validUntil,
       mode: (() => {
-        const m = (selectedQuoteDetails?.modeLabel || quote.mode || '').toUpperCase();
-        if (m.includes('SEA') && m.includes('FCL')) return 'SEA FCL';
-        if (m.includes('SEA') && m.includes('LCL')) return 'SEA LCL';
-        if (m.includes('AIR') && m.includes('LCL')) return 'AIR LCL';
-        if (m.includes('AIR')) return 'AIR';
-        if (m.includes('LAND') && m.includes('FTL')) return 'LAND FTL';
-        if (m.includes('LAND') && m.includes('LTL')) return 'LAND LTL';
-        return m;
+        // Use the modeLabel from editQuote as the primary source
+        const selectedMode = editQuote.modeLabel || selectedQuoteDetails?.modeLabel || quote.modeLabel || '';
+        if (selectedMode) {
+          // Map to the standardized mode values
+          const m = selectedMode.toUpperCase();
+          if (m.includes('SEA') && m.includes('FCL')) return 'SEA FCL';
+          if (m.includes('SEA') && m.includes('LCL')) return 'SEA LCL';
+          if (m.includes('AIR')) return 'AIR';
+          if (m.includes('LAND') && m.includes('FTL')) return 'LAND FTL';
+          if (m.includes('LAND') && m.includes('LTL')) return 'LAND LTL';
+          return selectedMode; // Return as-is if it matches our standard values
+        }
+        // Fallback to basic mode mapping
+        const basicMode = editQuote.mode || selectedQuoteDetails?.mode || quote.mode || '';
+        if (basicMode === 'ocean') return 'SEA FCL'; // Default to SEA FCL for ocean
+        if (basicMode === 'air') return 'AIR';
+        if (basicMode === 'road') return 'LAND FTL'; // Default to LAND FTL for road
+        return basicMode.toUpperCase();
       })(),
-      modeLabel: editQuote.mode || selectedQuoteDetails?.modeLabel || quote.modeLabel || quote.mode || '',
+      modeLabel: editQuote.modeLabel || selectedQuoteDetails?.modeLabel || quote.modeLabel || quote.mode || '',
       // Use only the new fields
       details: detailsField,
       containertype: containerTypeField,
@@ -721,33 +758,15 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
     setAdditionalCostDescription(quote.additionalCostDescription || '');
   }, [quote?.id]);
 
-  // Update editTableRows when selectedQuoteDetails changes (for search flow quotes)
+  // Update editTableRows when quote or selectedQuoteDetails changes
   useEffect(() => {
-    console.log('selectedQuoteDetails useEffect triggered:', {
-      hasSelectedQuoteDetails: !!selectedQuoteDetails,
-      hasTableRows: !!selectedQuoteDetails?.tableRows,
-      tableRowsLength: selectedQuoteDetails?.tableRows?.length,
-      tableRows: selectedQuoteDetails?.tableRows
-    });
-    if (selectedQuoteDetails?.tableRows && selectedQuoteDetails.tableRows.length > 0) {
-      console.log('UPDATING editTableRows from selectedQuoteDetails:', selectedQuoteDetails.tableRows);
-      setEditTableRows(JSON.parse(JSON.stringify(selectedQuoteDetails.tableRows)));
+    const sourceTableRows = selectedQuoteDetails?.tableRows || quote?.tableRows;
+    
+    if (sourceTableRows && sourceTableRows.length > 0) {
+      console.log('UPDATING editTableRows from source:', sourceTableRows);
+      setEditTableRows(structuredClone(sourceTableRows));
     }
-  }, [selectedQuoteDetails?.tableRows]);
-
-  // Update editTableRows when quote changes (for existing quotes)
-  useEffect(() => {
-    console.log('quote.tableRows useEffect triggered:', {
-      hasQuote: !!quote,
-      hasTableRows: !!quote?.tableRows,
-      tableRowsLength: quote?.tableRows?.length,
-      tableRows: quote?.tableRows
-    });
-    if (quote?.tableRows && quote.tableRows.length > 0) {
-      console.log('UPDATING editTableRows from quote.tableRows:', quote.tableRows);
-      setEditTableRows(JSON.parse(JSON.stringify(quote.tableRows)));
-    }
-  }, [quote?.tableRows]);
+  }, [selectedQuoteDetails?.tableRows, quote?.tableRows]);
 
   // Reset form state after submission or when starting a new quote
   useEffect(() => {
@@ -759,18 +778,22 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
   // Use tableRows from selectedQuoteDetails for the quote table
   const tableRows = selectedQuoteDetails?.tableRows || [];
 
-  // Build details from tableRows
-  const containerTypes = Array.from(new Set(tableRows.map((row: any) => row.item).filter(Boolean)));
-  const truckTypes = Array.from(new Set(tableRows.map((row: any) => row.truckType).filter(Boolean)));
-  const weightVolumes = Array.from(new Set(tableRows.map((row: any) => row.weightVolume).filter(Boolean)));
-  const details = [
-    ...containerTypes,
-    ...truckTypes,
-    ...weightVolumes
-  ].filter(Boolean).join(', ');
+  // Build details from tableRows - memoized for performance
+  const { containerTypes, truckTypes, weightVolumes, details, totalAmount, currency } = useMemo(() => {
+    const containerTypes = Array.from(new Set(tableRows.map((row: any) => row.item).filter(Boolean)));
+    const truckTypes = Array.from(new Set(tableRows.map((row: any) => row.truckType).filter(Boolean)));
+    const weightVolumes = Array.from(new Set(tableRows.map((row: any) => row.weightVolume).filter(Boolean)));
+    const details = [
+      ...containerTypes,
+      ...truckTypes,
+      ...weightVolumes
+    ].filter(Boolean).join(', ');
 
-  const totalAmount = tableRows.reduce((sum: number, row: any) => sum + (typeof row.amount === 'number' ? row.amount : 0), 0);
-  const currency = tableRows[0]?.currency || quote.currency;
+    const totalAmount = tableRows.reduce((sum: number, row: any) => sum + (typeof row.amount === 'number' ? row.amount : 0), 0);
+    const currency = tableRows[0]?.currency || quote.currency;
+
+    return { containerTypes, truckTypes, weightVolumes, details, totalAmount, currency };
+  }, [tableRows, quote.currency]);
 
   // Dates
   const createdOn = formatDate(new Date());
@@ -1098,26 +1121,26 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                     transitTime: editQuote.transitTime,
                     validUntil: editQuote.validUntil,
                     mode: (() => {
-                      // Prioritize the actual mode from search results or edit state
-                      const actualMode = editQuote.modeLabel || selectedQuoteDetails?.modeLabel || quote.modeLabel || '';
-                      if (actualMode) {
-                        const m = actualMode.toUpperCase();
+                      // Use the modeLabel from editQuote as the primary source
+                      const selectedMode = editQuote.modeLabel || selectedQuoteDetails?.modeLabel || quote.modeLabel || '';
+                      if (selectedMode) {
+                        // Map to the standardized mode values
+                        const m = selectedMode.toUpperCase();
                         if (m.includes('SEA') && m.includes('FCL')) return 'SEA FCL';
                         if (m.includes('SEA') && m.includes('LCL')) return 'SEA LCL';
-                        if (m.includes('AIR') && m.includes('LCL')) return 'AIR LCL';
                         if (m.includes('AIR')) return 'AIR';
                         if (m.includes('LAND') && m.includes('FTL')) return 'LAND FTL';
                         if (m.includes('LAND') && m.includes('LTL')) return 'LAND LTL';
-                        return m;
+                        return selectedMode; // Return as-is if it matches our standard values
                       }
                       // Fallback to basic mode mapping
                       const basicMode = editQuote.mode || selectedQuoteDetails?.mode || quote.mode || '';
-                      if (basicMode === 'ocean') return 'OCEAN';
+                      if (basicMode === 'ocean') return 'SEA FCL'; // Default to SEA FCL for ocean
                       if (basicMode === 'air') return 'AIR';
-                      if (basicMode === 'road') return 'LAND';
+                      if (basicMode === 'road') return 'LAND FTL'; // Default to LAND FTL for road
                       return basicMode.toUpperCase();
                     })(),
-                    modeLabel: editQuote.mode || selectedQuoteDetails?.modeLabel || quote.modeLabel || quote.mode || '',
+                    modeLabel: editQuote.modeLabel || selectedQuoteDetails?.modeLabel || quote.modeLabel || quote.mode || '',
                     details: detailsBadges,
                     isTariff: cleanedAdditionalInfo.isTariff ?? quote.isTariff ?? false,
                     client: safeTo.company || quote.client || '',
@@ -1137,6 +1160,14 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                     finalTotalAmount: submitFinalTotalAmount,
                   };
                   console.log('QUOTE SUBMIT DEBUG:', updatedQuote);
+                  console.log('MODE SUBMISSION DEBUG:', {
+                    editQuoteModeLabel: editQuote.modeLabel,
+                    selectedQuoteDetailsModeLabel: selectedQuoteDetails?.modeLabel,
+                    quoteModeLabel: quote.modeLabel,
+                    quoteMode: quote.mode,
+                    finalMode: updatedQuote.mode,
+                    finalModeLabel: updatedQuote.modeLabel
+                  });
                   console.log('Quote ID check:', {
                     originalQuoteId: quote.id,
                     updatedQuoteId: updatedQuote.id,
@@ -1191,23 +1222,18 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                     });
                     
                     // Determine if this is an existing quote that should be updated
-                    // Database quotes have QR- prefix, temporary quotes have QT- prefix
-                    if (quoteId && quoteId.startsWith('QR-')) {
-                      // This is an existing quote from database - update it
+                    // Check if this quote was previously submitted in this session OR if it has a QR- ID (database ID)
+                    if (submittedQuoteIds.has(quoteId) || (quoteId && quoteId.startsWith('QR-'))) {
+                      // This quote was already submitted in this session or has a database ID - update it
                       isExistingQuote = true;
-                      console.log('UPDATING EXISTING QUOTE FROM DATABASE:', quoteId);
-                    } else if (quoteId && quoteId.startsWith('QT-')) {
-                      // This is a temporary quote (not yet saved to database) - create new
-                      isExistingQuote = false;
-                      console.log('CREATING NEW QUOTE FROM TEMPORARY ID:', quoteId);
-                    } else if (isManualQuotation) {
-                      // Manual quotations are always new quotes
-                      isExistingQuote = false;
-                      console.log('CREATING NEW MANUAL QUOTE:', quoteId);
+                      console.log('UPDATING EXISTING QUOTE:', quoteId, {
+                        wasSubmitted: submittedQuoteIds.has(quoteId),
+                        hasDatabaseId: quoteId && quoteId.startsWith('QR-')
+                      });
                     } else {
-                      // For search flow quotes, check if they exist in the database
+                      // This is a new quote - create it
                       isExistingQuote = false;
-                      console.log('CREATING NEW QUOTE FROM SEARCH:', quoteId);
+                      console.log('CREATING NEW QUOTE:', quoteId);
                     }
                     
                     console.log('Quote submission logic debug:', {
@@ -1223,32 +1249,25 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                       isManualQuotation
                     });
                     
-                    if (isExistingQuote) {
-                      // Quote was previously submitted, update it
-                      console.log('UPDATING EXISTING QUOTE - Calling updateQuote with:', {
+                    let finalQuote = updatedQuote;
+                    
+                    try {
+                      // Always try to create the quote first (this will handle both new and existing quotes)
+                      console.log('CREATING/UPDATING QUOTE - Calling addQuote with:', {
                         quoteId,
                         updatedQuoteId: updatedQuote.id,
                         updatedQuoteData: updatedQuote
                       });
-                      await updateQuote(updatedQuote);
-                      console.log('UPDATING EXISTING QUOTE - Successfully updated quote');
-                      
-                      // Update the selectedQuoteDetails in the search store to reflect the changes
-                      console.log('UPDATING SELECTED QUOTE DETAILS IN SEARCH STORE');
-                      setSelectedQuoteDetails(updatedQuote);
-                    } else {
-                      // New quote, create it
-                      console.log('CREATING NEW QUOTE - Calling addQuote with:', {
-                        quoteId,
-                        updatedQuoteId: updatedQuote.id,
-                        updatedQuoteData: updatedQuote
-                      });
-                      await addQuote(updatedQuote);
-                      console.log('CREATING NEW QUOTE - Successfully created quote');
+                      const createdQuote = await addQuote(updatedQuote);
+                      console.log('CREATING/UPDATING QUOTE - Successfully created/updated quote with ID:', createdQuote.id);
                       
                       // Update the selectedQuoteDetails in the search store
                       console.log('UPDATING SELECTED QUOTE DETAILS IN SEARCH STORE');
-                      setSelectedQuoteDetails(updatedQuote);
+                      setSelectedQuoteDetails(createdQuote);
+                      finalQuote = createdQuote;
+                    } catch (error) {
+                      console.error('Error creating/updating quote:', error);
+                      throw error;
                     }
                     
                     // Mark this quote as submitted in this session
@@ -1256,13 +1275,13 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                     
                     // Update quotes array
                     const prevQuotes = quotes || [];
-                    const idx = prevQuotes.findIndex((q: any) => q.id === updatedQuote.id);
+                    const idx = prevQuotes.findIndex((q: any) => q.id === finalQuote.id);
                     if (idx !== -1) {
                       const newQuotes = [...prevQuotes];
-                      newQuotes[idx] = updatedQuote;
+                      newQuotes[idx] = finalQuote;
                       setQuotes(newQuotes);
                     } else {
-                      setQuotes([updatedQuote, ...prevQuotes]);
+                      setQuotes([finalQuote, ...prevQuotes]);
                     }
                     
                     router.push('/quotes/list');
