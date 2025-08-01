@@ -1076,7 +1076,11 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                     quoteAdditionalCost: quote.additionalCost,
                     quoteAdditionalCostDescription: quote.additionalCostDescription,
                     isEditing,
-                    isManualQuotation
+                    isManualQuotation,
+                    submitTotalAmount,
+                    submitFinalTotalAmount,
+                    originalTotalAmount: quote.totalAmount,
+                    originalFinalTotalAmount: quote.finalTotalAmount
                   });
                   
                   // Prevent duplicate submissions
@@ -1100,11 +1104,28 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                     
                     // Check if this quote was previously saved to database
                     // We can determine this by checking if the quote has been submitted in this session
-                    // or if it has a non-draft status
+                    // or if it has a non-draft status, or if it has an ID that indicates it was previously saved
                     const wasPreviouslySubmitted = submittedQuoteIds.has(quoteId);
                     const hasNonDraftStatus = quote.status && quote.status !== 'draft';
+                    // Check if the quote has a valid ID that indicates it was previously saved to database
+                    const hasExistingId = quote.id && quote.id.startsWith('QR-') && quote.id === quoteId;
+                    // Also check if we're in edit mode for a quote that was loaded from database
+                    const isEditingExistingQuote = isEditing && quote.id && quote.id.startsWith('QR-');
+                    const isExistingQuote = wasPreviouslySubmitted || hasNonDraftStatus || hasExistingId || isEditingExistingQuote;
                     
-                    if (wasPreviouslySubmitted || hasNonDraftStatus) {
+                    console.log('Quote submission logic debug:', {
+                      quoteId,
+                      wasPreviouslySubmitted,
+                      hasNonDraftStatus,
+                      hasExistingId,
+                      isEditingExistingQuote,
+                      isExistingQuote,
+                      quoteStatus: quote.status,
+                      originalQuoteId: quote.id,
+                      isEditing
+                    });
+                    
+                    if (isExistingQuote) {
                       // Quote was previously submitted, update it
                       console.log('Updating previously submitted quote:', quoteId);
                       await updateQuote(updatedQuote);

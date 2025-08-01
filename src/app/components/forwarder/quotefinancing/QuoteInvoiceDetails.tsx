@@ -183,11 +183,13 @@ const QuoteInvoiceDetails = ({
             <div className="flex justify-between text-xs items-center">
               <span className="text-gray-500">Transit Time:</span>
               {!isEditing ? (
-                <span className="font-semibold">{quote.transitTime || '-'}</span>
+                <span className="font-semibold">
+                  {quote.transitTime || quote.transit_time || '-'}
+                </span>
               ) : (
                 <input
                   className="border rounded px-2 py-1 text-xs"
-                  value={editQuote.transitTime}
+                  value={editQuote.transitTime || editQuote.transit_time || ''}
                   onChange={e => setEditQuote((prev: any) => ({ ...prev, transitTime: e.target.value }))}
                   placeholder="e.g. 25 days"
                 />

@@ -187,6 +187,7 @@ export async function GET(req: NextRequest) {
         totalAmount: (quote as any).total_amount || 0,
         finalTotalAmount: (quote as any).final_total_amount || 0,
         serviceType: (quote as any).service_type,
+        transitTime: (quote as any).transit_time,
         transitPort: (quote as any).transit_port,
         createdDate: (quote as any).created_date,
         validUntil: (quote as any).valid_until,
@@ -247,6 +248,7 @@ export async function GET(req: NextRequest) {
         totalAmount: quote.total_amount || 0,
         finalTotalAmount: quote.final_total_amount || 0,
         serviceType: quote.service_type,
+        transitTime: quote.transit_time,
         transitPort: quote.transit_port,
         createdDate: quote.created_date,
         validUntil: quote.valid_until,
@@ -481,8 +483,14 @@ export async function PUT(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
-         console.log('PUT /api/quotes: Updating quote', { id, userId: currentUser.id });
-     console.log('PUT /api/quotes: Quote data received:', JSON.stringify(quoteData, null, 2));
+    console.log('PUT /api/quotes: Updating quote', { id, userId: currentUser.id });
+    console.log('PUT /api/quotes: Quote data received:', JSON.stringify(quoteData, null, 2));
+    console.log('PUT /api/quotes: Additional cost fields:', {
+      additionalCost: quoteData.additionalCost,
+      additionalCostDescription: quoteData.additionalCostDescription,
+      totalAmount: quoteData.totalAmount,
+      finalTotalAmount: quoteData.finalTotalAmount
+    });
      console.log('PUT /api/quotes: Weight/Volume data check:', {
        weightVolume: quoteData.weightVolume,
        weightVolumeType: typeof quoteData.weightVolume,

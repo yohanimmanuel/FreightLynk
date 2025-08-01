@@ -221,11 +221,21 @@ export const useQuoteStore = create<QuoteStore>((set, get) => ({
 
   updateQuote: async (updatedQuote: Quote) => {
     try {
+      console.log('Store updateQuote: Starting to update quote:', updatedQuote.id);
+      console.log('Store updateQuote: Updated quote data:', updatedQuote);
+      
       const result = await updateQuoteApi(updatedQuote.id, updatedQuote);
+      console.log('Store updateQuote: API result:', result);
+      
       if (result.success) {
-        set((state) => ({
-          quotes: state.quotes.map(quote => quote.id === updatedQuote.id ? updatedQuote : quote)
-        }));
+        console.log('Store updateQuote: Success, updating local state');
+        set((state) => {
+          const updatedQuotes = state.quotes.map(quote => quote.id === updatedQuote.id ? updatedQuote : quote);
+          console.log('Store updateQuote: Updated quotes count:', updatedQuotes.length);
+          return { quotes: updatedQuotes };
+        });
+      } else {
+        console.error('Store updateQuote: API returned success: false');
       }
     } catch (error) {
       console.error('Error updating quote:', error);
