@@ -7,6 +7,7 @@ import QuoteInvoice from '@/app/components/forwarder/quotefinancing/Quoteinvoice
 import { useSearchParams } from 'next/navigation';
 import { useQuoteStore } from '@/store/forwarderquote';
 import { useQuoteSearchStore } from '@/store/quotesearchdata';
+import { getQuote } from '@/utils/quotesApi';
 
 const ClientUI = () => {
   return (
@@ -22,14 +23,41 @@ const ForwarderUI = () => {
   const id = searchParams.get('id');
   const quotes = useQuoteStore(state => state.quotes);
   const setSelectedQuoteDetails = useQuoteSearchStore(state => state.setSelectedQuoteDetails);
+  const setQuotes = useQuoteStore(state => state.setQuotes);
 
   useEffect(() => {
     if (!id) return;
-    const quote = quotes.find(q => String(q.id) === String(id));
+    
+    // First try to find quote in local store
+    let quote = quotes.find(q => String(q.id) === String(id));
+    
     if (quote) {
+      console.log('Found quote in local store:', quote.id);
       setSelectedQuoteDetails(quote);
+    } else {
+      // If not found in local store, fetch specific quote from database
+      console.log('Quote not found in local store, fetching from database...');
+      getQuote(id).then((fetchedQuote) => {
+        console.log('Fetched quote from database:', fetchedQuote.id);
+        // Update the quotes array with the fetched quote
+        setQuotes([fetchedQuote, ...quotes]);
+        setSelectedQuoteDetails(fetchedQuote);
+      }).catch(error => {
+        console.error('Error fetching quote from database:', error);
+      });
     }
-  }, [id, quotes, setSelectedQuoteDetails]);
+  }, [id, setSelectedQuoteDetails, setQuotes]); // Removed 'quotes' from dependency array to prevent re-running when quotes array changes
+
+  // Separate effect to update selectedQuoteDetails when quotes array changes
+  useEffect(() => {
+    if (!id) return;
+    
+    const updatedQuote = quotes.find(q => String(q.id) === String(id));
+    if (updatedQuote) {
+      console.log('Quote updated in store, updating selectedQuoteDetails:', updatedQuote.id);
+      setSelectedQuoteDetails(updatedQuote);
+    }
+  }, [quotes, id, setSelectedQuoteDetails]);
 
   return (
     <div className="p-4">

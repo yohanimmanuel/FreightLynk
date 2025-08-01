@@ -109,12 +109,23 @@ export const useAuthStore = create<AuthState>()(
               set({ user: {
                 id: userRes.user.id,
                 email: userRes.user.username, // username is used as email in this demo
-                fullName: '',
-                companyName: '',
-            role,
-            permissions: rolePermissions[role]
+                fullName: userRes.user.fullName || '',
+                companyName: userRes.user.companyName || '',
+                companyAddress: userRes.user.companyAddress,
+                companyWebsite: userRes.user.companyWebsite,
+                companySize: userRes.user.companySize,
+                userType: userRes.user.userType,
+                otherUserType: userRes.user.otherUserType,
+                businessOperations: userRes.user.businessOperations,
+                goodsTypes: userRes.user.goodsTypes,
+                shippingFrequency: userRes.user.shippingFrequency,
+                primaryRoutes: userRes.user.primaryRoutes,
+                jobTitle: userRes.user.jobTitle,
+                phone: userRes.user.phone,
+                role,
+                permissions: rolePermissions[role]
               }, isAuthenticated: true, token: null });
-          return true;
+              return true;
             }
           }
           return false;

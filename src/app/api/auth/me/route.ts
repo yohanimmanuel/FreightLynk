@@ -10,5 +10,24 @@ export async function GET(req: NextRequest) {
   if (!user) {
     return NextResponse.json({ user: null });
   }
-  return NextResponse.json({ user: { id: user.id, username: user.username, role: user.role } });
+  return NextResponse.json({ 
+    user: { 
+      id: user.id, 
+      username: user.username, 
+      role: user.role,
+      fullName: user.fullName,
+      companyName: user.companyName,
+      companyAddress: user.companyAddress,
+      companyWebsite: user.companyWebsite,
+      companySize: user.companySize,
+      userType: user.userType,
+      otherUserType: user.otherUserType,
+      businessOperations: user.businessOperations,
+      goodsTypes: user.goodsTypes,
+      shippingFrequency: user.shippingFrequency,
+      primaryRoutes: user.primaryRoutes,
+      jobTitle: user.jobTitle,
+      phone: user.phone
+    } 
+  });
 } 

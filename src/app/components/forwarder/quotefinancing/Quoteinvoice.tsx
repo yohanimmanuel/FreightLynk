@@ -36,6 +36,17 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
   const router = useRouter();
   const quote = selectedQuoteDetails;
   
+  // Get user data - use actual user if available, otherwise use demo data
+  const effectiveUser = user || {
+    id: 'demo-user',
+    email: 'demo123@gmail.com',
+    fullName: 'Demo User',
+    companyName: 'Demo Company (FreightLynk LLC)',
+    companyAddress: '1000 20th Street NW, Suite 400, Washington D.C. 20036',
+    phone: '(028) 1208 281055',
+    role: 'role123'
+  };
+  
   // Debug: Log quote changes
   useEffect(() => {
     console.log('QuoteInvoice: Quote object changed', {
@@ -56,12 +67,12 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
   // --- Edit mode state ---
   const [isEditing, setIsEditing] = useState(isManualQuotation);
   const [editFrom, setEditFrom] = useState({
-    company: user?.companyName || 'Demo Company (FreightLynk LLC)',
-    address: '1000 20th Street NW, Suite 400, Washington D.C. 20036',
-    phone: '(028) 1208 281055',
-    preparedBy: user?.fullName || 'Demo User',
-    mobile: '(028) 1208 281055',
-    email: user?.email || 'demo123@gmail.com',
+    company: effectiveUser?.companyName || 'Demo Company (FreightLynk LLC)',
+    address: effectiveUser?.companyAddress || '1000 20th Street NW, Suite 400, Washington D.C. 20036',
+    phone: effectiveUser?.phone || '(028) 1208 281055',
+    preparedBy: effectiveUser?.fullName || 'Demo User',
+    mobile: effectiveUser?.phone || '(028) 1208 281055',
+    email: effectiveUser?.email || 'demo123@gmail.com',
   });
   const [editTo, setEditTo] = useState({
     company: '',
@@ -78,11 +89,72 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
   const [additionalCost, setAdditionalCost] = useState(quote.additionalCost || 0);
   const [additionalCostDescription, setAdditionalCostDescription] = useState(quote.additionalCostDescription || '');
 
-  // Sync additional cost fields whenever quote changes
+  // Sync all edit states with quote data whenever quote changes
   useEffect(() => {
-    setAdditionalCost(quote.additionalCost || 0);
-    setAdditionalCostDescription(quote.additionalCostDescription || '');
-  }, [quote?.id]);
+    console.log('SYNCING EDIT STATES WITH QUOTE DATA:', {
+      quoteId: quote?.id,
+      quoteFrom: quote?.from,
+      quoteTo: quote?.to,
+      quoteRemark: quote?.remark,
+      quoteAdditionalInfo: quote?.additionalInfo
+    });
+    
+    // Sync editFrom with quote.from data
+    if (quote?.from) {
+      setEditFrom({
+        company: quote.from.company || effectiveUser?.companyName || 'Demo Company (FreightLynk LLC)',
+        address: quote.from.address || effectiveUser?.companyAddress || '1000 20th Street NW, Suite 400, Washington D.C. 20036',
+        phone: quote.from.phone || effectiveUser?.phone || '(028) 1208 281055',
+        preparedBy: quote.from.preparedBy || effectiveUser?.fullName || 'Demo User',
+        mobile: quote.from.mobile || effectiveUser?.phone || '(028) 1208 281055',
+        email: quote.from.email || effectiveUser?.email || 'demo123@gmail.com',
+      });
+    }
+    
+    // Sync editTo with quote.to data
+    if (quote?.to) {
+      setEditTo({
+        company: quote.to.company || '',
+        address: quote.to.address || '',
+        phone: quote.to.phone || '',
+        contact: quote.to.contact || '',
+      });
+    }
+    
+    // Sync editRemark with quote.remark
+    setEditRemark(quote?.remark || '');
+    
+    // Sync editAdditionalInfo with quote.additionalInfo
+    setEditAdditionalInfo({ ...quote?.additionalInfo });
+    
+    // Sync editQuote with quote data
+    setEditQuote({
+      origin: quote?.origin || '',
+      destination: quote?.destination || '',
+      transitPort: quote?.transitPort || '',
+      serviceType: quote?.serviceType || '',
+      mode: quote?.mode || '',
+      modeLabel: quote?.modeLabel || quote?.mode || '',
+      transitTime: quote?.transitTime || '',
+      validUntil: quote?.validUntil || '',
+      validFrom: quote?.validFrom || '',
+      departure: quote?.departure || '',
+      arrival: quote?.arrival || '',
+      provider: quote?.provider || '',
+      portOfLoading: quote?.portOfLoading || quote?.origin || '',
+      portOfDischarge: quote?.portOfDischarge || quote?.destination || '',
+    });
+    
+    // Sync additional cost fields
+    setAdditionalCost(quote?.additionalCost || 0);
+    setAdditionalCostDescription(quote?.additionalCostDescription || '');
+    
+    // Sync editTableRows with quote.tableRows
+    if (quote?.tableRows) {
+      setEditTableRows(JSON.parse(JSON.stringify(quote.tableRows)));
+    }
+    
+  }, [quote?.id, quote?.from, quote?.to, quote?.remark, quote?.additionalInfo, quote?.origin, quote?.destination, quote?.transitPort, quote?.serviceType, quote?.mode, quote?.modeLabel, quote?.transitTime, quote?.validUntil, quote?.validFrom, quote?.departure, quote?.arrival, quote?.provider, quote?.portOfLoading, quote?.portOfDischarge, quote?.additionalCost, quote?.additionalCostDescription, quote?.tableRows, effectiveUser]);
 
   // State for editable quote fields
   const [editQuote, setEditQuote] = useState({
@@ -182,12 +254,12 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
   // On mount, initialize edit fields from quote, but always use defaults if missing
   useEffect(() => {
     setEditFrom({
-      company: quote.from?.company || user?.companyName || 'Demo Company (FreightLynk LLC)',
-      address: quote.from?.address || '1000 20th Street NW, Suite 400, Washington D.C. 20036',
-      phone: quote.from?.phone || '(028) 1208 281055',
-      preparedBy: quote.from?.preparedBy || user?.fullName || 'Demo User',
-      mobile: quote.from?.mobile || '(028) 1208 281055',
-      email: quote.from?.email || user?.email || 'demo123@gmail.com',
+      company: quote.from?.company || effectiveUser?.companyName || 'Demo Company (FreightLynk LLC)',
+      address: quote.from?.address || effectiveUser?.companyAddress || '1000 20th Street NW, Suite 400, Washington D.C. 20036',
+      phone: quote.from?.phone || effectiveUser?.phone || '(028) 1208 281055',
+      preparedBy: quote.from?.preparedBy || effectiveUser?.fullName || 'Demo User',
+      mobile: quote.from?.mobile || effectiveUser?.phone || '(028) 1208 281055',
+      email: quote.from?.email || effectiveUser?.email || 'demo123@gmail.com',
     });
     setEditTo(quote.to || editTo);
     setEditRemark(quote.remark || '');
@@ -239,12 +311,12 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
   // 1. Fix edit state initialization in handleEdit
   const handleEdit = () => {
     setEditFrom({
-      company: quote.from?.company || user?.companyName || 'Demo Company (FreightLynk LLC)',
-      address: quote.from?.address || '1000 20th Street NW, Suite 400, Washington D.C. 20036',
-      phone: quote.from?.phone || '(028) 1208 281055',
-      preparedBy: quote.from?.preparedBy || user?.fullName || 'Demo User',
-      mobile: quote.from?.mobile || '(028) 1208 281055',
-      email: quote.from?.email || user?.email || 'demo123@gmail.com',
+      company: quote.from?.company || effectiveUser?.companyName || 'Demo Company (FreightLynk LLC)',
+      address: quote.from?.address || effectiveUser?.companyAddress || '1000 20th Street NW, Suite 400, Washington D.C. 20036',
+      phone: quote.from?.phone || effectiveUser?.phone || '(028) 1208 281055',
+      preparedBy: quote.from?.preparedBy || effectiveUser?.fullName || 'Demo User',
+      mobile: quote.from?.mobile || effectiveUser?.phone || '(028) 1208 281055',
+      email: quote.from?.email || effectiveUser?.email || 'demo123@gmail.com',
     });
     setEditTo(quote.to || { company: '', address: '', phone: '', contact: '' });
     setEditRemark(quote.remark || '');
@@ -300,12 +372,12 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
   // In handleSave, do not allow empty 'from' fields; always use defaults if missing
   const handleSave = () => {
     const safeFrom = {
-      company: editFrom.company || user?.companyName || 'Demo Company (FreightLynk LLC)',
-      address: editFrom.address || '1000 20th Street NW, Suite 400, Washington D.C. 20036',
-      phone: editFrom.phone || '(028) 1208 281055',
-      preparedBy: editFrom.preparedBy || user?.fullName || 'Demo User',
-      mobile: editFrom.mobile || '(028) 1208 281055',
-      email: editFrom.email || user?.email || 'demo123@gmail.com',
+      company: editFrom.company || effectiveUser?.companyName || 'Demo Company (FreightLynk LLC)',
+      address: editFrom.address || effectiveUser?.companyAddress || '1000 20th Street NW, Suite 400, Washington D.C. 20036',
+      phone: editFrom.phone || effectiveUser?.phone || '(028) 1208 281055',
+      preparedBy: editFrom.preparedBy || effectiveUser?.fullName || 'Demo User',
+      mobile: editFrom.mobile || effectiveUser?.phone || '(028) 1208 281055',
+      email: editFrom.email || effectiveUser?.email || 'demo123@gmail.com',
     };
     const safeTo = {
       company: editTo.company || '',
@@ -619,12 +691,12 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
   // 2. Fix state reset on quote change
   useEffect(() => {
     setEditFrom({
-      company: quote.from?.company || user?.companyName || 'Demo Company (FreightLynk LLC)',
-      address: quote.from?.address || '1000 20th Street NW, Suite 400, Washington D.C. 20036',
-      phone: quote.from?.phone || '(028) 1208 281055',
-      preparedBy: quote.from?.preparedBy || user?.fullName || 'Demo User',
-      mobile: quote.from?.mobile || '(028) 1208 281055',
-      email: quote.from?.email || user?.email || 'demo123@gmail.com',
+      company: quote.from?.company || effectiveUser?.companyName || 'Demo Company (FreightLynk LLC)',
+      address: quote.from?.address || effectiveUser?.companyAddress || '1000 20th Street NW, Suite 400, Washington D.C. 20036',
+      phone: quote.from?.phone || effectiveUser?.phone || '(028) 1208 281055',
+      preparedBy: quote.from?.preparedBy || effectiveUser?.fullName || 'Demo User',
+      mobile: quote.from?.mobile || effectiveUser?.phone || '(028) 1208 281055',
+      email: quote.from?.email || effectiveUser?.email || 'demo123@gmail.com',
     });
     setEditTo(quote.to || { company: '', address: '', phone: '', contact: '' });
     setEditRemark(quote.remark || '');
@@ -897,12 +969,12 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                 onClick={async () => {
                   // Build the updated quote object directly
                   const safeFrom = {
-                    company: editFrom.company || user?.companyName || 'Demo Company (FreightLynk LLC)',
-                    address: editFrom.address || '1000 20th Street NW, Suite 400, Washington D.C. 20036',
-                    phone: editFrom.phone || '(028) 1208 281055',
-                    preparedBy: editFrom.preparedBy || user?.fullName || 'Demo User',
-                    mobile: editFrom.mobile || '(028) 1208 281055',
-                    email: editFrom.email || user?.email || 'demo123@gmail.com',
+                    company: editFrom.company || effectiveUser?.companyName || 'Demo Company (FreightLynk LLC)',
+                    address: editFrom.address || effectiveUser?.companyAddress || '1000 20th Street NW, Suite 400, Washington D.C. 20036',
+                    phone: editFrom.phone || effectiveUser?.phone || '(028) 1208 281055',
+                    preparedBy: editFrom.preparedBy || effectiveUser?.fullName || 'Demo User',
+                    mobile: editFrom.mobile || effectiveUser?.phone || '(028) 1208 281055',
+                    email: editFrom.email || effectiveUser?.email || 'demo123@gmail.com',
                   };
                   const safeTo = {
                     company: editTo.company || '',
@@ -1054,7 +1126,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                     weightVolume: submitWeightVolumeBadge ? [submitWeightVolumeBadge] : [],
                     status: quote.status || 'draft',
                     price: submitFinalTotalAmount.toString(),
-                    createdBy: user?.fullName || quote.createdBy || '',
+                    createdBy: effectiveUser?.fullName || quote.createdBy || '',
                     incoterms: cleanedAdditionalInfo.incoterm || quote.incoterms || '',
                     notes: cleanedAdditionalInfo.note || quote.notes || '',
                     tableRows: tableRows,
@@ -1102,16 +1174,41 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                   try {
                     console.log('QuoteInvoice: Submitting quote to database:', quoteId);
                     
-                    // Check if this quote was previously saved to database
-                    // We can determine this by checking if the quote has been submitted in this session
-                    // or if it has a non-draft status, or if it has an ID that indicates it was previously saved
-                    const wasPreviouslySubmitted = submittedQuoteIds.has(quoteId);
-                    const hasNonDraftStatus = quote.status && quote.status !== 'draft';
-                    // Check if the quote has a valid ID that indicates it was previously saved to database
-                    const hasExistingId = quote.id && quote.id.startsWith('QR-') && quote.id === quoteId;
-                    // Also check if we're in edit mode for a quote that was loaded from database
-                    const isEditingExistingQuote = isEditing && quote.id && quote.id.startsWith('QR-');
-                    const isExistingQuote = wasPreviouslySubmitted || hasNonDraftStatus || hasExistingId || isEditingExistingQuote;
+                    // For manual quotations, always create new quotes - never update
+                    // For search flow quotes, check if they exist in database
+                    let isExistingQuote = false;
+                    let wasPreviouslySubmitted = false;
+                    let hasNonDraftStatus = false;
+                    let hasExistingId = false;
+                    let isEditingExistingQuote = false;
+                    
+                    console.log('MANUAL QUOTATION DEBUG:', {
+                      isManualQuotation,
+                      quoteId,
+                      quoteIdType: typeof quoteId,
+                      quoteIdStartsWithQR: quoteId?.startsWith('QR-'),
+                      isEditing
+                    });
+                    
+                    // Determine if this is an existing quote that should be updated
+                    // Database quotes have QR- prefix, temporary quotes have QT- prefix
+                    if (quoteId && quoteId.startsWith('QR-')) {
+                      // This is an existing quote from database - update it
+                      isExistingQuote = true;
+                      console.log('UPDATING EXISTING QUOTE FROM DATABASE:', quoteId);
+                    } else if (quoteId && quoteId.startsWith('QT-')) {
+                      // This is a temporary quote (not yet saved to database) - create new
+                      isExistingQuote = false;
+                      console.log('CREATING NEW QUOTE FROM TEMPORARY ID:', quoteId);
+                    } else if (isManualQuotation) {
+                      // Manual quotations are always new quotes
+                      isExistingQuote = false;
+                      console.log('CREATING NEW MANUAL QUOTE:', quoteId);
+                    } else {
+                      // For search flow quotes, check if they exist in the database
+                      isExistingQuote = false;
+                      console.log('CREATING NEW QUOTE FROM SEARCH:', quoteId);
+                    }
                     
                     console.log('Quote submission logic debug:', {
                       quoteId,
@@ -1122,17 +1219,36 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                       isExistingQuote,
                       quoteStatus: quote.status,
                       originalQuoteId: quote.id,
-                      isEditing
+                      isEditing,
+                      isManualQuotation
                     });
                     
                     if (isExistingQuote) {
                       // Quote was previously submitted, update it
-                      console.log('Updating previously submitted quote:', quoteId);
+                      console.log('UPDATING EXISTING QUOTE - Calling updateQuote with:', {
+                        quoteId,
+                        updatedQuoteId: updatedQuote.id,
+                        updatedQuoteData: updatedQuote
+                      });
                       await updateQuote(updatedQuote);
+                      console.log('UPDATING EXISTING QUOTE - Successfully updated quote');
+                      
+                      // Update the selectedQuoteDetails in the search store to reflect the changes
+                      console.log('UPDATING SELECTED QUOTE DETAILS IN SEARCH STORE');
+                      setSelectedQuoteDetails(updatedQuote);
                     } else {
                       // New quote, create it
-                      console.log('Creating new quote in database:', quoteId);
+                      console.log('CREATING NEW QUOTE - Calling addQuote with:', {
+                        quoteId,
+                        updatedQuoteId: updatedQuote.id,
+                        updatedQuoteData: updatedQuote
+                      });
                       await addQuote(updatedQuote);
+                      console.log('CREATING NEW QUOTE - Successfully created quote');
+                      
+                      // Update the selectedQuoteDetails in the search store
+                      console.log('UPDATING SELECTED QUOTE DETAILS IN SEARCH STORE');
+                      setSelectedQuoteDetails(updatedQuote);
                     }
                     
                     // Mark this quote as submitted in this session

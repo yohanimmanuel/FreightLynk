@@ -1,9 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Search, ChevronDown, X, Menu, Ship, Box, Plane, Truck, Upload, Download, CheckCircle, XCircle } from 'lucide-react';
 import { useQuoteStore, mockForwarderQuotes } from '@/store/forwarderquote';
 import { useInvoiceSend } from './useInvoiceSend';
 import { useClientQuoteStore } from '@/store/clientquotes';
 import { useBookingStore } from '@/store/bookingStore';
+import { useQuoteRequestStore } from '@/store/quoteRequestStore';
+import { formatBookingToQuoteRequest, formatQuoteRequestForDisplay } from '@/utils/quoteRequestApi';
 
 // Column configs for quote requests
 const REQUEST_COLUMNS = [
@@ -214,90 +216,112 @@ export default function QuoteRequest({ role = 'forwarder', hasBookings = true }:
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [successType, setSuccessType] = useState<'success' | 'error' | null>(null);
 
-  // Use forwarder or client store based on role
+  // Use stores based on role
   const forwarderStore = useQuoteStore();
   const clientStore = useClientQuoteStore();
   const bookingStore = useBookingStore();
+  const quoteRequestStore = useQuoteRequestStore();
 
-  // Requests data source
-  let requests: RequestType[] = [];
-  if (role === 'forwarder') {
-    requests = mockForwarderQuotes;
-  } else if (role === 'client') {
-    // Map confirmedBookings to quote request rows
-    const today = new Date().toLocaleDateString('en-CA');
-    requests = bookingStore.confirmedBookings.map((b: any, idx: number) => {
-      // Determine mode for tab and icon
-      let mode = '';
-      if (b.transportModeValue === 'sea') {
-        mode = b.shipmentTypeValue?.toLowerCase() === 'fcl' ? 'fcl' : 'lcl';
-      } else if (b.transportModeValue === 'air') {
-        mode = 'air';
-      } else if (b.transportModeValue === 'land') {
-        mode = b.shipmentTypeValue?.toLowerCase() === 'ftl' ? 'ftl' : 'ltl';
+  // Load quote requests on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        await quoteRequestStore.loadQuoteRequests({ role });
+      } catch (error) {
+        console.error('Failed to load quote requests:', error);
       }
-      // Build details string with proper format
-      let details = '';
-      
-      if (b.transportModeValue === 'sea' && b.shipmentTypeValue?.toLowerCase() === 'fcl') {
-        // For FCL, use container types array if available, otherwise fallback to single values
-        let containerTypesArray = b.containerTypes;
-        if (typeof b.containerTypes === 'string') {
-          try {
-            containerTypesArray = JSON.parse(b.containerTypes);
-          } catch (e) {
-            containerTypesArray = [];
+    };
+    loadData();
+  }, [role]); // Removed quoteRequestStore from dependencies to prevent infinite loop
+
+  // Requests data source - memoized to prevent infinite loops
+  const requests = useMemo(() => {
+    if (role === 'forwarder') {
+      // Use real quote requests from API for forwarders
+      return quoteRequestStore.quoteRequests.map(formatQuoteRequestForDisplay);
+    } else if (role === 'client') {
+      // For clients, use confirmed bookings as quote requests
+      const today = new Date().toLocaleDateString('en-CA');
+      return bookingStore.confirmedBookings.map((b: any, idx: number) => {
+        // Determine mode for tab and icon
+        let mode = '';
+        if (b.transportModeValue === 'sea') {
+          mode = b.shipmentTypeValue?.toLowerCase() === 'fcl' ? 'fcl' : 'lcl';
+        } else if (b.transportModeValue === 'air') {
+          mode = 'air';
+        } else if (b.transportModeValue === 'land') {
+          mode = b.shipmentTypeValue?.toLowerCase() === 'ftl' ? 'ftl' : 'ltl';
+        }
+        // Build details string with proper format
+        let details = '';
+        
+        if (b.transportModeValue === 'sea' && b.shipmentTypeValue?.toLowerCase() === 'fcl') {
+          // For FCL, use container types array if available, otherwise fallback to single values
+          let containerTypesArray = b.containerTypes;
+          if (typeof b.containerTypes === 'string') {
+            try {
+              containerTypesArray = JSON.parse(b.containerTypes);
+            } catch (e) {
+              containerTypesArray = [];
+            }
           }
+          
+          if (containerTypesArray && Array.isArray(containerTypesArray) && containerTypesArray.length > 0) {
+            details = containerTypesArray.map((ct: any) => `${ct.quantity || ''} x ${ct.type || ''}`).join(', ');
+          } else {
+            details = `${b.containerQuantity || ''} x ${b.containerTypeValue || ''}`;
+          }
+        } else if (b.transportModeValue === 'land' && b.shipmentTypeValue?.toLowerCase() === 'ftl') {
+          // For FTL, use truck types array if available, otherwise fallback to single values
+          let truckTypesArray = b.truckTypes;
+          if (typeof b.truckTypes === 'string') {
+            try {
+              truckTypesArray = JSON.parse(b.truckTypes);
+            } catch (e) {
+              truckTypesArray = [];
+            }
+          }
+          
+          if (truckTypesArray && Array.isArray(truckTypesArray) && truckTypesArray.length > 0) {
+            details = truckTypesArray.map((tt: any) => `${tt.quantity || ''} x ${tt.type || ''}`).join(', ');
+          } else {
+            details = `${b.truckQuantity || ''} x ${b.truckType || ''}`;
+          }
+        } else {
+          // For LCL/AIR/LTL: weight kg/volume cbm
+          details = (b.weight && b.volume) ? `${b.weight}kg/${b.volume}cbm` : b.weight ? `${b.weight}kg` : b.volume ? `${b.volume}cbm` : '';
         }
         
-        if (containerTypesArray && Array.isArray(containerTypesArray) && containerTypesArray.length > 0) {
-          details = containerTypesArray.map((ct: any) => `${ct.quantity || ''} x ${ct.type || ''}`).join(', ');
-        } else {
-          details = `${b.containerQuantity || ''} x ${b.containerTypeValue || ''}`;
-        }
-      } else if (b.transportModeValue === 'land' && b.shipmentTypeValue?.toLowerCase() === 'ftl') {
-        // For FTL, use truck types array if available, otherwise fallback to single values
-        let truckTypesArray = b.truckTypes;
-        if (typeof b.truckTypes === 'string') {
-          try {
-            truckTypesArray = JSON.parse(b.truckTypes);
-          } catch (e) {
-            truckTypesArray = [];
-          }
-        }
-        
-        if (truckTypesArray && Array.isArray(truckTypesArray) && truckTypesArray.length > 0) {
-          details = truckTypesArray.map((tt: any) => `${tt.quantity || ''} x ${tt.type || ''}`).join(', ');
-        } else {
-          details = `${b.truckQuantity || ''} x ${b.truckType || ''}`;
-        }
-      } else {
-        // For LCL/AIR/LTL: weight kg/volume cbm
-        details = (b.weight && b.volume) ? `${b.weight}kg/${b.volume}cbm` : b.weight ? `${b.weight}kg` : b.volume ? `${b.volume}cbm` : '';
-      }
-      
-      return {
-        id: b.bookingId || `REQ-${idx+1}`,
-        customer: b.shipperValue || 'Demo User',
-        provider: b.provider || '',
-        details,
-        origin: b.originPort || '',
-        destination: b.destinationPort || '',
-        cargoReadyDate: b.cargoReadyDate || '',
-        expectedDelivery: b.eta || '',
-        attachment: b.attachment || 'No attached file',
-        status: b.status || 'Booked',
-        incoterms: b.incoterms || '',
-        remark: '', // Always blank for client
-        createdBy: 'Demo User',
-        createdOn: today,
-        mode,
-        notes: b.additionalNotes || '', // Use additional notes from booking
-        commodities: b.productName || '', // Use 'productName' for commodities
-      };
-    });
-  }
+        return {
+          id: b.bookingId || `REQ-${idx+1}`,
+          customer: b.shipperValue || 'Demo User',
+          provider: b.provider || '',
+          details,
+          origin: b.originPort || '',
+          destination: b.destinationPort || '',
+          cargoReadyDate: b.cargoReadyDate || '',
+          expectedDelivery: b.eta || '',
+          attachment: b.attachment || 'No attached file',
+          status: b.status || 'Booked',
+          incoterms: b.incoterms || '',
+          remark: '', // Always blank for client
+          createdBy: 'Demo User',
+          createdOn: today,
+          mode,
+          notes: b.additionalNotes || '', // Use additional notes from booking
+          commodities: b.productName || '', // Use 'productName' for commodities
+        };
+      });
+    }
+    return [];
+  }, [role, quoteRequestStore.quoteRequests, bookingStore.confirmedBookings]);
+
   const [localRequests, setLocalRequests] = useState<RequestType[]>(requests);
+  
+  // Update local requests when data changes
+  useEffect(() => {
+    setLocalRequests(requests);
+  }, [requests]);
 
   // Hide remark, provider, and transitTime columns for client
   let columns = [...REQUEST_COLUMNS];
@@ -305,33 +329,37 @@ export default function QuoteRequest({ role = 'forwarder', hasBookings = true }:
     columns = columns.filter(col => col.key !== 'remark' && col.key !== 'provider' && col.key !== 'transitTime');
   }
 
-  // Filtered data (add real filtering logic as needed)
-  const filteredRequests = localRequests.filter(r =>
-    (tab === 'all' || (r.mode && r.mode.toLowerCase() === tab)) &&
-    (search === '' || Object.values(r).some(val => val !== undefined && val.toString().toLowerCase().includes(search.toLowerCase())))
-  );
+  // Filtered data with real-time filtering
+  const filteredRequests = useMemo(() => {
+    return localRequests.filter((r: RequestType) =>
+      (tab === 'all' || (r.mode && r.mode.toLowerCase() === tab)) &&
+      (search === '' || Object.values(r).some((val: any) => val !== undefined && val !== null && val.toString().toLowerCase().includes(search.toLowerCase())))
+    );
+  }, [localRequests, tab, search]);
 
   // Bulk action bar logic
   const selectedRequests = filteredRequests.filter(r => selected.includes(r.id));
 
   // Handler to update or cancel a request
-  const handleRequestAction = (id: string, action: 'update' | 'cancel') => {
-    setLocalRequests(prev => prev.map(r =>
-      r.id === id
-        ? {
-            ...r,
-            status: action === 'update' ? 'Updated' : 'Canceled',
-          }
-        : r
-    ));
-    if (action === 'update') {
-      setSuccessMsg('Updated request successfully');
-      setSuccessType('success');
-    } else {
-      setSuccessMsg('Quote request cancelled');
+  const handleRequestAction = async (id: string, action: 'update' | 'cancel') => {
+    try {
+      const newStatus = action === 'update' ? 'quoted' : 'cancelled';
+      await quoteRequestStore.updateExistingQuoteRequest(id, { status: newStatus });
+      
+      if (action === 'update') {
+        setSuccessMsg('Updated request successfully');
+        setSuccessType('success');
+      } else {
+        setSuccessMsg('Quote request cancelled');
+        setSuccessType('error');
+      }
+      setTimeout(() => { setSuccessMsg(null); setSuccessType(null); }, 2000);
+    } catch (error) {
+      console.error('Failed to update quote request:', error);
+      setSuccessMsg('Failed to update request');
       setSuccessType('error');
+      setTimeout(() => { setSuccessMsg(null); setSuccessType(null); }, 2000);
     }
-    setTimeout(() => { setSuccessMsg(null); setSuccessType(null); }, 2000);
   };
 
   // Client: show booking message if no bookings
@@ -492,7 +520,7 @@ export default function QuoteRequest({ role = 'forwarder', hasBookings = true }:
               <span key={r.id} className="flex items-center bg-blue-100 text-blue-800 text-xs font-medium px-3 py-2 rounded-full">
                 {r.id} {r.origin && r.destination ? `(${r.origin} → ${r.destination})` : ''}
                 <button
-                  onClick={e => {
+                  onClick={(e: React.MouseEvent) => {
                     e.stopPropagation();
                     setSelected(selected.filter(i => i !== r.id));
                   }}
@@ -548,7 +576,7 @@ export default function QuoteRequest({ role = 'forwarder', hasBookings = true }:
           <tbody>
             {filteredRequests.length === 0 ? (
               <tr><td colSpan={columns.length+1} className="text-center py-8 text-gray-400">No requests found.</td></tr>
-            ) : filteredRequests.map(request => (
+            ) : filteredRequests.map((request: RequestType) => (
               <tr
                 key={request.id}
                 className={`hover:bg-blue-50 cursor-pointer border-b border-gray-200 transition ${selected.includes(request.id) ? 'bg-blue-50' : ''}`}
