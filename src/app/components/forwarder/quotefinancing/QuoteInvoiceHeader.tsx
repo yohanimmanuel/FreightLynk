@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 
 const QuoteInvoiceHeader = ({
   isEditing,
@@ -15,6 +15,30 @@ const QuoteInvoiceHeader = ({
   editRemark,
   setEditRemark
 }: any) => {
+  const [logoPreview, setLogoPreview] = useState<string | null>(quote.companyLogo || quote.logo || null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Create a preview URL for the uploaded image
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setLogoPreview(result);
+        // Update the quote with the new logo
+        setEditQuote((prev: any) => ({ ...prev, companyLogo: result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleLogoClick = () => {
+    if (isEditing && fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
   return (
     <div className="flex flex-row justify-between items-start border-b pb-6 mb-6 gap-6">
       {/* Left: From/To stacked */}
@@ -92,22 +116,35 @@ const QuoteInvoiceHeader = ({
       </div>
       {/* Right: Logo and Quotation */}
       <div className="flex flex-col gap-3 items-end">
-        <div className="p-8 border border-gray-200 rounded-lg shadow-xs flex flex-col items-center justify-center w-full mt-8">
-          {quote.companyLogo ? (
-            <img src={quote.companyLogo} alt="Logo" className="w-32 h-16 object-contain mx-auto" />
-          ) : quote.logo ? (
-          <img src={quote.logo} alt="Logo" className="w-32 h-16 object-contain mx-auto" />
+        <div 
+          className={`p-8 border border-gray-200 rounded-lg shadow-xs flex flex-col items-center justify-center w-full mt-8 ${isEditing ? 'cursor-pointer hover:border-blue-300 transition-colors' : ''}`}
+          onClick={handleLogoClick}
+        >
+          {(logoPreview || editQuote.companyLogo) ? (
+            <img src={logoPreview || editQuote.companyLogo} alt="Logo" className="w-32 h-16 object-contain mx-auto" />
           ) : (
             <div className="w-32 h-16 flex items-center justify-center text-gray-400 text-xs">
               <div className="text-center">
-                <div className="w-8 h-8 mx-auto mb-1 bg-gray-200 rounded flex items-center justify-center">
+                <div className="w-10 h-8 mx-auto mb-1 bg-gray-200 rounded flex items-center justify-center">
                   <span className="text-gray-500 text-xs">Logo</span>
                 </div>
-                <span className="text-gray-500 text-xs">Logo</span>
+                {isEditing && (
+                  <div className="text-xs text-blue-500 mt-5">+ Click to upload</div>
+                )}
               </div>
             </div>
           )}
         </div>
+        
+        {/* Hidden file input for logo upload */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleLogoUpload}
+          className="hidden"
+        />
+        
         <div className="text-3xl text-gray-900 font-semibold uppercase mt-2 text-right w-full">Quotation</div>
         {isEditing ? (
           <div className="w-full flex flex-col items-end mt-2">

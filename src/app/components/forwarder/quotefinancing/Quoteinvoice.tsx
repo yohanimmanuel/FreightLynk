@@ -144,6 +144,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
         provider: quote?.provider || '',
         portOfLoading: quote?.portOfLoading || quote?.origin || '',
         portOfDischarge: quote?.portOfDischarge || quote?.destination || '',
+        companyLogo: quote?.companyLogo || quote?.logo || '',
       };
       
       // If user is actively editing and has made mode changes, preserve their selection
@@ -192,6 +193,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
     provider: quote.provider || '',
     portOfLoading: quote.portOfLoading || quote.origin || '',
     portOfDischarge: quote.portOfDischarge || quote.destination || '',
+    companyLogo: quote.companyLogo || quote.logo || '',
   });
 
   // Add local editTableRows state - start with quote.tableRows, will be updated by useEffects
@@ -363,6 +365,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       provider: quote.provider || '',
       portOfLoading: quote.portOfLoading || quote.origin || '',
       portOfDischarge: quote.portOfDischarge || quote.destination || '',
+      companyLogo: quote.companyLogo || quote.logo || '',
     });
     setEditTableRows(quote.tableRows ? structuredClone(quote.tableRows) : []);
     setAdditionalCost(quote.additionalCost || 0);
@@ -671,6 +674,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       serviceType: editQuote.serviceType,
       transitTime: editQuote.transitTime,
       validUntil: editQuote.validUntil,
+      companyLogo: editQuote.companyLogo || quote.companyLogo || quote.logo || '',
       mode: (() => {
         // Use the modeLabel from editQuote as the primary source
         const selectedMode = editQuote.modeLabel || selectedQuoteDetails?.modeLabel || quote.modeLabel || '';
@@ -753,6 +757,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
       provider: quote.provider || '',
       portOfLoading: quote.portOfLoading || quote.origin || '',
       portOfDischarge: quote.portOfDischarge || quote.destination || '',
+      companyLogo: quote.companyLogo || quote.logo || '',
     });
     setAdditionalCost(quote.additionalCost || 0);
     setAdditionalCostDescription(quote.additionalCostDescription || '');
@@ -1120,6 +1125,7 @@ const QuoteInvoice = ({ isManualQuotation = false }: { isManualQuotation?: boole
                     serviceType: editQuote.serviceType,
                     transitTime: editQuote.transitTime,
                     validUntil: editQuote.validUntil,
+                    companyLogo: editQuote.companyLogo || quote.companyLogo || quote.logo || '',
                     mode: (() => {
                       // Use the modeLabel from editQuote as the primary source
                       const selectedMode = editQuote.modeLabel || selectedQuoteDetails?.modeLabel || quote.modeLabel || '';
