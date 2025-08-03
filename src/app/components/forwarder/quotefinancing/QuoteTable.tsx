@@ -39,7 +39,7 @@ const MODE_COLUMN_CONFIGS: Record<string, { key: string; label: string }[]> = {
     { key: 'client', label: 'Client' },
     { key: 'isTariff', label: 'Is tariff' },
     { key: 'provider', label: 'Provider' },
-    { key: 'containertype', label: 'Container Type' },
+    { key: 'volume', label: 'Volume' },
     { key: 'origin', label: 'Origin' },
     { key: 'destination', label: 'Destination' },
     { key: 'status', label: 'Status' },
@@ -56,7 +56,7 @@ const MODE_COLUMN_CONFIGS: Record<string, { key: string; label: string }[]> = {
     { key: 'client', label: 'Client' },
     { key: 'isTariff', label: 'Is tariff' },
     { key: 'provider', label: 'Provider' },
-    { key: 'weightVolume', label: 'Weight/volume' },
+    { key: 'volume', label: 'Volume' },
     { key: 'origin', label: 'Origin' },
     { key: 'destination', label: 'Destination' },
     { key: 'status', label: 'Status' },
@@ -73,7 +73,7 @@ const MODE_COLUMN_CONFIGS: Record<string, { key: string; label: string }[]> = {
     { key: 'client', label: 'Client' },
     { key: 'isTariff', label: 'Is tariff' },
     { key: 'provider', label: 'Provider' },
-    { key: 'weightVolume', label: 'Weight/volume' },
+    { key: 'volume', label: 'Volume' },
     { key: 'origin', label: 'Origin' },
     { key: 'destination', label: 'Destination' },
     { key: 'status', label: 'Status' },
@@ -90,7 +90,7 @@ const MODE_COLUMN_CONFIGS: Record<string, { key: string; label: string }[]> = {
     { key: 'client', label: 'Client' },
     { key: 'isTariff', label: 'Is tariff' },
     { key: 'provider', label: 'Provider' },
-    { key: 'truckType', label: 'Truck Type' },
+    { key: 'volume', label: 'Volume' },
     { key: 'origin', label: 'Origin' },
     { key: 'destination', label: 'Destination' },
     { key: 'status', label: 'Status' },
@@ -107,7 +107,7 @@ const MODE_COLUMN_CONFIGS: Record<string, { key: string; label: string }[]> = {
     { key: 'client', label: 'Client' },
     { key: 'isTariff', label: 'Is tariff' },
     { key: 'provider', label: 'Provider' },
-    { key: 'weightVolume', label: 'Weight/volume' },
+    { key: 'volume', label: 'Volume' },
     { key: 'origin', label: 'Origin' },
     { key: 'destination', label: 'Destination' },
     { key: 'status', label: 'Status' },
@@ -124,7 +124,7 @@ const MODE_COLUMN_CONFIGS: Record<string, { key: string; label: string }[]> = {
     { key: 'client', label: 'Client' },
     { key: 'isTariff', label: 'Is tariff' },
     { key: 'provider', label: 'Provider' },
-    { key: 'details', label: 'Details' },
+    { key: 'volume', label: 'Volume' },
     { key: 'origin', label: 'Origin' },
     { key: 'destination', label: 'Destination' },
     { key: 'status', label: 'Status' },
@@ -336,6 +336,47 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
         return [];
       }
       case 'truckType': return q.truckType;
+      case 'volume': {
+        const mode = (q.mode || q.modeLabel || '').toLowerCase();
+        
+        // For FCL: show container type
+        if (mode.includes('fcl')) {
+          if (q.containertype && Array.isArray(q.containertype) && q.containertype.length > 0) {
+            return q.containertype;
+          } else if (q.containertype && typeof q.containertype === 'string') {
+            return [q.containertype];
+          }
+        }
+        
+        // For LCL/AIR: show weight/volume
+        if (mode.includes('lcl') || mode.includes('air')) {
+          if (q.weightVolume && Array.isArray(q.weightVolume) && q.weightVolume.length > 0) {
+            return q.weightVolume;
+          }
+          
+          // Fallback: construct weight/volume from multiple possible sources
+          const weight = q.lclWeight || q.additionalInfo?.lclWeight || '';
+          const volume = q.lclVolume || q.additionalInfo?.lclVolume || '';
+          if (weight && volume) {
+            return [`${weight} kg / ${volume} cbm`];
+          } else if (weight) {
+            return [`${weight} kg`];
+          } else if (volume) {
+            return [`${volume} cbm`];
+          }
+        }
+        
+        // For FTL/LTL: show truck type
+        if (mode.includes('ftl') || mode.includes('ltl')) {
+          if (q.truckType && Array.isArray(q.truckType) && q.truckType.length > 0) {
+            return q.truckType;
+          } else if (q.truckType && typeof q.truckType === 'string') {
+            return [q.truckType];
+          }
+        }
+        
+        return [];
+      }
       case 'shipmentType': return q.shipmentType || q.additionalInfo?.shipmentType || '-';
       case 'mode': return q.mode || q.modeLabel || q.additionalInfo?.shipmentMode || '-';
       default: return '';
@@ -711,7 +752,7 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
                     <td key={col.key} className="px-4 py-4 text-gray-900 whitespace-nowrap overflow-x-auto">
                       {getModeIcon(q.mode || q.modeLabel)}{getValue(q, col.key)}
                     </td>
-                  ) : col.key === 'details' || col.key === 'containertype' || col.key === 'truckType' || col.key === 'weightVolume' ? (
+                  ) : col.key === 'volume' ? (
                     <td key={col.key} className="px-4 py-4 text-gray-900 whitespace-nowrap overflow-x-auto">
                       {(() => {
                         const value = getValue(q, col.key);
@@ -732,10 +773,10 @@ export default function QuoteTable({ role = 'forwarder' }: { role?: 'forwarder' 
                         return (
                           <>
                             {displayBadges.map((badge, i) => (
-                              <span key={i} className="inline-block border border-blue-300 bg-blue-50 text-blue-800 rounded-full px-3 py-1 text-xs font-semibold mr-1 truncate">{badge}</span>
+                              <span key={i} className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-50 text-blue-800 border border-blue-200 mr-1">{badge}</span>
                             ))}
                             {extraCount > 0 && (
-                              <span className="inline-block border border-blue-300 bg-blue-50 text-blue-800 rounded-full px-2 py-1 text-xs font-semibold mr-1 truncate">+ more</span>
+                              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-50 text-blue-800 border border-blue-200 mr-1">+{extraCount}</span>
                             )}
                           </>
                         );

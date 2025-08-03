@@ -12,7 +12,7 @@ const REQUEST_COLUMNS = [
   { key: 'id', label: 'Request ID' },
   { key: 'customer', label: 'Customer Name' },
   { key: 'commodities', label: 'Commodities' },
-  { key: 'details', label: 'Details' },
+  { key: 'volume', label: 'Volume' },
   { key: 'origin', label: 'Origin' },
   { key: 'destination', label: 'Destination' },
   { key: 'cargoReadyDate', label: 'Cargo Ready Date' },
@@ -31,7 +31,7 @@ type RequestType = {
   id: string;
   customer: string;
   provider?: string;
-  details: string;
+  volume: string;
   origin: string;
   destination: string;
   attachment: string;
@@ -97,8 +97,8 @@ function ViewRequestModal({
               <div className="font-bold text-gray-900">{request.id}</div>
             </div>
             <div>
-              <div className="text-gray-500 mb-1">Details</div>
-              <div className="text-gray-900">{request.details || '-'}</div>
+              <div className="text-gray-500 mb-1">Volume</div>
+              <div className="text-gray-900">{request.volume || '-'}</div>
             </div>
             <div>
               <div className="text-gray-500 mb-1">Incoterms</div>
@@ -252,8 +252,8 @@ export default function QuoteRequest({ role = 'forwarder', hasBookings = true }:
         } else if (b.transportModeValue === 'land') {
           mode = b.shipmentTypeValue?.toLowerCase() === 'ftl' ? 'ftl' : 'ltl';
         }
-        // Build details string with proper format
-        let details = '';
+        // Build volume string with proper format
+        let volume = '';
         
         if (b.transportModeValue === 'sea' && b.shipmentTypeValue?.toLowerCase() === 'fcl') {
           // For FCL, use container types array if available, otherwise fallback to single values
@@ -267,9 +267,9 @@ export default function QuoteRequest({ role = 'forwarder', hasBookings = true }:
           }
           
           if (containerTypesArray && Array.isArray(containerTypesArray) && containerTypesArray.length > 0) {
-            details = containerTypesArray.map((ct: any) => `${ct.quantity || ''} x ${ct.type || ''}`).join(', ');
+            volume = containerTypesArray.map((ct: any) => `${ct.quantity || ''} x ${ct.type || ''}`).join(', ');
           } else {
-            details = `${b.containerQuantity || ''} x ${b.containerTypeValue || ''}`;
+            volume = `${b.containerQuantity || ''} x ${b.containerTypeValue || ''}`;
           }
         } else if (b.transportModeValue === 'land' && b.shipmentTypeValue?.toLowerCase() === 'ftl') {
           // For FTL, use truck types array if available, otherwise fallback to single values
@@ -283,20 +283,20 @@ export default function QuoteRequest({ role = 'forwarder', hasBookings = true }:
           }
           
           if (truckTypesArray && Array.isArray(truckTypesArray) && truckTypesArray.length > 0) {
-            details = truckTypesArray.map((tt: any) => `${tt.quantity || ''} x ${tt.type || ''}`).join(', ');
+            volume = truckTypesArray.map((tt: any) => `${tt.quantity || ''} x ${tt.type || ''}`).join(', ');
           } else {
-            details = `${b.truckQuantity || ''} x ${b.truckType || ''}`;
+            volume = `${b.truckQuantity || ''} x ${b.truckType || ''}`;
           }
         } else {
           // For LCL/AIR/LTL: weight kg/volume cbm
-          details = (b.weight && b.volume) ? `${b.weight}kg/${b.volume}cbm` : b.weight ? `${b.weight}kg` : b.volume ? `${b.volume}cbm` : '';
+          volume = (b.weight && b.volume) ? `${b.weight} kg / ${b.volume} cbm` : b.weight ? `${b.weight} kg` : b.volume ? `${b.volume} cbm` : '';
         }
         
         return {
           id: b.bookingId || `REQ-${idx+1}`,
           customer: b.shipperValue || 'Demo User',
           provider: b.provider || '',
-          details,
+          volume,
           origin: b.originPort || '',
           destination: b.destinationPort || '',
           cargoReadyDate: b.cargoReadyDate || '',
@@ -614,13 +614,13 @@ export default function QuoteRequest({ role = 'forwarder', hasBookings = true }:
                             {request.status}
                           </span>
                         )
-                        : col.key === 'details'
+                        : col.key === 'volume'
                           ? (() => {
-                              const detailsValue = request[col.key];
-                              if (!detailsValue) return <span className="text-gray-400">-</span>;
+                              const volumeValue = request[col.key];
+                              if (!volumeValue) return <span className="text-gray-400">-</span>;
                               
                               // Split by comma and create badges
-                              const badges = detailsValue.split(',').map((s: string) => s.trim()).filter(Boolean);
+                              const badges = volumeValue.split(',').map((s: string) => s.trim()).filter(Boolean);
                               if (badges.length === 0) return <span className="text-gray-400">-</span>;
                               
                               const displayBadges = badges.slice(0, 3);
@@ -629,12 +629,12 @@ export default function QuoteRequest({ role = 'forwarder', hasBookings = true }:
                               return (
                                 <>
                                   {displayBadges.map((badge: string, i: number) => (
-                                    <span key={i} className="inline-block border border-blue-300 bg-blue-50 text-blue-800 rounded-full px-3 py-1 text-xs font-semibold mr-1 truncate">
+                                    <span key={i} className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-50 text-blue-800 border border-blue-200 mr-1">
                                       {badge}
                                     </span>
                                   ))}
                                   {extraCount > 0 && (
-                                    <span className="inline-block border border-blue-300 bg-blue-50 text-blue-800 rounded-full px-2 py-1 text-xs font-semibold mr-1 truncate">
+                                    <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-50 text-blue-800 border border-blue-200 mr-1">
                                       +{extraCount}
                                     </span>
                                   )}
