@@ -409,7 +409,7 @@ export default function ShipmentTable() {
   const selectedShipments = MOCK_SHIPMENTS.filter((s: any) => selected.includes(s.id));
 
   const handleViewShipment = (shipmentId: string) => {
-    router.push(`/dashboard/shipments/details/${shipmentId}`);
+    router.push(`/shipments/orders/details?id=${shipmentId}`);
   };
 
   const handleEditShipment = (shipmentId: string) => {
@@ -581,7 +581,20 @@ export default function ShipmentTable() {
                {selected.length} shipment{selected.length > 1 ? 's' : ''} selected
              </span>
              <div className="flex gap-10">
-               <button className="text-sm text-[#007bff] hover:text-blue-800">
+               <button 
+                 className="text-sm text-[#007bff] hover:text-blue-800"
+                 onClick={() => {
+                   if (selected.length === 1) {
+                     const shipment = MOCK_SHIPMENTS.find(s => s.id === selected[0]);
+                     if (shipment) {
+                       handleViewShipment(shipment.shipmentId);
+                     }
+                   } else {
+                     // For multiple selections, you might want to show a modal or handle differently
+                     console.log('Multiple shipments selected for viewing');
+                   }
+                 }}
+               >
                  View 
                </button>
                <button className="text-sm text-red-600 hover:text-red-800">
