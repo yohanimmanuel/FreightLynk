@@ -137,10 +137,6 @@ const BookingConfirm = ({ bookingId }: { bookingId?: string }) => {
         <p className="text-xs text-gray-500 mt-2">
           * Pricing typically takes 1-3 business days from the forwarder or logistics provider.
         </p>
-        <div className="flex items-center gap-2 mt-2">
-          <p className="text-xs text-gray-500">Want to Request Quote?</p>
-          <button className="text-xs text-[#007bff] hover:text-blue-700">Request Quote here!</button>
-        </div>
         <button
           className={`mt-4 w-full px-4 py-3 rounded-lg text-xs font-semibold transition-colors duration-200 ${pricingReady ? 'bg-[#007bff] text-white hover:bg-blue-700 cursor-pointer' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
           disabled={!pricingReady}

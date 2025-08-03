@@ -105,8 +105,15 @@ export const usePOStore = create<POState>()(
         await get().fetchPurchaseOrders();
       },
       deletePurchaseOrder: async (poId) => {
-        await purchaseOrderApi.deletePurchaseOrder(poId);
-        await get().fetchPurchaseOrders();
+        try {
+          console.log('Deleting PO:', poId);
+          await purchaseOrderApi.deletePurchaseOrder(poId);
+          console.log('PO deleted successfully, refreshing list');
+          await get().fetchPurchaseOrders();
+        } catch (error) {
+          console.error('Failed to delete PO:', poId, error);
+          throw error;
+        }
       },
       upsertPODetails: async (poId, details) => {
         try {

@@ -237,8 +237,6 @@ const POCreation: React.FC = () => {
     
     try {
       // Convert form data to store format
-      const poNumber = parseInt(formData.poNumber.replace('PO', ''));
-      
       // Create purchase order
       const newPO: PurchaseOrder = {
         id: formData.poNumber,
@@ -255,7 +253,7 @@ const POCreation: React.FC = () => {
       // Create PO details
       const newPODetails: PODetail[] = formData.items.map(item => ({
         id: item.id,
-        poOrderNumber: poNumber,
+        poOrderNumber: formData.poNumber,
         productCode: item.productSKU,
         productName: item.productName,
         cargoReadyDate: item.crd,
@@ -695,10 +693,8 @@ const POCreation: React.FC = () => {
             <button
               type="button"
               onClick={() => {
-                if (confirm('Are you sure you want to cancel? All changes will be lost.')) {
-                  // Reset form or navigate away
-                  window.history.back();
-                }
+                // Reset form or navigate away
+                window.history.back();
               }}
               className="px-6 py-2 border border-gray-300 text-sm text-gray-700 rounded-lg hover:bg-gray-200"
             >

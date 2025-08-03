@@ -29,7 +29,13 @@ export async function updatePurchaseOrder(poId: string, po: Partial<PurchaseOrde
 
 // Delete a purchase order
 export async function deletePurchaseOrder(poId: string): Promise<void> {
-  await axios.delete(`${API_BASE}/${poId}`);
+  try {
+    const response = await axios.delete(`${API_BASE}/${poId}`);
+    console.log('Delete response:', response.data);
+  } catch (error: any) {
+    console.error('Delete PO error:', error.response?.data || error.message);
+    throw error;
+  }
 }
 
 // Create or update PO details

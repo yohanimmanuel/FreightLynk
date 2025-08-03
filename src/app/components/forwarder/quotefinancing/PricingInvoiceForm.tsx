@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation';
 import { useQuoteStore } from '../../../../store/forwarderquote';
 import { useSearchParams } from 'next/navigation';
 
-import BookingDetailsModal from '../shipmentmanagement/BookingDetailsModal';
 
 // Types
 interface ChargeLine {
@@ -504,12 +503,6 @@ const PricingInvoiceForm: React.FC = () => {
         <button type="button" className="px-5 py-2 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 font-medium hover:bg-gray-100">Save</button>
         <button type="submit" className="px-5 py-2 rounded-lg bg-[#007bff] text-sm text-white font-semibold hover:bg-blue-700">Submit</button>
       </div>
-      {showBookingModal && bookingData && (
-        <BookingDetailsModal
-          formData={bookingData}
-          onClose={() => setShowBookingModal(false)}
-        />
-      )}
     </form>
   );
 };

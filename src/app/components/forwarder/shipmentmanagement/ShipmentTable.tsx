@@ -154,7 +154,7 @@ const MOCK_SHIPMENTS = [
     client: 'ANC TRANSPORT',
     status: 'PENDING',
     process: 'ORDER',
-    mode: 'FREEHAND',
+    mode: 'SEA FCL',
     blNumber: 'HBLOCE2305009',
     bookingNo: 'BKEXFR2305009',
     accountManager: 'John Smith',
@@ -176,7 +176,7 @@ const MOCK_SHIPMENTS = [
     client: 'OCEANIC FREIGHT',
     status: 'ACTIVE',
     process: 'SHIPPING',
-    mode: 'FREEHAND',
+    mode: 'SEA LCL',
     blNumber: 'HBLOCE2305015',
     bookingNo: 'BKIMFR2305015',
     accountManager: 'Sarah Johnson',
@@ -190,28 +190,6 @@ const MOCK_SHIPMENTS = [
     weightVolume: '500 kg / 2.5 cbm',
     truckType: '',
     createdDate: '2023-05-02',
-  },
-  {
-    id: '3',
-    shipmentId: 'AIR-S-2305-E-AIR-023',
-    type: 'EXPORT',
-    client: 'GLOBAL LOGISTICS',
-    status: 'ACTIVE',
-    process: 'CUSTOMS',
-    mode: 'FREEHAND',
-    blNumber: 'AWBGLO2305023',
-    bookingNo: 'BKEXAI2305023',
-    accountManager: 'Mike Wilson',
-    provider: 'FEDEX',
-    origin: 'LOS ANGELES, US',
-    destination: 'TOKYO, JP',
-    etd: '2023-05-18',
-    eta: '2023-05-19',
-    volume: '',
-    containerType: '',
-    weightVolume: '150 kg / 0.8 cbm',
-    truckType: '',
-    createdDate: '2023-05-03',
   },
 ];
 
@@ -312,6 +290,12 @@ export default function ShipmentTable() {
       case 'process':
         return s.process || '';
       case 'mode':
+        // Derive mode from shipment ID or use the mode field
+        if (s.shipmentId?.includes('FCL')) return 'SEA FCL';
+        if (s.shipmentId?.includes('LCL')) return 'SEA LCL';
+        if (s.shipmentId?.includes('AIR')) return 'AIR';
+        if (s.shipmentId?.includes('FTL')) return 'LAND FTL';
+        if (s.shipmentId?.includes('LTL')) return 'LAND LTL';
         return s.mode || '';
       case 'blNumber':
         return s.blNumber || '';

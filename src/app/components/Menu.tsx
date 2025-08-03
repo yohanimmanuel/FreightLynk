@@ -100,8 +100,14 @@ const menuItems: MenuSection[] = [
           {
             icon: BriefcaseBusiness,
             label: "Quotes",
+            href: "/quotes/request",
+            visible: ["client"],
+          },
+          {
+            icon: BriefcaseBusiness,
+            label: "Quotes",
             href: "#",
-            visible: ["forwarder", "client", "logisticsprovider"],
+            visible: ["forwarder", "logisticsprovider"],
             hasSubmenu: true,
             submenu: [
               {

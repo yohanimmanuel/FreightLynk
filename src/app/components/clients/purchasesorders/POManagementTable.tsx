@@ -899,7 +899,11 @@ const POManagement = ({ onEditOrder, onCreateBooking, mode = 'review' }: POManag
                         </button>
                         <button
                           onClick={async () => {
-                            await deletePurchaseOrder(po.id);
+                            try {
+                              await deletePurchaseOrder(po.id);
+                            } catch (error) {
+                              console.error('Failed to delete PO:', error);
+                            }
                           }}
                           className="p-1 text-gray-500 hover:text-red-600 rounded"
                           title="Remove PO"
