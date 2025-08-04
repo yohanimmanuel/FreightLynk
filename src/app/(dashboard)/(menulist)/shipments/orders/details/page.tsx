@@ -4,50 +4,78 @@ import { useEffect, useState } from 'react';
 import { useAuthStore, UserRole } from '@/store/authStore';
 import { useSearchParams } from 'next/navigation';
 import ProtectedRoute from '@/app/components/ProtectedRoute';
+import ShipmentCardInfo from '@/app/components/forwarder/shipmentmanagement/ShipmentCardInfo';
+import ShipmentDetails from '@/app/components/forwarder/shipmentmanagement/ShipmentDetails';
 
-const ClientUI = ({ shipmentId }: { shipmentId?: string }) => {
+const ClientUI = () => {
   return (
     <div className="p-4">
       <h2 className="text-2xl font-semibold text-gray-900 mb-4">Shipment Details</h2>
-      {shipmentId && (
-        <p className="text-gray-600 mb-4">Shipment ID: {shipmentId}</p>
-      )}
       <p className="text-gray-600">Client view - Coming Soon...</p>
     </div>
   );
 };
 
 const ForwarderUI = ({ shipmentId }: { shipmentId?: string }) => {
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   return (
-    <div className="p-4">
-      <h2 className="text-2xl font-semibold text-gray-900 mb-4">Shipment Details</h2>
-      {shipmentId && (
-        <p className="text-gray-600 mb-4">Shipment ID: {shipmentId}</p>
-      )}
-      <p className="text-gray-600">Forwarder view - Coming Soon...</p>
+    <div className="min-h-screen">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Shipment Details</h1>
+            <p className="text-sm text-gray-600 mt-1">
+              Shipments {'>>'} {shipmentId || 'FCL-S-2305-E-FCL-000'}
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-gray-500 font-mono">
+              {currentTime.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                hour12: true 
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-8xl mx-auto p-4">
+        {/* Top Section - ShipmentCardInfo (Collapsible) */}
+        <ShipmentCardInfo />
+        
+        {/* Bottom Section - ShipmentDetails */}
+        <ShipmentDetails shipmentId={shipmentId} />
+      </div>
     </div>
   );
 };
 
-const LogisticsProviderUI = ({ shipmentId }: { shipmentId?: string }) => {
+const LogisticsProviderUI = () => {
   return (
     <div className="p-4">
       <h2 className="text-2xl font-semibold text-gray-900 mb-4">Shipment Details</h2>
-      {shipmentId && (
-        <p className="text-gray-600 mb-4">Shipment ID: {shipmentId}</p>
-      )}
       <p className="text-gray-600">Logistics Provider view - Coming Soon...</p>
     </div>
   );
 };
 
-const AdminUI = ({ shipmentId }: { shipmentId?: string }) => {
+const AdminUI = () => {
   return (
     <div className="p-4">
       <h2 className="text-2xl font-semibold text-gray-900 mb-4">Shipment Details</h2>
-      {shipmentId && (
-        <p className="text-gray-600 mb-4">Shipment ID: {shipmentId}</p>
-      )}
       <p className="text-gray-600">Admin view - Coming Soon...</p>
     </div>
   );
@@ -64,16 +92,16 @@ const OrdersDetailsPage = () => {
 
     switch (user.role) {
       case UserRole.ADMIN:
-        setRoleBasedUI(<AdminUI shipmentId={shipmentId || undefined} />);
+        setRoleBasedUI(<AdminUI />);
         break;
       case UserRole.CLIENT:
-        setRoleBasedUI(<ClientUI shipmentId={shipmentId || undefined} />);
+        setRoleBasedUI(<ClientUI />);
         break;
       case UserRole.FORWARDER:
         setRoleBasedUI(<ForwarderUI shipmentId={shipmentId || undefined} />);
         break;
       case UserRole.LOGISTICS_PROVIDER:
-        setRoleBasedUI(<LogisticsProviderUI shipmentId={shipmentId || undefined} />);
+        setRoleBasedUI(<LogisticsProviderUI />);
         break;
       default:
         setRoleBasedUI(<div>Access denied</div>);
