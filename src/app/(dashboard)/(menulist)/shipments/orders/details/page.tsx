@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import ProtectedRoute from '@/app/components/ProtectedRoute';
 import ShipmentCardInfo from '@/app/components/forwarder/shipmentmanagement/ShipmentCardInfo';
 import ShipmentDetails from '@/app/components/forwarder/shipmentmanagement/ShipmentDetails';
+import ActionRequired from '@/app/components/forwarder/shipmentmanagement/ActionRequired';
 
 const ClientUI = () => {
   return (
@@ -53,7 +54,10 @@ const ForwarderUI = ({ shipmentId }: { shipmentId?: string }) => {
 
       {/* Main Content */}
       <div className="max-w-8xl mx-auto p-4">
-        {/* Top Section - ShipmentCardInfo (Collapsible) */}
+        {/* Top Section - Action Required (Overall Progress) */}
+        <ActionRequired shipmentId={shipmentId} />
+        
+        {/* Middle Section - ShipmentCardInfo (Collapsible) */}
         <ShipmentCardInfo />
         
         {/* Bottom Section - ShipmentDetails */}

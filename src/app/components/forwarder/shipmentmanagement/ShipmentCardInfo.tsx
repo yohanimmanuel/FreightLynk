@@ -96,25 +96,7 @@ const ShipmentCardInfo: React.FC<ShipmentCardInfoProps> = ({ shipmentData }) => 
 
   const data = shipmentData || mockData;
 
-  // Algorithm to detect missing items and generate alerts
-  const getMissingItems = () => {
-    const missingItems = [];
-    
-    if (!data.cargoReadyDate) {
-      missingItems.push('Cargo ready date not specified');
-    }
-    if (!data.commodities) {
-      missingItems.push('Commodities information missing');
-    }
-    if (!data.note) {
-      missingItems.push('No notes added');
-    }
 
-    return missingItems;
-  };
-
-  const missingItems = getMissingItems();
-  const hasAlerts = missingItems.length > 0;
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm mb-4">
@@ -128,12 +110,6 @@ const ShipmentCardInfo: React.FC<ShipmentCardInfoProps> = ({ shipmentData }) => 
             </div>
           </div>
           <div className="flex items-center gap-6">
-            {hasAlerts && (
-              <div className="flex items-center gap-1 px-2 py-1 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-700">
-                <AlertCircle className="w-3 h-3" />
-                <span>{missingItems.length} items pending</span>
-              </div>
-            )}
             <button
               onClick={() => setIsExpanded(!isExpanded)}
               className="transition-colors bg-white"
@@ -147,25 +123,7 @@ const ShipmentCardInfo: React.FC<ShipmentCardInfoProps> = ({ shipmentData }) => 
       {/* Collapsible Content */}
       {isExpanded && (
         <div className="p-4 space-y-4">
-          {/* Alerts Section */}
-          {hasAlerts && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <AlertCircle className="w-4 h-4 text-yellow-600" />
-                <span className="text-sm font-semibold text-yellow-800">Action Required</span>
-              </div>
-              <div className="space-y-1">
-                {missingItems.map((item, index) => (
-                  <div key={index} className="flex items-center gap-2 text-xs text-yellow-700">
-                    <div className="w-1 h-1 bg-yellow-600 rounded-full"></div>
-                    <span>{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-                     {/* Main Information Grid - 4 Columns */}
+          {/* Main Information Grid - 4 Columns */}
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                            {/* Column 1 - Shipment & Booking Information */}
               <div>
