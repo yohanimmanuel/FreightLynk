@@ -173,35 +173,35 @@ const menuItems: MenuSection[] = [
             href: "/shipments",
             visible: ["admin", "client", "logisticsprovider"],
           },
-          {
-            icon: Globe,
-            label: "Freight",
-            href: "#",
-            visible: ["forwarder"],
-            hasSubmenu: true,
-            submenu: [
-              {
-                icon: List,
-                label: "Ocean",
-                href: "/freight/ocean",
-              },
-              {
-                icon: List,
-                label: "Air",
-                href: "/freight/air",
-              },
-              {
-                icon: List,
-                label: "Road",
-                href: "/freight/road",
-              },
+          // {
+          //   icon: Globe,
+          //   label: "Freight",
+          //   href: "#",
+          //   visible: ["forwarder"],
+          //   hasSubmenu: true,
+          //   submenu: [
+          //   {
+          //     icon: List,
+          //     label: "Ocean",
+          //     href: "/freight/ocean",
+          //   },
+          //   {
+          //     icon: List,
+          //     label: "Air",
+          //     href: "/freight/air",
+          //   },
+          //   {
+          //     icon: List,
+          //     label: "Road",
+          //     href: "/freight/road",
+          //   },
              // {
                // icon: List,
                // label: "Warehouse",
                // href: "/freight/warehouse",
-             // },
-            ]
-          },
+          //    // },
+          //   ]
+          // },
           {
             icon: Globe,
             label: "Freight",

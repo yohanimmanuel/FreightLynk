@@ -17,7 +17,7 @@ const Orders: React.FC<OrdersProps> = ({ shipmentId }) => {
     
     // Client Information
     customer_name: 'ANC TRANSPORT',
-    created_by: 'Demo User',
+    created_by: 'Mr. Đức',
     created_on: '2024-01-15',
     company_address: '123 Business Street, Ho Chi Minh City, Vietnam',
     company_phone: '+84 28 1234 5678',

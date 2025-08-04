@@ -21,6 +21,7 @@ import {
   X
 } from 'lucide-react';
 import Orders from './information/Orders';
+import Bookings from './information/Bookings';
 
 interface ShipmentDetailsProps {
   shipmentId?: string;
@@ -167,11 +168,7 @@ const ShipmentDetails: React.FC<ShipmentDetailsProps> = ({ shipmentId }) => {
                     )}
 
                     {activeSubTab === 'booking' && (
-                      <div className="text-center py-12">
-                        <Package className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Booking Information</h3>
-                        <p className="text-gray-500">Booking details will be displayed here</p>
-                      </div>
+                      <Bookings shipmentId={shipmentId} />
                     )}
 
                     {activeSubTab === 'shipping-instruction' && (
