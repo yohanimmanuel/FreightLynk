@@ -20,6 +20,7 @@ import {
   Save,
   X
 } from 'lucide-react';
+import Orders from './information/Orders';
 
 interface ShipmentDetailsProps {
   shipmentId?: string;
@@ -156,154 +157,13 @@ const ShipmentDetails: React.FC<ShipmentDetailsProps> = ({ shipmentId }) => {
                           </button>
                         ))}
                       </div>
-                      {/* Edit Button */}
-                      <button className="flex items-center gap-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors">
-                        <Edit className="w-4 h-4" />
-                        Edit Information
-                      </button>
                     </nav>
                   </div>           
 
                   {/* Sub-tab Content */}
                   <div className="p-6">
-                    {activeSubTab === 'order' && (  
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {/* Left Column - Shipment Specific Details */}
-                        <div className="space-y-6">
-                          <h3 className="text-md font-semibold text-gray-900 mb-4">Shipment Details</h3>
-                          
-                          <div className="space-y-4 text-xs">
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-500">Reference ID:</span>
-                              <div className="flex items-center gap-2">
-                                <span className="text-gray-900">{data.referenceId || 'Not specified'}</span>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-500">Shipment ID:</span>
-                              <span className="font-mono text-gray-900">{data.id}</span>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-500">Shipment Type:</span>
-                              <span className="text-gray-900">{data.shipmentType}</span>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-500">Shipment Mode:</span>
-                              <span className="text-gray-900">{data.shipmentMode}</span>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-500">Branch:</span>
-                              <div className="flex items-center gap-2">
-                                <span className="text-gray-900">{data.branch || 'Not specified'}</span>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-500">Carrier:</span>
-                              <span className="text-gray-900">{data.carrier}</span>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-500">Port of Loading:</span>
-                              <span className="text-gray-900">{data.portOfLoading}</span>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-500">Transit Port:</span>
-                              <span className="text-gray-900">{data.transitPort}</span>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-500">Place of Delivery:</span>
-                              <span className="text-gray-900">{data.placeOfDelivery}</span>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-500">ETD:</span>
-                              <span className="text-gray-900">{data.etd}</span>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-500">Cargo Ready Date:</span>
-                              <span className="text-gray-900">{data.cargoReadyDate || 'Not specified'}</span>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-500">Commodities:</span>
-                              <span className="text-gray-900">{data.commodities || 'Not specified'}</span>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-500">Freight Terms:</span>
-                              <span className="text-gray-900">{data.freightTerms}</span>
-                            </div>
-
-                            <div className="flex items-start justify-between">
-                              <span className="text-gray-500">Note:</span>
-                              <span className="text-gray-900">{data.note || 'No notes added'}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Right Column - Company & Contact Information */}
-                        <div className="space-y-6">
-                          <h3 className="text-md font-semibold text-gray-900 mb-4">Company & Contact</h3>
-                          
-                          {/* Company Information */}
-                          <div className="bg-gray-50 rounded-lg p-4">
-                            <h4 className="text-sm font-semibold text-gray-900 mb-3">Company Information</h4>
-                            <div className="space-y-3 text-xs">
-                              <div className="flex items-center justify-between">
-                                <span className="text-gray-500">Name:</span>
-                                <span className="text-gray-900">{data.companyInfo.name}</span>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-gray-500">Address:</span>
-                                <span className="text-gray-900">{data.companyInfo.address || 'Not specified'}</span>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-gray-500">Phone:</span>
-                                <span className="text-gray-900">{data.companyInfo.phone || 'Not specified'}</span>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-gray-500">Company ID:</span>
-                                <span className="text-gray-900">{data.companyInfo.companyId || 'Not specified'}</span>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-gray-500">Tax Number:</span>
-                                <span className="text-gray-900">{data.companyInfo.taxNumber || 'Not specified'}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Contact Person */}
-                          <div className="bg-gray-50 rounded-lg p-4">
-                            <h4 className="text-sm font-semibold text-gray-900 mb-3">Contact Person</h4>
-                            <div className="space-y-3 text-xs">
-                              <div className="flex items-center justify-between">
-                                <span className="text-gray-500">Name:</span>
-                                <span className="text-gray-900">{data.contactPerson.name}</span>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-gray-500">Email:</span>
-                                <span className="text-gray-900">{data.contactPerson.email}</span>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-gray-500">Phone:</span>
-                                <span className="text-gray-900">{data.contactPerson.phone || 'Not specified'}</span>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-gray-500">Title:</span>
-                                <span className="text-gray-900">{data.contactPerson.title || 'Not specified'}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                    {activeSubTab === 'order' && (
+                      <Orders shipmentId={shipmentId} />
                     )}
 
                     {activeSubTab === 'booking' && (
