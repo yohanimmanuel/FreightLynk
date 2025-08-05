@@ -295,7 +295,7 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
 
                 {/* BL Title */}
                  <div className="text-xl font-bold text-center mb-4">
-                   <h1 className="text-gray-900 mb-1" style={{ fontWeight: 'bold' }}>BILL OF LADING</h1>
+                   <div className="text-gray-900 mb-1" style={{ fontWeight: 'bold' }}>BILL OF LADING</div>
                  </div>
 
                   {/* BL Numbers and Forwarding Agent Reference */}
@@ -381,8 +381,8 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
              </div>
 
                            {/* Cargo Details Table */}
-               <div className="border-b border-gray-900 mb-2 border-t-0 border-l-0 border-r-0">
-                 <h1 className="text-gray-900 font-bold px-3" style={{ fontWeight: 'bold' }}> PARTICULARS FURNISHED BY SHIPPER </h1>
+               <div className="border-b border-gray-900 border-t-0 border-l-0 border-r-0">
+                 <div className="text-gray-900 font-bold p-3" style={{ fontWeight: 'bold' }}> PARTICULARS FURNISHED BY SHIPPER </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs border-t border-gray-900">
                   <thead className="border-b border-gray-900">
@@ -421,8 +421,8 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
                          {/* Charges Table - Connected to Cargo Table */}
                <div className="border-b border-gray-900 border-t-0 border-l-0 border-r-0">
                 <div>
-                  <div className="px-3 border-b border-gray-900 py-2.5">
-                    <h1 className="text-gray-900 font-bold" style={{ fontWeight: 'bold' }}> CHARGES </h1>
+                  <div className="p-3 border-b border-gray-900">
+                    <div className="text-gray-900 font-bold py-1" style={{ fontWeight: 'bold' }}> CHARGES </div>
                     <div>
                       <span className="text-xs text-gray-900">Total No. Container or Packages (in words):</span>
                       <span className="ml-2 text-xs text-gray-900">ONE CONTAINER(S) ONLY</span>
