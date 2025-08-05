@@ -425,7 +425,7 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
                      <span className="text-gray-900">{shipmentData.cargo.commodity}</span>
                    </div>
                    <div className="flex items-center justify-between">
-                     <span className="text-gray-500">Service Mode:</span>
+                     <span className="text-gray-500">Shipment Mode:</span>
                      <span className="text-gray-900">{shipmentData.cargo.serviceMode}</span>
                    </div>
                  </div>
@@ -1073,7 +1073,7 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
                     />
                     </div>
                     <div>
-                    <label className="block text-gray-500 mb-1 text-xs">Service Mode</label>
+                    <label className="block text-gray-500 mb-1 text-xs">Shipment Mode</label>
                     <input
                         type="text"
                         value={editData.cargo.serviceMode}
