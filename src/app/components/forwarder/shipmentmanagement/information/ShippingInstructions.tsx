@@ -1,11 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { 
   Download, 
   Copy, 
   Edit, 
-  FileText
+  FileText,
+  X,
+  Save,
+  Trash2,
+  Plus
 } from 'lucide-react';
 
 interface ShippingInstructionsProps {
@@ -14,6 +18,7 @@ interface ShippingInstructionsProps {
 
 const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Mock data - replace with actual data from API
   const shipmentData = {
@@ -31,6 +36,8 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
     shippedOnBoardDate: '2024-05-12T07:00:00',
     dateOfIssue: '2024-05-12T10:00:00',
     placeOfIssue: 'HO CHI MINH CITY, VN (VNSGN)',
+    preCarriageBy: '-',
+    cfsTerminal: '-',
     shipper: {
       name: 'ABC Manufacturing Co.',
       address: '123 Industrial Park, Ho Chi Minh City, Vietnam',
@@ -112,9 +119,66 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
     console.log('Copying shipment data...');
   };
 
+  const [editData, setEditData] = useState(shipmentData);
+
   const handleEdit = () => {
-    setIsEditing(!isEditing);
+    setEditData(shipmentData);
+    setShowEditModal(true);
   };
+
+  const handleSave = () => {
+    // Update the shipment data with edited data
+    Object.assign(shipmentData, editData);
+    setShowEditModal(false);
+  };
+
+  const handleCancel = () => {
+    setEditData(shipmentData);
+    setShowEditModal(false);
+  };
+
+  const renderInput = useCallback((field: string, label: string, type = 'text', placeholder = '') => (
+    <div key={field}>
+      <label className="block text-gray-500 mb-1 text-xs">{label}</label>
+      <input
+        type={type}
+        value={type === 'datetime-local' ? (editData as any)[field]?.replace(' ', 'T') || '' : (editData as any)[field] || ''}
+        onChange={(e) => {
+          const value = type === 'datetime-local' ? e.target.value.replace('T', ' ') : e.target.value;
+          setEditData(prev => ({ ...prev, [field]: value }));
+        }}
+        placeholder={placeholder}
+        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+      />
+    </div>
+  ), [editData]);
+
+  const renderTextarea = useCallback((field: string, label: string, rows = 3) => (
+    <div key={field}>
+      <label className="block text-gray-500 mb-1 text-xs">{label}</label>
+      <textarea
+        value={(editData as any)[field] || ''}
+        onChange={(e) => setEditData(prev => ({ ...prev, [field]: e.target.value }))}
+        rows={rows}
+        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+      />
+    </div>
+  ), [editData]);
+
+  const renderSelect = useCallback((field: string, label: string, options: string[]) => (
+    <div key={field}>
+      <label className="block text-gray-500 mb-1 text-xs">{label}</label>
+      <select
+        value={(editData as any)[field] || ''}
+        onChange={(e) => setEditData(prev => ({ ...prev, [field]: e.target.value }))}
+        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+      >
+        {options.map(option => (
+          <option key={option} value={option}>{option}</option>
+        ))}
+      </select>
+    </div>
+  ), [editData]);
 
   return (
     <div className="space-y-4">
@@ -398,6 +462,748 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
           </div>
         </div>
       </div>
+
+    {/* Edit Modal */}
+    {showEditModal && (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg shadow-xl w-full max-w-7xl max-h-[90vh] overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900">Edit Shipping Instructions</h2>
+            <button
+            onClick={handleCancel}
+            className="text-gray-400 hover:text-gray-600"
+            >
+            <X className="w-6 h-6" />
+            </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 overflow-y-auto max-h-[calc(90vh-140px)]">
+            <div className="space-y-4">
+            {/* General Information */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <h3 className="text-md font-semibold text-gray-900 mb-4">General Information</h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">HBL Number</label>
+                    <input
+                        type="text"
+                        value={editData.hblNumber}
+                        onChange={(e) => setEditData(prev => ({ ...prev, hblNumber: e.target.value }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">MBL Number</label>
+                    <input
+                        type="text"
+                        value={editData.mblNumber}
+                        onChange={(e) => setEditData(prev => ({ ...prev, mblNumber: e.target.value }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Booking Number</label>
+                    <input
+                        type="text"
+                        value={editData.bookingNumber}
+                        onChange={(e) => setEditData(prev => ({ ...prev, bookingNumber: e.target.value }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Port of Loading</label>
+                    <input
+                        type="text"
+                        value={editData.portOfLoading}
+                        onChange={(e) => setEditData(prev => ({ ...prev, portOfLoading: e.target.value }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Port of Discharge</label>
+                    <input
+                        type="text"
+                        value={editData.portOfDischarge}
+                        onChange={(e) => setEditData(prev => ({ ...prev, portOfDischarge: e.target.value }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">ETD</label>
+                    <input
+                        type="datetime-local"
+                        value={editData.etd.replace(' ', 'T')}
+                        onChange={(e) => setEditData(prev => ({ ...prev, etd: e.target.value.replace('T', ' ') }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">ETA</label>
+                    <input
+                        type="datetime-local"
+                        value={editData.eta.replace(' ', 'T')}
+                        onChange={(e) => setEditData(prev => ({ ...prev, eta: e.target.value.replace('T', ' ') }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                </div>
+                <div className="space-y-3">
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Place of Receipt</label>
+                    <input
+                        type="text"
+                        value={editData.placeOfReceipt}
+                        onChange={(e) => setEditData(prev => ({ ...prev, placeOfReceipt: e.target.value }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Place of Delivery</label>
+                    <input
+                        type="text"
+                        value={editData.placeOfDelivery}
+                        onChange={(e) => setEditData(prev => ({ ...prev, placeOfDelivery: e.target.value }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Final Destination</label>
+                    <input
+                        type="text"
+                        value={editData.finalDestination}
+                        onChange={(e) => setEditData(prev => ({ ...prev, finalDestination: e.target.value }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Shipped on Board Date</label>
+                    <input
+                        type="datetime-local"
+                        value={editData.shippedOnBoardDate.replace(' ', 'T')}
+                        onChange={(e) => setEditData(prev => ({ ...prev, shippedOnBoardDate: e.target.value.replace('T', ' ') }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Date of Issue</label>
+                    <input
+                        type="datetime-local"
+                        value={editData.dateOfIssue.replace(' ', 'T')}
+                        onChange={(e) => setEditData(prev => ({ ...prev, dateOfIssue: e.target.value.replace('T', ' ') }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Place of Issue</label>
+                    <input
+                        type="text"
+                        value={editData.placeOfIssue}
+                        onChange={(e) => setEditData(prev => ({ ...prev, placeOfIssue: e.target.value }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            {/* Parties Information */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <h3 className="text-md font-semibold text-gray-900 mb-4">Parties Information</h3>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="space-y-3">
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Shipper Name</label>
+                    <input
+                        type="text"
+                        value={editData.shipper.name}
+                        onChange={(e) => setEditData(prev => ({ 
+                        ...prev, 
+                        shipper: { ...prev.shipper, name: e.target.value }
+                        }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Shipper Address</label>
+                    <textarea
+                        value={editData.shipper.address}
+                        onChange={(e) => setEditData(prev => ({ 
+                        ...prev, 
+                        shipper: { ...prev.shipper, address: e.target.value }
+                        }))}
+                        rows={2}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Shipper Contact</label>
+                    <input
+                        type="text"
+                        value={editData.shipper.contact}
+                        onChange={(e) => setEditData(prev => ({ 
+                        ...prev, 
+                        shipper: { ...prev.shipper, contact: e.target.value }
+                        }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                </div>
+                <div className="space-y-3">
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Consignee Name</label>
+                    <input
+                        type="text"
+                        value={editData.consignee.name}
+                        onChange={(e) => setEditData(prev => ({ 
+                        ...prev, 
+                        consignee: { ...prev.consignee, name: e.target.value }
+                        }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Consignee Address</label>
+                    <textarea
+                        value={editData.consignee.address}
+                        onChange={(e) => setEditData(prev => ({ 
+                        ...prev, 
+                        consignee: { ...prev.consignee, address: e.target.value }
+                        }))}
+                        rows={2}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Consignee Contact</label>
+                    <input
+                        type="text"
+                        value={editData.consignee.contact}
+                        onChange={(e) => setEditData(prev => ({ 
+                        ...prev, 
+                        consignee: { ...prev.consignee, contact: e.target.value }
+                        }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                </div>
+                <div className="space-y-3">
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Notify Party Name</label>
+                    <input
+                        type="text"
+                        value={editData.notifyParty.name}
+                        onChange={(e) => setEditData(prev => ({ 
+                        ...prev, 
+                        notifyParty: { ...prev.notifyParty, name: e.target.value }
+                        }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Notify Party Address</label>
+                    <textarea
+                        value={editData.notifyParty.address}
+                        onChange={(e) => setEditData(prev => ({ 
+                        ...prev, 
+                        notifyParty: { ...prev.notifyParty, address: e.target.value }
+                        }))}
+                        rows={2}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Notify Party Contact</label>
+                    <input
+                        type="text"
+                        value={editData.notifyParty.contact}
+                        onChange={(e) => setEditData(prev => ({ 
+                        ...prev, 
+                        notifyParty: { ...prev.notifyParty, contact: e.target.value }
+                        }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                </div>
+                </div>
+            </div>
+
+                      {/* Container Details Table */}
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-md font-semibold text-gray-900">Container Details</h3>
+              <button
+                onClick={() => {
+                  const newContainer = {
+                    number: '',
+                    type: '',
+                    sealNumber: '',
+                    grossWeight: '',
+                    measurement: '',
+                    packages: '',
+                    packageType: '',
+                    tare: '',
+                    vgm: '',
+                    marks: '',
+                    description: ''
+                  };
+                  setEditData(prev => ({
+                    ...prev,
+                    containers: [...prev.containers, newContainer]
+                  }));
+                }}
+                className="flex items-center gap-2 px-3 py-2 bg-[#007bff] text-white text-xs rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Add Row
+              </button>
+            </div>
+            <div className="overflow-x-auto border border-gray-200 rounded-lg">
+                <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                    <tr>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Container No.</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Seal No.</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gross Weight</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Measurement</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tare</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Package Type</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No of Pkgs</th>
+                                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">VGM</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Note</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                    {editData.containers.map((container, index) => (
+                        <tr key={index}>
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">{index + 1}</td>
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
+                            <input
+                            type="text"
+                            value={container.type}
+                            onChange={(e) => {
+                                const newContainers = [...editData.containers];
+                                newContainers[index] = { ...container, type: e.target.value };
+                                setEditData(prev => ({ ...prev, containers: newContainers }));
+                            }}
+                            className="w-full p-1 border border-gray-300 rounded text-gray-900 text-xs"
+                            />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
+                            <input
+                            type="text"
+                            value={container.number}
+                            onChange={(e) => {
+                                const newContainers = [...editData.containers];
+                                newContainers[index] = { ...container, number: e.target.value };
+                                setEditData(prev => ({ ...prev, containers: newContainers }));
+                            }}
+                            className="w-full p-1 border border-gray-300 rounded text-gray-900 text-xs font-mono"
+                            />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
+                            <input
+                            type="text"
+                            value={container.sealNumber}
+                            onChange={(e) => {
+                                const newContainers = [...editData.containers];
+                                newContainers[index] = { ...container, sealNumber: e.target.value };
+                                setEditData(prev => ({ ...prev, containers: newContainers }));
+                            }}
+                            className="w-full p-1 border border-gray-300 rounded text-gray-900 text-xs"
+                            />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
+                            <input
+                            type="text"
+                            value={container.grossWeight}
+                            onChange={(e) => {
+                                const newContainers = [...editData.containers];
+                                newContainers[index] = { ...container, grossWeight: e.target.value };
+                                setEditData(prev => ({ ...prev, containers: newContainers }));
+                            }}
+                            className="w-full p-1 border border-gray-300 rounded text-gray-900 text-xs"
+                            />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
+                            <input
+                            type="text"
+                            value={container.measurement}
+                            onChange={(e) => {
+                                const newContainers = [...editData.containers];
+                                newContainers[index] = { ...container, measurement: e.target.value };
+                                setEditData(prev => ({ ...prev, containers: newContainers }));
+                            }}
+                            className="w-full p-1 border border-gray-300 rounded text-gray-900 text-xs"
+                            />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
+                            <input
+                            type="text"
+                            value={container.tare}
+                            onChange={(e) => {
+                                const newContainers = [...editData.containers];
+                                newContainers[index] = { ...container, tare: e.target.value };
+                                setEditData(prev => ({ ...prev, containers: newContainers }));
+                            }}
+                            className="w-full p-1 border border-gray-300 rounded text-gray-900 text-xs"
+                            />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
+                            <input
+                            type="text"
+                            value={container.packageType}
+                            onChange={(e) => {
+                                const newContainers = [...editData.containers];
+                                newContainers[index] = { ...container, packageType: e.target.value };
+                                setEditData(prev => ({ ...prev, containers: newContainers }));
+                            }}
+                            className="w-full p-1 border border-gray-300 rounded text-gray-900 text-xs"
+                            />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
+                            <input
+                            type="text"
+                            value={container.packages}
+                            onChange={(e) => {
+                                const newContainers = [...editData.containers];
+                                newContainers[index] = { ...container, packages: e.target.value };
+                                setEditData(prev => ({ ...prev, containers: newContainers }));
+                            }}
+                            className="w-full p-1 border border-gray-300 rounded text-gray-900 text-xs"
+                            />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
+                            <input
+                            type="text"
+                            value={container.vgm}
+                            onChange={(e) => {
+                                const newContainers = [...editData.containers];
+                                newContainers[index] = { ...container, vgm: e.target.value };
+                                setEditData(prev => ({ ...prev, containers: newContainers }));
+                            }}
+                            className="w-full p-1 border border-gray-300 rounded text-gray-900 text-xs"
+                            />
+                        </td>
+                                                <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
+                          <input
+                            type="text"
+                            value={container.marks}
+                            onChange={(e) => {
+                              const newContainers = [...editData.containers];
+                              newContainers[index] = { ...container, marks: e.target.value };
+                              setEditData(prev => ({ ...prev, containers: newContainers }));
+                            }}
+                            className="w-full p-1 border border-gray-300 rounded text-gray-900 text-xs"
+                          />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
+                          <button
+                            onClick={() => {
+                              const newContainers = editData.containers.filter((_, i) => i !== index);
+                              setEditData(prev => ({ ...prev, containers: newContainers }));
+                            }}
+                            className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                            title="Delete container"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+
+            {/* Shipping Information and Freight & Charges */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+                {/* Shipping Information */}
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <h3 className="text-md font-semibold text-gray-900 mb-4">Shipping Information</h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Pre-Carriage By</label>
+                    <input
+                        type="text"
+                        value={editData.preCarriageBy || ''}
+                        onChange={(e) => setEditData(prev => ({ ...prev, preCarriageBy: e.target.value }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Vessel Name</label>
+                    <input
+                        type="text"
+                        value={editData.vessel.name}
+                        onChange={(e) => setEditData(prev => ({ 
+                        ...prev, 
+                        vessel: { ...prev.vessel, name: e.target.value }
+                        }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">B/L Place of Issue</label>
+                    <input
+                        type="text"
+                        value={editData.placeOfIssue}
+                        onChange={(e) => setEditData(prev => ({ ...prev, placeOfIssue: e.target.value }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">CFS Terminal</label>
+                    <input
+                        type="text"
+                        value={editData.cfsTerminal || ''}
+                        onChange={(e) => setEditData(prev => ({ ...prev, cfsTerminal: e.target.value }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Shipping Marks</label>
+                    <input
+                        type="text"
+                        value={editData.cargo.shippingMarks}
+                        onChange={(e) => setEditData(prev => ({ 
+                        ...prev, 
+                        cargo: { ...prev.cargo, shippingMarks: e.target.value }
+                        }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Signature By</label>
+                    <input
+                        type="text"
+                        value={editData.blDetails.signatureBy}
+                        onChange={(e) => setEditData(prev => ({ 
+                        ...prev, 
+                        blDetails: { ...prev.blDetails, signatureBy: e.target.value }
+                        }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Description of Goods</label>
+                    <input
+                        type="text"
+                        value={editData.cargo.description}
+                        onChange={(e) => setEditData(prev => ({ 
+                        ...prev, 
+                        cargo: { ...prev.cargo, description: e.target.value }
+                        }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                </div>
+                <div className="space-y-3">
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Feeder Voyage No.</label>
+                    <input
+                        type="text"
+                        value={editData.vessel.feederVoyage}
+                        onChange={(e) => setEditData(prev => ({ 
+                        ...prev, 
+                        vessel: { ...prev.vessel, feederVoyage: e.target.value }
+                        }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Voyage No.</label>
+                    <input
+                        type="text"
+                        value={editData.vessel.voyageNumber}
+                        onChange={(e) => setEditData(prev => ({ 
+                        ...prev, 
+                        vessel: { ...prev.vessel, voyageNumber: e.target.value }
+                        }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Date of Issue B/L</label>
+                    <input
+                        type="datetime-local"
+                        value={editData.dateOfIssue.replace(' ', 'T')}
+                        onChange={(e) => setEditData(prev => ({ ...prev, dateOfIssue: e.target.value.replace('T', ' ') }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Direct MBL</label>
+                    <input
+                        type="text"
+                        value={editData.blDetails.directMbl}
+                        onChange={(e) => setEditData(prev => ({ 
+                        ...prev, 
+                        blDetails: { ...prev.blDetails, directMbl: e.target.value }
+                        }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Shipped on Board Date</label>
+                    <input
+                        type="datetime-local"
+                        value={editData.shippedOnBoardDate.replace(' ', 'T')}
+                        onChange={(e) => setEditData(prev => ({ ...prev, shippedOnBoardDate: e.target.value.replace('T', ' ') }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Commodity</label>
+                    <input
+                        type="text"
+                        value={editData.cargo.commodity}
+                        onChange={(e) => setEditData(prev => ({ 
+                        ...prev, 
+                        cargo: { ...prev.cargo, commodity: e.target.value }
+                        }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Service Mode</label>
+                    <input
+                        type="text"
+                        value={editData.cargo.serviceMode}
+                        onChange={(e) => setEditData(prev => ({ 
+                        ...prev, 
+                        cargo: { ...prev.cargo, serviceMode: e.target.value }
+                        }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                </div>
+                </div>
+                </div>
+
+                {/* Freight & Charges */}
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <h3 className="text-md font-semibold text-gray-900 mb-4">Freight & Charges</h3>
+                <div className="space-y-3">
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Total Freight</label>
+                    <input
+                        type="text"
+                        value={editData.freightCharges.totalFreight}
+                        onChange={(e) => setEditData(prev => ({ 
+                        ...prev, 
+                        freightCharges: { ...prev.freightCharges, totalFreight: e.target.value }
+                        }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Currency</label>
+                    <input
+                        type="text"
+                        value={editData.freightCharges.currency}
+                        onChange={(e) => setEditData(prev => ({ 
+                        ...prev, 
+                        freightCharges: { ...prev.freightCharges, currency: e.target.value }
+                        }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Payment Terms</label>
+                    <input
+                        type="text"
+                        value={editData.freightCharges.paymentTerms}
+                        onChange={(e) => setEditData(prev => ({ 
+                        ...prev, 
+                        freightCharges: { ...prev.freightCharges, paymentTerms: e.target.value }
+                        }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Payable At</label>
+                    <input
+                        type="text"
+                        value={editData.freightCharges.payableAt}
+                        onChange={(e) => setEditData(prev => ({ 
+                        ...prev, 
+                        freightCharges: { ...prev.freightCharges, payableAt: e.target.value }
+                        }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Prepaid At</label>
+                    <input
+                        type="text"
+                        value={editData.freightCharges.prepaidAt}
+                        onChange={(e) => setEditData(prev => ({ 
+                        ...prev, 
+                        freightCharges: { ...prev.freightCharges, prepaidAt: e.target.value }
+                        }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Total Prepaid</label>
+                    <input
+                        type="text"
+                        value={editData.freightCharges.totalPrepaid}
+                        onChange={(e) => setEditData(prev => ({ 
+                        ...prev, 
+                        freightCharges: { ...prev.freightCharges, totalPrepaid: e.target.value }
+                        }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">No. of Original B/L</label>
+                    <input
+                        type="text"
+                        value={editData.blDetails.numberOfOriginals}
+                        onChange={(e) => setEditData(prev => ({ 
+                        ...prev, 
+                        blDetails: { ...prev.blDetails, numberOfOriginals: e.target.value }
+                        }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                </div>
+                </div>
+            </div>
+            </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end p-4 border-t border-gray-200">
+            <div className="flex items-center gap-3">
+            <button
+                onClick={handleCancel}
+                className="px-4 py-2 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+                Cancel
+            </button>
+            <button
+                onClick={handleSave}
+                className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2"
+            >
+                <Save className="w-4 h-4" />
+                Save
+            </button>
+            </div>
+        </div>
+        </div>
+    </div>
+    )}
+
     </div>
   );
 };

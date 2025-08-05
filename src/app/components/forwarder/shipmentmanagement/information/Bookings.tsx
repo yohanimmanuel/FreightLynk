@@ -160,9 +160,9 @@ const Bookings: React.FC<BookingsProps> = ({ shipmentId }) => {
   ), [editData]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Action Buttons */}
-      <div className="flex justify-end gap-3 mb-6">
+      <div className="flex justify-end gap-3 mb-4">
         <button
           onClick={handleCopyData}
           className="flex items-center gap-2 px-4 py-2 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
@@ -187,9 +187,9 @@ const Bookings: React.FC<BookingsProps> = ({ shipmentId }) => {
       </div>
 
       {/* Booking Information Display */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Left Column */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* General Booking Information */}
           <div className="bg-white border border-gray-200 rounded-lg p-4">
             <h3 className="text-md font-semibold text-gray-900 mb-4">General</h3>
@@ -286,7 +286,7 @@ const Bookings: React.FC<BookingsProps> = ({ shipmentId }) => {
         </div>
 
         {/* Middle Column */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Destination */}
           <div className="bg-white border border-gray-200 rounded-lg p-4">
             <h3 className="text-md font-semibold text-gray-900 mb-4">Destination</h3>
@@ -354,7 +354,7 @@ const Bookings: React.FC<BookingsProps> = ({ shipmentId }) => {
         </div>
 
         {/* Right Column */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Transit Port */}
           <div className="bg-white border border-gray-200 rounded-lg p-4">
             <h3 className="text-md font-semibold text-gray-900 mb-4">Transit Port</h3>
@@ -370,7 +370,7 @@ const Bookings: React.FC<BookingsProps> = ({ shipmentId }) => {
             </div>
           </div>
 
-                     {/* Other Information */}
+          {/* Other Information */}
            <div className="bg-white border border-gray-200 rounded-lg p-4">
              <h3 className="text-md font-semibold text-gray-900 mb-4">Other Information</h3>
              <div className="space-y-3 text-xs">
@@ -448,9 +448,9 @@ const Bookings: React.FC<BookingsProps> = ({ shipmentId }) => {
 
               {/* Content */}
               <div className="flex-1 overflow-y-auto p-4">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {/* Left Column */}
-                  <div className="space-y-6">
+                  <div className="space-y-4">
                     {/* General Section */}
                     <div className="bg-white border border-gray-200 rounded-lg p-4">
                       <h3 className="text-md font-semibold text-gray-900 mb-4">General</h3>
@@ -487,7 +487,7 @@ const Bookings: React.FC<BookingsProps> = ({ shipmentId }) => {
                   </div>
 
                   {/* Right Column */}
-                  <div className="space-y-6">
+                  <div className="space-y-4">
                     {/* Destination Section */}
                     <div className="bg-white border border-gray-200 rounded-lg p-4">
                       <h3 className="text-md font-semibold text-gray-900 mb-4">Destination</h3>
