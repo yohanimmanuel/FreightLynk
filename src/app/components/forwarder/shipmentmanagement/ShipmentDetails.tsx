@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import Orders from './information/Orders';
 import Bookings from './information/Bookings';
+import ShippingInstructions from './information/ShippingInstructions';
 
 interface ShipmentDetailsProps {
   shipmentId?: string;
@@ -142,13 +143,13 @@ const ShipmentDetails: React.FC<ShipmentDetailsProps> = ({ shipmentId }) => {
                 <div>
                   {/* Sub-tabs for Information */}
                   <div className="border-b border-gray-200">
-                    <nav className="flex justify-between items-center px-6">
+                    <nav className="flex px-6">
                       <div className="flex space-x-8">
                         {subTabs.map((tab) => (
                           <button
                             key={tab.id}
                             onClick={() => setActiveSubTab(tab.id)}
-                            className={`py-4 px-1 border-b-2 font-medium text-sm capitalize transition-colors ${
+                            className={`py-4 px-1 border-b-2 font-medium text-sm capitalize transition-colors whitespace-nowrap ${
                               tab.active
                                 ? 'border-[#007bff] text-[#007bff]'
                                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -162,7 +163,7 @@ const ShipmentDetails: React.FC<ShipmentDetailsProps> = ({ shipmentId }) => {
                   </div>           
 
                   {/* Sub-tab Content */}
-                  <div className="p-6">
+                  <div className="p-4">
                     {activeSubTab === 'order' && (
                       <Orders shipmentId={shipmentId} />
                     )}
@@ -172,11 +173,7 @@ const ShipmentDetails: React.FC<ShipmentDetailsProps> = ({ shipmentId }) => {
                     )}
 
                     {activeSubTab === 'shipping-instruction' && (
-                      <div className="text-center py-12">
-                        <FileText className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Shipping Instructions</h3>
-                        <p className="text-gray-500">Shipping instruction details will be displayed here</p>
-                      </div>
+                      <ShippingInstructions shipmentId={shipmentId} />
                     )}
 
                     {activeSubTab === 'customs' && (
