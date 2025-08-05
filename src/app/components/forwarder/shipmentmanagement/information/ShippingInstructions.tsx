@@ -1,16 +1,17 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { 
-  Download, 
-  Copy, 
-  Edit, 
+import {
+  Download,
+  Copy,
+  Edit,
   FileText,
   X,
   Save,
   Trash2,
   Plus
 } from 'lucide-react';
+import BLFormat from './BLFormat';
 
 interface ShippingInstructionsProps {
   shipmentId?: string;
@@ -19,6 +20,7 @@ interface ShippingInstructionsProps {
 const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showBLModal, setShowBLModal] = useState(false);
 
   // Mock data - replace with actual data from API
   const shipmentData = {
@@ -105,8 +107,7 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
   };
 
   const handleDownloadBL = () => {
-    // Implement BL download logic
-    console.log('Downloading BL...');
+    setShowBLModal(true);
   };
 
   const handleDownloadSI = () => {
@@ -425,7 +426,7 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
                      <span className="text-gray-900">{shipmentData.cargo.commodity}</span>
                    </div>
                    <div className="flex items-center justify-between">
-                     <span className="text-gray-500">Shipment Mode:</span>
+                     <span className="text-gray-500">Shipment Type:</span>
                      <span className="text-gray-900">{shipmentData.cargo.serviceMode}</span>
                    </div>
                  </div>
@@ -1073,7 +1074,7 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
                     />
                     </div>
                     <div>
-                    <label className="block text-gray-500 mb-1 text-xs">Shipment Mode</label>
+                    <label className="block text-gray-500 mb-1 text-xs">Shipment Type</label>
                     <input
                         type="text"
                         value={editData.cargo.serviceMode}
@@ -1193,7 +1194,7 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
             </button>
             <button
                 onClick={handleSave}
-                className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-[#007bff] text-white hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2"
             >
                 <Save className="w-4 h-4" />
                 Save
@@ -1202,6 +1203,78 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
         </div>
         </div>
     </div>
+    )}
+
+    {/* BL Generation Modal */}
+    {showBLModal && (
+      <BLFormat
+        data={{
+          blNumber: shipmentData.blNumber,
+          bookingNumber: shipmentData.bookingNumber,
+          dateOfIssue: shipmentData.dateOfIssue,
+          shipper: {
+            name: shipmentData.shipper.name,
+            address: shipmentData.shipper.address,
+            city: shipmentData.shipper.address.split(', ').slice(-2, -1)[0] || '',
+            country: shipmentData.shipper.address.split(', ').slice(-1)[0] || ''
+          },
+          consignee: {
+            name: shipmentData.consignee.name,
+            address: shipmentData.consignee.address,
+            city: shipmentData.consignee.address.split(', ').slice(-2, -1)[0] || '',
+            country: shipmentData.consignee.address.split(', ').slice(-1)[0] || ''
+          },
+          notifyParty: {
+            name: shipmentData.notifyParty.name,
+            address: shipmentData.notifyParty.address,
+            city: shipmentData.notifyParty.address.split(', ').slice(-2, -1)[0] || '',
+            country: shipmentData.notifyParty.address.split(', ').slice(-1)[0] || ''
+          },
+          vessel: {
+            name: shipmentData.vessel.name,
+            voyageNumber: shipmentData.vessel.voyageNumber,
+            feederVessel: shipmentData.vessel.feederVessel,
+            feederVoyage: shipmentData.vessel.feederVoyage
+          },
+          portOfLoading: shipmentData.portOfLoading,
+          portOfDischarge: shipmentData.portOfDischarge,
+          placeOfReceipt: shipmentData.placeOfReceipt,
+          placeOfDelivery: shipmentData.placeOfDelivery,
+          finalDestination: shipmentData.finalDestination,
+          containers: shipmentData.containers.map(container => ({
+            containerNumber: container.number,
+            sealNumber: container.sealNumber,
+            type: container.type,
+            tare: container.tare,
+            vgm: container.vgm,
+            marks: container.marks,
+            description: container.description,
+            packages: container.packages,
+            weight: container.grossWeight,
+            volume: container.measurement
+          })),
+          freightCharges: {
+            totalFreight: shipmentData.freightCharges.totalFreight,
+            currency: shipmentData.freightCharges.currency,
+            paymentTerms: shipmentData.freightCharges.paymentTerms,
+            payableAt: shipmentData.freightCharges.payableAt,
+            prepaidAt: shipmentData.freightCharges.prepaidAt,
+            totalPrepaid: shipmentData.freightCharges.totalPrepaid,
+            numberOfOriginals: shipmentData.blDetails.numberOfOriginals
+          },
+          shippedOnBoardDate: shipmentData.shippedOnBoardDate,
+          placeOfIssue: shipmentData.placeOfIssue,
+          signatureBy: shipmentData.blDetails.signatureBy,
+          cargo: {
+            commodity: shipmentData.cargo.commodity,
+            description: shipmentData.cargo.description,
+            serviceMode: shipmentData.cargo.serviceMode,
+            freightTerms: shipmentData.cargo.freightTerms,
+            shippingMarks: shipmentData.cargo.shippingMarks
+          }
+        }}
+        onClose={() => setShowBLModal(false)}
+      />
     )}
 
     </div>
