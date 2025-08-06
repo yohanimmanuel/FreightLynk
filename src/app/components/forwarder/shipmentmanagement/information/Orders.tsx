@@ -186,10 +186,6 @@ const Orders: React.FC<OrdersProps> = ({ shipmentId }) => {
                        {data.status.charAt(0).toUpperCase() + data.status.slice(1)}
                      </span>
                    </div>
-                   <div className="flex items-center justify-between">
-                     <span className="text-gray-500">Amount:</span>
-                     <span className="text-gray-900">{data.quoted_currency} {data.quoted_amount}</span>
-                   </div>
                 </div>
               </div>
             </div>
