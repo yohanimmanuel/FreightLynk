@@ -12,6 +12,7 @@ import {
   Plus
 } from 'lucide-react';
 import OceanBLFormat from './OceanBLFormat';
+import OceanSIFormat from './OceanSIFormat';
 
 interface ShippingInstructionsProps {
   shipmentId?: string;
@@ -21,6 +22,7 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
   const [isEditing, setIsEditing] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showBLModal, setShowBLModal] = useState(false);
+  const [showSIModal, setShowSIModal] = useState(false);
 
   // Mock data - replace with actual data from API
   const shipmentData = {
@@ -77,12 +79,12 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
       }
     ],
     freightCharges: {
-      totalFreight: '2,500.00',
-      currency: 'USD',
       paymentTerms: 'FREIGHT PREPAID',
       payableAt: 'HO CHI MINH CITY, VN (VNSGN)',
       prepaidAt: 'HO CHI MINH CITY, VN (VNSGN)',
-      totalPrepaid: '2,500.00 USD'
+      totalPrepaid: 'USD',
+      numberOfOriginals: 'THREE/3',
+      incoterm: 'FOB',
     },
     blDetails: {
       numberOfOriginals: 'THREE/3',
@@ -98,6 +100,11 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
       shippingMarks: 'FCL/FCL-CY/CY',
       clause: 'SHIPPER\'S LOAD, COUNT, STOW & SEAL'
     },
+    // Additional fields for SI format
+    incoterm: 'FOB',
+    documentInstructions: 'Original BL Required',
+    dangerousGoods: 'NO',
+    creditInfo: 'NO',
     totalCargo: {
       totalPackages: '1,000 CTNS',
       totalGrossWeight: '20,000 KGS',
@@ -111,8 +118,7 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
   };
 
   const handleDownloadSI = () => {
-    // Implement Shipping Instructions download logic
-    console.log('Downloading Shipping Instructions...');
+    setShowSIModal(true);
   };
 
   const handleCopyData = () => {
@@ -217,7 +223,7 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
 
       {/* First Row - General Information and Parties Information */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                 {/* General Information */}
+         {/* General Information */}
          <div className="bg-white border border-gray-200 rounded-lg p-4">
            <h3 className="text-md font-semibold text-gray-900 mb-4">General Information</h3>
            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -231,7 +237,7 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
                  <span className="text-gray-500">MBL Number:</span>
                  <span className="font-mono text-gray-900">{shipmentData.mblNumber}</span>
                </div>
-                               <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between">
                   <span className="text-gray-500">Booking Number:</span>
                   <span className="font-mono text-gray-900">{shipmentData.bookingNumber}</span>
                 </div>
@@ -397,6 +403,14 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
                      <span className="text-gray-500">Description of Goods:</span>
                      <span className="text-gray-900">{shipmentData.cargo.description}</span>
                    </div>
+                   <div className="flex items-center justify-between">
+                     <span className="text-gray-500">Document Instructions:</span>
+                     <span className="text-gray-900">{shipmentData.documentInstructions}</span>
+                   </div>
+                   <div className="flex items-center justify-between">
+                     <span className="text-gray-500">Credit Information:</span>
+                     <span className="text-gray-900">{shipmentData.creditInfo}</span>
+                   </div>
                  </div>
                 
                 {/* Right Column */}
@@ -422,12 +436,20 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
                      <span className="text-gray-900">{new Date(shipmentData.shippedOnBoardDate).toLocaleDateString()}</span>
                    </div>
                    <div className="flex items-center justify-between">
+                     <span className="text-gray-500">Clause:</span>
+                     <span className="text-gray-900">{shipmentData.cargo.clause}</span>
+                   </div>
+                   <div className="flex items-center justify-between">
                      <span className="text-gray-500">Commodity:</span>
                      <span className="text-gray-900">{shipmentData.cargo.commodity}</span>
                    </div>
                    <div className="flex items-center justify-between">
                      <span className="text-gray-500">Shipment Type:</span>
                      <span className="text-gray-900">{shipmentData.cargo.serviceMode}</span>
+                   </div>
+                   <div className="flex items-center justify-between">
+                     <span className="text-gray-500">Dangerous Goods:</span>
+                     <span className="text-gray-900">{shipmentData.dangerousGoods}</span>
                    </div>
                  </div>
               </div>
@@ -437,9 +459,9 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
           <h3 className="text-md font-semibold text-gray-900 mb-4">Freight & Charges</h3>
           <div className="space-y-3 text-xs">
             <div className="flex items-center justify-between">
-              <span className="text-gray-500">Total Freight:</span>
-              <span className="text-gray-900">{shipmentData.freightCharges.totalFreight} {shipmentData.freightCharges.currency}</span>
-            </div>
+               <span className="text-gray-500">Incoterms:</span>
+               <span className="text-gray-900">{shipmentData.freightCharges.incoterm}</span>
+             </div>
             <div className="flex items-center justify-between">
               <span className="text-gray-500">Payment Terms:</span>
               <span className="text-gray-900">{shipmentData.freightCharges.paymentTerms}</span>
@@ -453,7 +475,7 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
                <span className="text-gray-900">{shipmentData.freightCharges.prepaidAt}</span>
              </div>
              <div className="flex items-center justify-between">
-               <span className="text-gray-500">Total Prepaid:</span>
+               <span className="text-gray-500">Total Prepaid in:</span>
                <span className="text-gray-900">{shipmentData.freightCharges.totalPrepaid}</span>
              </div>
              <div className="flex items-center justify-between">
@@ -1005,6 +1027,26 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
                         className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
                     />
                     </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Document Instructions</label>
+                    <input
+                        type="text"
+                        value={editData.documentInstructions}
+                        onChange={(e) => setEditData(prev => ({ ...prev, documentInstructions: e.target.value }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Credit Information</label>
+                    <select
+                        value={editData.creditInfo}
+                        onChange={(e) => setEditData(prev => ({ ...prev, creditInfo: e.target.value }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    >
+                        <option value="NO">NO</option>
+                        <option value="YES">YES</option>
+                    </select>
+                    </div>
                 </div>
                 <div className="space-y-3">
                     <div>
@@ -1062,6 +1104,18 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
                     />
                     </div>
                     <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Clause</label>
+                    <input
+                        type="text"
+                        value={editData.cargo.clause}
+                        onChange={(e) => setEditData(prev => ({ 
+                        ...prev, 
+                        cargo: { ...prev.cargo, clause: e.target.value }
+                        }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
                     <label className="block text-gray-500 mb-1 text-xs">Commodity</label>
                     <input
                         type="text"
@@ -1085,6 +1139,17 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
                         className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
                     />
                     </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Dangerous Goods</label>
+                    <select
+                        value={editData.dangerousGoods}
+                        onChange={(e) => setEditData(prev => ({ ...prev, dangerousGoods: e.target.value }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    >
+                        <option value="NO">NO</option>
+                        <option value="YES">YES</option>
+                    </select>
+                    </div>
                 </div>
                 </div>
                 </div>
@@ -1093,30 +1158,6 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
                 <div className="bg-white border border-gray-200 rounded-lg p-4">
                 <h3 className="text-md font-semibold text-gray-900 mb-4">Freight & Charges</h3>
                 <div className="space-y-3">
-                    <div>
-                    <label className="block text-gray-500 mb-1 text-xs">Total Freight</label>
-                    <input
-                        type="text"
-                        value={editData.freightCharges.totalFreight}
-                        onChange={(e) => setEditData(prev => ({ 
-                        ...prev, 
-                        freightCharges: { ...prev.freightCharges, totalFreight: e.target.value }
-                        }))}
-                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
-                    />
-                    </div>
-                    <div>
-                    <label className="block text-gray-500 mb-1 text-xs">Currency</label>
-                    <input
-                        type="text"
-                        value={editData.freightCharges.currency}
-                        onChange={(e) => setEditData(prev => ({ 
-                        ...prev, 
-                        freightCharges: { ...prev.freightCharges, currency: e.target.value }
-                        }))}
-                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
-                    />
-                    </div>
                     <div>
                     <label className="block text-gray-500 mb-1 text-xs">Payment Terms</label>
                     <input
@@ -1154,13 +1195,25 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
                     />
                     </div>
                     <div>
-                    <label className="block text-gray-500 mb-1 text-xs">Total Prepaid</label>
+                    <label className="block text-gray-500 mb-1 text-xs">Total Prepaid in</label>
                     <input
                         type="text"
                         value={editData.freightCharges.totalPrepaid}
                         onChange={(e) => setEditData(prev => ({ 
                         ...prev, 
                         freightCharges: { ...prev.freightCharges, totalPrepaid: e.target.value }
+                        }))}
+                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-gray-500 mb-1 text-xs">Incoterm</label>
+                    <input
+                        type="text"
+                        value={editData.freightCharges.incoterm}
+                        onChange={(e) => setEditData(prev => ({ 
+                        ...prev, 
+                        freightCharges: { ...prev.freightCharges, incoterm: e.target.value }
                         }))}
                         className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
                     />
@@ -1209,7 +1262,7 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
     {showBLModal && (
       <OceanBLFormat
         data={{
-          serviceType: 'lcl', // or 'lcl' based on shipment type
+          serviceType: 'fcl', // or 'lcl' based on shipment type
           blNumber: shipmentData.blNumber,
           bookingNumber: shipmentData.bookingNumber,
           dateOfIssue: shipmentData.dateOfIssue,
@@ -1274,13 +1327,13 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
             sealNumber: shipmentData.containers[0]?.sealNumber || ''
           },
           freightCharges: {
-            totalFreight: shipmentData.freightCharges.totalFreight,
-            currency: shipmentData.freightCharges.currency,
+            
             paymentTerms: shipmentData.freightCharges.paymentTerms,
             payableAt: shipmentData.freightCharges.payableAt,
             prepaidAt: shipmentData.freightCharges.prepaidAt,
             totalPrepaid: shipmentData.freightCharges.totalPrepaid,
-            numberOfOriginals: shipmentData.blDetails.numberOfOriginals
+            numberOfOriginals: shipmentData.blDetails.numberOfOriginals,
+            incoterm: shipmentData.freightCharges.incoterm
           },
           shippedOnBoardDate: shipmentData.shippedOnBoardDate,
           placeOfIssue: shipmentData.placeOfIssue,
@@ -1294,6 +1347,77 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
           }
         }}
         onClose={() => setShowBLModal(false)}
+      />
+    )}
+
+    {/* SI Generation Modal */}
+    {showSIModal && (
+      <OceanSIFormat
+        data={{
+          siNumber: shipmentData.hblNumber,
+          pageNumber: '1 of 1',
+          reference: shipmentData.bookingNumber,
+          buyerReference: shipmentData.blNumber,
+          exportDeclarationNumber: 'EXP' + shipmentData.hblNumber,
+          
+          exporter: {
+            name: shipmentData.shipper.name,
+            address: shipmentData.shipper.address,
+            city: shipmentData.shipper.address.split(', ').slice(-2, -1)[0] || '',
+            country: shipmentData.shipper.address.split(', ').slice(-1)[0] || ''
+          },
+          consignee: {
+            name: shipmentData.consignee.name,
+            address: shipmentData.consignee.address,
+            city: shipmentData.consignee.address.split(', ').slice(-2, -1)[0] || '',
+            country: shipmentData.consignee.address.split(', ').slice(-1)[0] || ''
+          },
+          notifyParty: {
+            name: shipmentData.notifyParty.name,
+            address: shipmentData.notifyParty.address,
+            city: shipmentData.notifyParty.address.split(', ').slice(-2, -1)[0] || '',
+            country: shipmentData.notifyParty.address.split(', ').slice(-1)[0] || ''
+          },
+          
+          carrier: shipmentData.vessel.name,
+          methodOfDispatch: 'Ocean Freight',
+          typeOfShipment: shipmentData.cargo.serviceMode,
+          countryOfOriginOfGoods: shipmentData.shipper.address.split(', ').slice(-1)[0] || 'Vietnam',
+          countryOfFinalDestination: shipmentData.consignee.address.split(', ').slice(-1)[0] || 'United States',
+          
+          vesselOrAircraft: shipmentData.vessel.name,
+          voyageNo: shipmentData.vessel.voyageNumber,
+          placeOfReceipt: shipmentData.placeOfReceipt,
+          portOfLoading: shipmentData.portOfLoading,
+          dateOfDeparture: new Date(shipmentData.etd).toLocaleDateString(),
+          freightCharges: shipmentData.freightCharges.paymentTerms,
+          documentInstructions: shipmentData.documentInstructions,
+          portOfDischarge: shipmentData.portOfDischarge,
+          finalDestination: shipmentData.finalDestination,
+          incoterms2020: shipmentData.freightCharges.incoterm,
+          declaredValue: 'As per Commercial Invoice',
+          
+          cargoDetails: shipmentData.containers.map(container => ({
+            marks: container.marks,
+            kind: container.packageType,
+            packages: container.packages,
+            description: container.description,
+            grossWeight: container.grossWeight,
+            measurements: container.measurement
+          })),
+          
+          totalThisPage: shipmentData.totalCargo.totalPackages,
+          consignmentTotal: `${shipmentData.totalCargo.totalGrossWeight} / ${shipmentData.totalCargo.totalMeasurement}`,
+          dangerousGoods: shipmentData.dangerousGoods,
+          creditInfo: shipmentData.creditInfo,
+          specialInstructions: shipmentData.cargo.clause,
+          
+          placeAndDateOfIssue: `${shipmentData.placeOfIssue}, ${new Date(shipmentData.dateOfIssue).toLocaleDateString()}`,
+          signatoryCompany: shipmentData.blDetails.signatureBy,
+          nameOfAuthorizedSignatory: shipmentData.blDetails.signatureBy,
+          signature: ''
+        }}
+        onClose={() => setShowSIModal(false)}
       />
     )}
 

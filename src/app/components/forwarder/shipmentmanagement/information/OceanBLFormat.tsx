@@ -78,13 +78,12 @@ interface BLData {
   
   // Freight and Charges
   freightCharges: {
-    totalFreight: string;
-    currency: string;
     paymentTerms: string;
     payableAt: string;
     prepaidAt: string;
     totalPrepaid: string;
     numberOfOriginals: string;
+    incoterm: string;
   };
   
   // Additional Details
@@ -254,7 +253,7 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
         </div>
 
         {/* BL Content */}
-        <div className="p-4 overflow-y-auto max-h-[calc(90vh-140px)]">
+        <div className="p-4 overflow-y-auto max-h-[calc(90vh-140px)] hide-scrollbar">
           <div ref={printRef} className="bg-white border border-gray-900 max-w-4xl mx-auto">
                                    {/* Header Section - Freightek Format */}
                        <div className="border-b border-gray-900 border-t-0 border-l-0 border-r-0">
@@ -449,6 +448,18 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
                             <span>Consolidated by: {data.consolidation.consolidator}</span>
                             <span>Master BL: {data.consolidation.masterBLNumber}</span>
                             <span>House BL: {data.consolidation.houseBLNumber}</span>
+                            <span>Incoterm: {data.freightCharges.incoterm}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    
+                    {/* Incoterm for FCL shipments */}
+                    {data.serviceType === 'fcl' && (
+                      <tr>
+                        <td colSpan={4} className="px-3">
+                          <div className="flex justify-start text-xs text-gray-900">
+                            <span>Incoterm: {data.freightCharges.incoterm}</span>
                           </div>
                         </td>
                       </tr>
@@ -489,7 +500,7 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
                       <tr className="h-25">
                         <td className="border-r border-gray-900 p-4 text-gray-900">FREIGHT PREPAID</td>
                         <td className="border-r border-gray-900 p-4 text-gray-900">AS AGREED</td>
-                        <td className="border-r border-gray-900 p-4 text-gray-900">{data.freightCharges.currency}</td>
+                        <td className="border-r border-gray-900 p-4 text-gray-900">{data.freightCharges.totalPrepaid}</td>
                         <td className="border-r border-gray-900 p-4 text-gray-900">AS AGREED</td>
                         <td className="border-r border-gray-900 p-4 text-gray-900"></td>
                         <td className="p-2 text-gray-900"></td>
