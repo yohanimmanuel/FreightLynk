@@ -135,9 +135,41 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
         (el as HTMLElement).style.fontWeight = '900 !important';
       });
 
+      // Specifically override table borders for better PDF rendering
+      const tables = element.querySelectorAll('table');
+      tables.forEach((table) => {
+        (table as HTMLElement).style.borderCollapse = 'collapse';
+        (table as HTMLElement).style.borderSpacing = '0';
+      });
+
+      const tableHeaders = element.querySelectorAll('thead');
+      tableHeaders.forEach((thead) => {
+        (thead as HTMLElement).style.borderBottom = '2px solid #111111';
+      });
+
+      const tableHeaderCells = element.querySelectorAll('th');
+      tableHeaderCells.forEach((th) => {
+        (th as HTMLElement).style.borderBottom = '1px solid #111111';
+        (th as HTMLElement).style.borderRight = '1px solid #111111';
+      });
+
+      const tableBodyCells = element.querySelectorAll('td');
+      tableBodyCells.forEach((td) => {
+        (td as HTMLElement).style.borderRight = '1px solid #111111';
+        (td as HTMLElement).style.borderBottom = '1px solid #111111';
+      });
+
+      const tableRows = element.querySelectorAll('tr');
+      tableRows.forEach((tr) => {
+        (tr as HTMLElement).style.borderBottom = '1px solid #111111';
+      });
+
       // Direct capture with basic options
       const canvas = await html2canvas(element, {
-        scale: 2
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff'
       });
 
       // Restore original styles
@@ -151,8 +183,8 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
       
       // Calculate dimensions to fit within A4 margins
       const pageWidth = 210; // A4 width in mm
-      const pageHeight = 297; // A4 height in mm
-      const margin = 10; // 10mm margin on all sides
+      const pageHeight = 290; // A4 height in mm
+      const margin = 5; // 10mm margin on all sides
       
       const availableWidth = pageWidth - (2 * margin);
       const availableHeight = pageHeight - (2 * margin);
@@ -442,11 +474,11 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
                     </thead>
                     <tbody>
                       <tr>
-                        <td className="border-r border-gray-900 p-2 text-gray-900">FREIGHT PREPAID</td>
-                        <td className="border-r border-gray-900 p-2 text-gray-900">AS AGREED</td>
-                        <td className="border-r border-gray-900 p-2 text-gray-900">{data.freightCharges.currency}</td>
-                        <td className="border-r border-gray-900 p-2 text-gray-900">AS AGREED</td>
-                        <td className="border-r border-gray-900 p-2 text-gray-900"></td>
+                        <td className="border-r border-gray-900 p-4 text-gray-900">FREIGHT PREPAID</td>
+                        <td className="border-r border-gray-900 p-4 text-gray-900">AS AGREED</td>
+                        <td className="border-r border-gray-900 p-4 text-gray-900">{data.freightCharges.currency}</td>
+                        <td className="border-r border-gray-900 p-4 text-gray-900">AS AGREED</td>
+                        <td className="border-r border-gray-900 p-4 text-gray-900"></td>
                         <td className="p-2 text-gray-900"></td>
                       </tr>
                     </tbody>
@@ -511,7 +543,7 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
             </div>
 
             {/* Page Number - Bottom Right */}
-            <div className="text-right p-2">
+            <div className="text-right p-2 -mt-2">
               <div className="text-xs text-gray-900">Page 1</div>
             </div>
             </div>
