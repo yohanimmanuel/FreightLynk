@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import OceanBLFormat from './OceanBLFormat';
 import OceanSIFormat from './OceanSIFormat';
+import AirwayBillFormat from './AirwayBillFormat';
 
 interface ShippingInstructionsProps {
   shipmentId?: string;
@@ -23,6 +24,7 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
   const [showEditModal, setShowEditModal] = useState(false);
   const [showBLModal, setShowBLModal] = useState(false);
   const [showSIModal, setShowSIModal] = useState(false);
+
 
   // Mock data - replace with actual data from API
   const shipmentData = {
@@ -95,7 +97,7 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
     cargo: {
       commodity: 'Electronics and Machinery',
       description: 'GENERAL CARGO',
-      serviceMode: 'FCL',
+      serviceMode: 'AIR',
       freightTerms: 'FREIGHT PREPAID',
       shippingMarks: 'FCL/FCL-CY/CY',
       clause: 'SHIPPER\'S LOAD, COUNT, STOW & SEAL'
@@ -121,9 +123,101 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
     setShowSIModal(true);
   };
 
+
+
   const handleCopyData = () => {
-    // Implement copy data logic
-    console.log('Copying shipment data...');
+    // Format shipment data for clipboard
+    const formattedData = `SHIPPING INSTRUCTIONS DATA
+
+GENERAL INFORMATION:
+HBL Number: ${shipmentData.hblNumber}
+MBL Number: ${shipmentData.mblNumber}
+Booking Number: ${shipmentData.bookingNumber}
+Port of Loading: ${shipmentData.portOfLoading}
+Port of Discharge: ${shipmentData.portOfDischarge}
+Place of Receipt: ${shipmentData.placeOfReceipt}
+Place of Delivery: ${shipmentData.placeOfDelivery}
+Final Destination: ${shipmentData.finalDestination}
+ETD: ${new Date(shipmentData.etd).toLocaleDateString()}
+ETA: ${new Date(shipmentData.eta).toLocaleDateString()}
+Shipped on Board: ${new Date(shipmentData.shippedOnBoardDate).toLocaleDateString()}
+Date of Issue: ${new Date(shipmentData.dateOfIssue).toLocaleDateString()}
+Place of Issue: ${shipmentData.placeOfIssue}
+
+PARTIES INFORMATION:
+Shipper:
+  Name: ${shipmentData.shipper.name}
+  Address: ${shipmentData.shipper.address}
+  Contact: ${shipmentData.shipper.contact}
+
+Consignee:
+  Name: ${shipmentData.consignee.name}
+  Address: ${shipmentData.consignee.address}
+  Contact: ${shipmentData.consignee.contact}
+
+Notify Party:
+  Name: ${shipmentData.notifyParty.name}
+  Address: ${shipmentData.notifyParty.address}
+  Contact: ${shipmentData.notifyParty.contact}
+
+VESSEL INFORMATION:
+Vessel Name: ${shipmentData.vessel.name}
+Voyage Number: ${shipmentData.vessel.voyageNumber}
+Feeder Vessel: ${shipmentData.vessel.feederVessel}
+Feeder Voyage: ${shipmentData.vessel.feederVoyage}
+
+CONTAINER DETAILS:
+${shipmentData.containers.map((container, index) => `
+Container ${index + 1}:
+  Container Number: ${container.number}
+  Type: ${container.type}
+  Seal Number: ${container.sealNumber}
+  Gross Weight: ${container.grossWeight} KGS
+  Measurement: ${container.measurement} CBM
+  Tare: ${container.tare} KGS
+  Package Type: ${container.packageType}
+  Number of Packages: ${container.packages}
+  VGM: ${container.vgm} KGS
+  Marks: ${container.marks}
+  Description: ${container.description}
+`).join('')}
+
+CARGO INFORMATION:
+Commodity: ${shipmentData.cargo.commodity}
+Description: ${shipmentData.cargo.description}
+Service Mode: ${shipmentData.cargo.serviceMode}
+Freight Terms: ${shipmentData.cargo.freightTerms}
+Shipping Marks: ${shipmentData.cargo.shippingMarks}
+Clause: ${shipmentData.cargo.clause}
+
+FREIGHT & CHARGES:
+Payment Terms: ${shipmentData.freightCharges.paymentTerms}
+Payable At: ${shipmentData.freightCharges.payableAt}
+Prepaid At: ${shipmentData.freightCharges.prepaidAt}
+Total Prepaid: ${shipmentData.freightCharges.totalPrepaid}
+Incoterm: ${shipmentData.freightCharges.incoterm}
+Number of Originals: ${shipmentData.blDetails.numberOfOriginals}
+
+ADDITIONAL INFORMATION:
+Document Instructions: ${shipmentData.documentInstructions}
+Dangerous Goods: ${shipmentData.dangerousGoods}
+Credit Info: ${shipmentData.creditInfo}
+Direct MBL: ${shipmentData.blDetails.directMbl}
+Signature By: ${shipmentData.blDetails.signatureBy}
+
+TOTAL CARGO:
+Total Packages: ${shipmentData.totalCargo.totalPackages}
+Total Gross Weight: ${shipmentData.totalCargo.totalGrossWeight}
+Total Measurement: ${shipmentData.totalCargo.totalMeasurement}
+Total Containers: ${shipmentData.totalCargo.totalContainers}`;
+
+    // Copy to clipboard
+    navigator.clipboard.writeText(formattedData).then(() => {
+      // Show success feedback (you can add a toast notification here)
+      console.log('Shipment data copied to clipboard successfully!');
+    }).catch((err) => {
+      console.error('Failed to copy data to clipboard:', err);
+    });
   };
 
   const [editData, setEditData] = useState(shipmentData);
@@ -1260,7 +1354,10 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
 
     {/* BL Generation Modal */}
     {showBLModal && (
-      <OceanBLFormat
+      shipmentData.cargo.serviceMode === 'AIR' ? (
+        <AirwayBillFormat onClose={() => setShowBLModal(false)} />
+      ) : (
+        <OceanBLFormat
         data={{
           serviceType: 'fcl', // or 'lcl' based on shipment type
           blNumber: shipmentData.blNumber,
@@ -1348,6 +1445,7 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
         }}
         onClose={() => setShowBLModal(false)}
       />
+      )
     )}
 
     {/* SI Generation Modal */}

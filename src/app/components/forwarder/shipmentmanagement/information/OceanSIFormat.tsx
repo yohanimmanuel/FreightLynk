@@ -181,7 +181,7 @@ const OceanSIFormat: React.FC<OceanSIFormatProps> = ({ data, onClose }) => {
           <div className="flex items-center gap-2">
             <button
               onClick={generatePDF}
-              className="px-4 py-2 bg-[#007bff] text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+              className="px-4 py-2 bg-[#007bff] text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               Download PDF
             </button>

@@ -71,19 +71,69 @@ const Bookings: React.FC<BookingsProps> = ({ shipmentId }) => {
   const [editData, setEditData] = useState(bookingData);
 
   const handleCopyData = () => {
-    const dataToCopy = JSON.stringify(bookingData, null, 2);
-    navigator.clipboard.writeText(dataToCopy);
-  };
+    // Format booking data for clipboard
+    const formattedData = `BOOKING INFORMATION
 
-  const handleDownload = () => {
-    const dataToDownload = JSON.stringify(bookingData, null, 2);
-    const blob = new Blob([dataToDownload], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `booking-${bookingData.bookingNo}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
+GENERAL BOOKING INFORMATION:
+Booking No.: ${bookingData.bookingNo}
+Booking Number Reference: ${bookingData.bookingNumberReference}
+Booking Date: ${bookingData.bookingDate}
+Booking To: ${bookingData.bookingTo}
+Service: ${bookingData.service}
+Booking Note: ${bookingData.bookingNote}
+
+ORIGIN INFORMATION:
+Place of Receipt: ${bookingData.placeOfReceipt}
+Port of Loading: ${bookingData.portOfLoading}
+Pickup: ${bookingData.pickup}
+Date of Pickup: ${bookingData.dateOfPickup}
+ETD: ${bookingData.etd}
+Dropoff: ${bookingData.dropoff}
+Feeder Vessel: ${bookingData.feederVessel}
+Feeder Voyage: ${bookingData.feederVoyage}
+Mother Vessel: ${bookingData.motherVessel}
+Mother Voyage: ${bookingData.motherVoyage}
+Provider: ${bookingData.provider}
+CY Cut-off: ${bookingData.cyCutoff}
+VGM Cut-off: ${bookingData.vgmCutoff}
+SI Cut-off: ${bookingData.siCutoff}
+
+DESTINATION INFORMATION:
+Port of Discharge: ${bookingData.portOfDischarge}
+Final Destination: ${bookingData.finalDestination}
+Place of Delivery: ${bookingData.placeOfDelivery}
+ETA: ${bookingData.eta}
+
+BOOKING CONSIGNMENT:
+Volume: ${bookingData.volume}
+Gross Weight: ${bookingData.grossWeight}
+Commodity: ${bookingData.commodity}
+Measurement: ${bookingData.measurement}
+
+CONTACT INFORMATION:
+Contact: ${bookingData.contact}
+Special Remark: ${bookingData.specialRemark}
+Date of Creation: ${bookingData.dateOfCreation}
+
+TRANSIT PORT:
+Transit Port: ${bookingData.transitPort}
+Temperature: ${bookingData.temp}
+
+OTHER INFORMATION:
+Gate In: ${bookingData.gateIn}
+Vent: ${bookingData.vent || 'Not specified'}
+Freight Terms: ${bookingData.freightTerms}
+
+DOCUMENTS:
+${bookingData.documents.map((doc: any, index: number) => `${index + 1}. ${doc.name}`).join('\n')}`;
+
+    // Copy to clipboard
+    navigator.clipboard.writeText(formattedData).then(() => {
+      // Show success feedback (you can add a toast notification here)
+      console.log('Booking data copied to clipboard successfully!');
+    }).catch((err) => {
+      console.error('Failed to copy data to clipboard:', err);
+    });
   };
 
   const handleEdit = () => {
@@ -171,15 +221,8 @@ const Bookings: React.FC<BookingsProps> = ({ shipmentId }) => {
           <span className="text-sm font-medium">Copy Data</span>
         </button>
         <button
-          onClick={handleDownload}
-          className="flex items-center gap-2 px-4 py-2 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          <Download className="w-4 h-4" />
-          <span className="text-sm font-medium">Booking Confirmation</span>
-        </button>
-        <button
           onClick={handleEdit}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-[#007bff] text-white hover:bg-blue-700 rounded-lg transition-colors"
         >
           <Edit className="w-4 h-4" />
           <span className="text-sm font-medium">Edit</span>
