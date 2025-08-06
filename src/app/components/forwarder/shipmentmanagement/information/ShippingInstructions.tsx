@@ -11,7 +11,7 @@ import {
   Trash2,
   Plus
 } from 'lucide-react';
-import SEAFCLBLFormat from './SEAFCLBLFormat';
+import BLFormat from './BLFormat';
 
 interface ShippingInstructionsProps {
   shipmentId?: string;
@@ -1207,7 +1207,7 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
 
     {/* BL Generation Modal */}
     {showBLModal && (
-      <SEAFCLBLFormat
+      <BLFormat
         data={{
           blNumber: shipmentData.blNumber,
           bookingNumber: shipmentData.bookingNumber,
