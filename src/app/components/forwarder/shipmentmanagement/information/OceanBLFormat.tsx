@@ -7,6 +7,7 @@ interface BLData {
   blNumber: string;
   bookingNumber: string;
   dateOfIssue: string;
+  serviceType: 'fcl' | 'lcl'; // Add service type
   
   // Parties
   shipper: {
@@ -41,8 +42,8 @@ interface BLData {
   placeOfDelivery: string;
   finalDestination: string;
   
-  // Cargo Details
-  containers: Array<{
+  // Cargo Details - FCL
+  containers?: Array<{
     containerNumber: string;
     sealNumber: string;
     type: string;
@@ -54,6 +55,26 @@ interface BLData {
     weight: string;
     volume: string;
   }>;
+  
+  // Cargo Details - LCL
+  lclCargo?: Array<{
+    marks: string;
+    packages: string;
+    description: string;
+    weight: string;
+    volume: string;
+    commodity: string;
+    serviceMode: string;
+  }>;
+  
+  // LCL Consolidation Details
+  consolidation?: {
+    consolidator: string;
+    masterBLNumber: string;
+    houseBLNumber: string;
+    containerNumber: string;
+    sealNumber: string;
+  };
   
   // Freight and Charges
   freightCharges: {
@@ -84,6 +105,26 @@ interface BLFormatProps {
   onClose?: () => void;
 }
 
+// Utility to replace all OKLCH and modern color functions in the DOM
+function replaceUnsupportedColors(root: HTMLElement) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, null);
+  let el = walker.currentNode as Element | null;
+  while (el) {
+    const style = window.getComputedStyle(el);
+    // Only replace if the color is in an unsupported format
+    if (style.color && /(oklch|lch|lab|color-mix)/.test(style.color)) {
+      (el as HTMLElement).style.color = '#111111';
+    }
+    if (style.backgroundColor && /(oklch|lch|lab|color-mix)/.test(style.backgroundColor)) {
+      (el as HTMLElement).style.backgroundColor = '#ffffff';
+    }
+    if (style.borderColor && /(oklch|lch|lab|color-mix)/.test(style.borderColor)) {
+      (el as HTMLElement).style.borderColor = '#111111';
+    }
+    el = walker.nextNode() as Element | null;
+  }
+}
+
 const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -95,130 +136,42 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
         return;
       }
 
-      // Override styles with inline hex colors and add padding
-      const originalStyle = element.style.cssText;
-      element.style.cssText = `
-        color: #111111 !important;
-        border-color: #111111 !important;
-        background-color: #ffffff !important;
-      `;
+      // Replace all unsupported colors before html2canvas
+      replaceUnsupportedColors(element);
 
-
-
-      // Override all child elements
-      const allElements = element.querySelectorAll('*');
-      const originalStyles: string[] = [];
-      allElements.forEach((el, index) => {
-        const htmlEl = el as HTMLElement;
-        originalStyles[index] = htmlEl.style.cssText;
-        htmlEl.style.cssText = `
-          color: #111111 !important;
-          border-color: #111111 !important;
-          background-color: #ffffff !important;
-        `;
-      });
-
-      // Override specific gray background
-      const grayBgElements = element.querySelectorAll('.bg-gray-50');
-      grayBgElements.forEach((el) => {
-        (el as HTMLElement).style.backgroundColor = '#f9f9f9 !important';
-      });
-
-      // Override font weights for titles to ensure they're bold in PDF
-      const titleElements = element.querySelectorAll('h1');
-      titleElements.forEach((el) => {
-        (el as HTMLElement).style.fontWeight = '900 !important';
-      });
-
-      const boldElements = element.querySelectorAll('.font-bold');
-      boldElements.forEach((el) => {
-        (el as HTMLElement).style.fontWeight = '900 !important';
-      });
-
-      // Specifically override table borders for better PDF rendering
-      const tables = element.querySelectorAll('table');
-      tables.forEach((table) => {
-        (table as HTMLElement).style.borderCollapse = 'collapse';
-        (table as HTMLElement).style.borderSpacing = '0';
-      });
-
-      const tableHeaders = element.querySelectorAll('thead');
-      tableHeaders.forEach((thead) => {
-        (thead as HTMLElement).style.borderBottom = '2px solid #111111';
-      });
-
-      const tableHeaderCells = element.querySelectorAll('th');
-      tableHeaderCells.forEach((th) => {
-        (th as HTMLElement).style.borderBottom = '1px solid #111111';
-        (th as HTMLElement).style.borderRight = '1px solid #111111';
-      });
-
-      const tableBodyCells = element.querySelectorAll('td');
-      tableBodyCells.forEach((td) => {
-        (td as HTMLElement).style.borderRight = '1px solid #111111';
-        (td as HTMLElement).style.borderBottom = '1px solid #111111';
-      });
-
-      const tableRows = element.querySelectorAll('tr');
-      tableRows.forEach((tr) => {
-        (tr as HTMLElement).style.borderBottom = '1px solid #111111';
-      });
-
-      // Direct capture with basic options
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
         allowTaint: true,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
       });
-
-      // Restore original styles
-      element.style.cssText = originalStyle;
-      allElements.forEach((el, index) => {
-        (el as HTMLElement).style.cssText = originalStyles[index];
-      });
-
       const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      
-      // Calculate dimensions to fit within A4 margins
-      const pageWidth = 210; // A4 width in mm
-      const pageHeight = 290; // A4 height in mm
-      const margin = 5; // 10mm margin on all sides
-      
-      const availableWidth = pageWidth - (2 * margin);
-      const availableHeight = pageHeight - (2 * margin);
-      
-      // Calculate scaling to fit content within margins
-      const scaleX = availableWidth / canvas.width;
-      const scaleY = availableHeight / canvas.height;
-      const scale = Math.min(scaleX, scaleY);
-      
-      const imgWidth = canvas.width * scale;
-      const imgHeight = canvas.height * scale;
-      
-      // Center the image on the page
-      const x = margin + (availableWidth - imgWidth) / 2;
-      const y = margin + (availableHeight - imgHeight) / 2;
-      
-      pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
-      
-      // Handle multi-page if content is still too tall
-      if (imgHeight > availableHeight) {
-        let remainingHeight = imgHeight - availableHeight;
-        let currentPosition = -availableHeight;
-        
-        while (remainingHeight > 0) {
-          pdf.addPage();
-          pdf.addImage(imgData, 'PNG', x, y + currentPosition, imgWidth, imgHeight);
-          currentPosition -= availableHeight;
-          remainingHeight -= availableHeight;
-        }
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: 'a4',
+      });
+      const imgProperties = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      const margin = 15; // px, extra whitespace
+      const maxImgWidth = pdfWidth - margin * 2;
+      const maxImgHeight = pdfHeight - margin * 2;
+
+      let imgWidth = maxImgWidth;
+      let imgHeight = (imgProperties.height * imgWidth) / imgProperties.width;
+
+      if (imgHeight > maxImgHeight) {
+        imgHeight = maxImgHeight;
+        imgWidth = (imgProperties.width * imgHeight) / imgProperties.height;
       }
 
+      const x = (pdfWidth - imgWidth) / 2;
+      const y = (pdfHeight - imgHeight) / 2;
+
+      pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
       pdf.save(`BL-${data.blNumber}.pdf`);
-      console.log('PDF generated successfully');
-      
     } catch (error) {
       console.error('PDF generation error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -237,20 +190,41 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
   };
 
   const calculateTotals = () => {
-    const totalPackages = data.containers.reduce((sum, container) => {
-      const packages = parseInt(container.packages) || 0;
-      return sum + packages;
-    }, 0);
+    let totalPackages = 0;
+    let totalWeight = 0;
+    let totalVolume = 0;
 
-    const totalWeight = data.containers.reduce((sum, container) => {
-      const weight = parseFloat(container.weight) || 0;
-      return sum + weight;
-    }, 0);
+    if (data.serviceType === 'fcl' && data.containers) {
+      totalPackages = data.containers.reduce((sum, container) => {
+        const packages = parseInt(container.packages) || 0;
+        return sum + packages;
+      }, 0);
 
-    const totalVolume = data.containers.reduce((sum, container) => {
-      const volume = parseFloat(container.volume) || 0;
-      return sum + volume;
-    }, 0);
+      totalWeight = data.containers.reduce((sum, container) => {
+        const weight = parseFloat(container.weight) || 0;
+        return sum + weight;
+      }, 0);
+
+      totalVolume = data.containers.reduce((sum, container) => {
+        const volume = parseFloat(container.volume) || 0;
+        return sum + volume;
+      }, 0);
+    } else if (data.serviceType === 'lcl' && data.lclCargo) {
+      totalPackages = data.lclCargo.reduce((sum, cargo) => {
+        const packages = parseInt(cargo.packages) || 0;
+        return sum + packages;
+      }, 0);
+
+      totalWeight = data.lclCargo.reduce((sum, cargo) => {
+        const weight = parseFloat(cargo.weight) || 0;
+        return sum + weight;
+      }, 0);
+
+      totalVolume = data.lclCargo.reduce((sum, cargo) => {
+        const volume = parseFloat(cargo.volume) || 0;
+        return sum + volume;
+      }, 0);
+    }
 
     return { totalPackages, totalWeight, totalVolume };
   };
@@ -318,15 +292,15 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
                 {/* Right Side - BL Header */}
                 <div>
                   <div className='p-2'>
-                                           {/* Company Logo Space */}
-                   <div className="h-30.5 border-2 border-dashed border-gray-900 mb-4 flex items-center justify-center">
+                    {/* Company Logo Space */}
+                   <div className="h-25 border-2 border-dashed border-gray-900 mb-4 flex items-center justify-center">
                      <div className="text-xs text-gray-500">Company Logo</div>
                    </div>
                   </div>
                   
 
                 {/* BL Title */}
-                 <div className="text-xl font-bold text-center mb-4">
+                 <div className="text-xl font-bold text-center mb-2">
                    <div className="text-gray-900 mb-1" style={{ fontWeight: 'bold' }}>BILL OF LADING</div>
                  </div>
 
@@ -412,56 +386,95 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
                </div>
              </div>
 
-                           {/* Cargo Details Table */}
+                {/* Cargo Details Table */}
                <div className="border-b border-gray-900 border-t-0 border-l-0 border-r-0">
-                 <div className="text-gray-900 font-bold p-3" style={{ fontWeight: 'bold' }}> PARTICULARS FURNISHED BY SHIPPER </div>
+                 <div className="text-gray-900 font-bold px-3 py-1" style={{ fontWeight: 'bold' }}> PARTICULARS FURNISHED BY SHIPPER </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-xs border-t border-gray-900">
-                  <thead className="border-b border-gray-900">
+                <table className="w-full text-xs border-t border-gray-900" style={{ height: '430px' }}>
+                  <thead>
                     <tr>
-                      <th className="border-r border-gray-900 p-2 text-left text-gray-900">Marks & Numbers</th>
-                      <th className="border-r border-gray-900 p-2 text-left text-gray-900">No. of Container or Packages</th>
-                      <th className="border-r border-gray-900 p-2 text-left text-gray-900">Kind of Packages: Description of Goods</th>
-                      <th className="border-r border-gray-900 p-2 text-left text-gray-900">Gross Weight (KGS)</th>
-                      <th className="p-2 text-left text-gray-900">Measurement (CBM)</th>
+                      <th className="p-2 text-left text-gray-900" style={{ width: '20%' }}>Marks & Numbers</th>
+                      <th className="p-2 text-left text-gray-900" style={{ width: '15%' }}>No. of Container or Packages</th>
+                      <th className="p-2 text-left text-gray-900" style={{ width: '40%' }}>Kind of Packages: Description of Goods</th>
+                      <th className="p-2 text-left text-gray-900" style={{ width: '12%' }}>Gross Weight (KGS)</th>
+                      <th className="p-2 text-left text-gray-900" style={{ width: '13%' }}>Measurement (CBM)</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {data.containers.map((container, index) => (
+                    {data.serviceType === 'fcl' && data.containers?.map((container, index) => (
                                 <tr key={index}>
-                                    <td className="border-r border-gray-900 p-4 text-gray-900 align-top" style={{ minHeight: '100px', height: 'auto' }}>
+                                    <td className="p-4 text-gray-900 align-top" style={{ minHeight: '100px', height: 'auto', width: '20%' }}>
                                       <div className="text-xs leading-normal break-words mb-2">{container.containerNumber}</div>
                                       <div className="text-xs leading-normal break-words mb-2">{container.sealNumber}</div>
                                       <div className="text-xs leading-normal break-words">{container.marks}</div>
                                     </td>
-                                    <td className="border-r border-gray-900 p-4 text-gray-900 align-top text-xs" style={{ minHeight: '100px', height: 'auto' }}>{container.packages}</td>
-                                    <td className="border-r border-gray-900 p-4 text-gray-900 align-top" style={{ minHeight: '100px', height: 'auto' }}>
+                                    <td className="p-4 text-gray-900 align-top text-xs" style={{ minHeight: '100px', height: 'auto', width: '15%' }}>{container.packages}</td>
+                                    <td className="p-4 text-gray-900 align-top" style={{ minHeight: '100px', height: 'auto', width: '40%' }}>
                                       <div className="text-xs leading-normal break-words mb-2">{container.type}</div>
                                       <div className="text-xs leading-normal break-words mb-2">{container.description}</div>
                                       <div className="text-xs leading-normal break-words mb-2">{data.cargo.commodity}</div>
                                       <div className="text-xs leading-normal break-words">{data.cargo.serviceMode}</div>
                                     </td>
-                                   <td className="border-r border-gray-900 p-4 text-gray-900 align-top text-xs" style={{ minHeight: '100px', height: 'auto' }}>{container.weight}</td>
-                                   <td className="p-4 text-gray-900 align-top text-xs" style={{ minHeight: '100px', height: 'auto' }}>{container.volume}</td>
+                                   <td className="p-4 text-gray-900 align-top text-xs" style={{ minHeight: '100px', height: 'auto', width: '12%' }}>{container.weight}</td>
+                                   <td className="p-4 text-gray-900 align-top text-xs" style={{ minHeight: '100px', height: 'auto', width: '13%' }}>{container.volume}</td>
                                  </tr>
                     ))}
+                    {data.serviceType === 'lcl' && data.lclCargo?.map((cargo, index) => (
+                                <tr key={index}>
+                                    <td className="p-4 text-gray-900 align-top" style={{ minHeight: '100px', height: 'auto', width: '20%' }}>
+                                      <div className="text-xs leading-normal break-words mb-2">{cargo.marks}</div>
+                                      {data.consolidation && (
+                                        <>
+                                          <div className="text-xs leading-normal break-words mb-2">Container: {data.consolidation.containerNumber}</div>
+                                          <div className="text-xs leading-normal break-words">Seal: {data.consolidation.sealNumber}</div>
+                                        </>
+                                      )}
+                                    </td>
+                                    <td className="p-4 text-gray-900 align-top text-xs" style={{ minHeight: '100px', height: 'auto', width: '15%' }}>{cargo.packages}</td>
+                                    <td className="p-4 text-gray-900 align-top" style={{ minHeight: '100px', height: 'auto', width: '40%' }}>
+                                      <div className="text-xs leading-normal break-words mb-2">{cargo.description}</div>
+                                      <div className="text-xs leading-normal break-words mb-2">{cargo.commodity}</div>
+                                      <div className="text-xs leading-normal break-words">{cargo.serviceMode}</div>
+                                    </td>
+                                   <td className="p-4 text-gray-900 align-top text-xs" style={{ minHeight: '100px', height: 'auto', width: '12%' }}>{cargo.weight}</td>
+                                   <td className="p-4 text-gray-900 align-top text-xs" style={{ minHeight: '100px', height: 'auto', width: '13%' }}>{cargo.volume}</td>
+                                 </tr>
+                    ))}
+                    
+                    {/* Consolidation details at bottom of particulars table */}
+                    {data.serviceType === 'lcl' && data.consolidation && (
+                      <tr>
+                        <td colSpan={4} className="px-3">
+                          <div className="flex justify-between text-xs text-gray-900">
+                            <span>Consolidated by: {data.consolidation.consolidator}</span>
+                            <span>Master BL: {data.consolidation.masterBLNumber}</span>
+                            <span>House BL: {data.consolidation.houseBLNumber}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
 
                          {/* Charges Table - Connected to Cargo Table */}
-               <div className="border-b border-gray-900 border-t-0 border-l-0 border-r-0">
+               <div className="border-b border-gray-900">
                 <div>
-                  <div className="p-3 border-b border-gray-900">
-                    <div className="text-gray-900 font-bold py-1" style={{ fontWeight: 'bold' }}> CHARGES </div>
+                  <div className="px-3 border-b border-gray-900 py-1">
+                    <div className="text-gray-900 font-bold" style={{ fontWeight: 'bold' }}> CHARGES </div>
                     <div>
                       <span className="text-xs text-gray-900">Total No. Container or Packages (in words):</span>
-                      <span className="ml-2 text-xs text-gray-900">ONE CONTAINER(S) ONLY</span>
+                      <span className="ml-2 text-xs text-gray-900">
+                        {data.serviceType === 'fcl' 
+                          ? `ONE CONTAINER(S) ONLY` 
+                          : `${totals.totalPackages} PACKAGE(S) ONLY`
+                        }
+                      </span>
+                    </div>
                   </div>
-                </div>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
+                  <table className="w-full text-xs charges-table">
                     <thead className="border-b border-gray-900">
                       <tr>
                         <th className="border-r border-gray-900 p-2 text-left text-gray-900">Unit</th>
@@ -473,7 +486,7 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
                       </tr>
                     </thead>
                     <tbody>
-                      <tr>
+                      <tr className="h-25">
                         <td className="border-r border-gray-900 p-4 text-gray-900">FREIGHT PREPAID</td>
                         <td className="border-r border-gray-900 p-4 text-gray-900">AS AGREED</td>
                         <td className="border-r border-gray-900 p-4 text-gray-900">{data.freightCharges.currency}</td>

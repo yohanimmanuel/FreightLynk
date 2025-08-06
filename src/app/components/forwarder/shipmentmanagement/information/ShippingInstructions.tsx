@@ -11,7 +11,7 @@ import {
   Trash2,
   Plus
 } from 'lucide-react';
-import BLFormat from './BLFormat';
+import OceanBLFormat from './OceanBLFormat';
 
 interface ShippingInstructionsProps {
   shipmentId?: string;
@@ -444,7 +444,7 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
               <span className="text-gray-500">Payment Terms:</span>
               <span className="text-gray-900">{shipmentData.freightCharges.paymentTerms}</span>
             </div>
-                         <div className="flex items-center justify-between">
+             <div className="flex items-center justify-between">
                <span className="text-gray-500">Payable At:</span>
                <span className="text-gray-900">{shipmentData.freightCharges.payableAt}</span>
              </div>
@@ -1207,8 +1207,9 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
 
     {/* BL Generation Modal */}
     {showBLModal && (
-      <BLFormat
+      <OceanBLFormat
         data={{
+          serviceType: 'lcl', // or 'lcl' based on shipment type
           blNumber: shipmentData.blNumber,
           bookingNumber: shipmentData.bookingNumber,
           dateOfIssue: shipmentData.dateOfIssue,
@@ -1241,6 +1242,7 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
           placeOfReceipt: shipmentData.placeOfReceipt,
           placeOfDelivery: shipmentData.placeOfDelivery,
           finalDestination: shipmentData.finalDestination,
+          // For FCL shipments
           containers: shipmentData.containers.map(container => ({
             containerNumber: container.number,
             sealNumber: container.sealNumber,
@@ -1253,6 +1255,24 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
             weight: container.grossWeight,
             volume: container.measurement
           })),
+          // For LCL shipments - convert container data to LCL format
+          lclCargo: shipmentData.containers.map(container => ({
+            marks: container.marks,
+            packages: container.packages,
+            description: container.description,
+            weight: container.grossWeight,
+            volume: container.measurement,
+            commodity: shipmentData.cargo.commodity,
+            serviceMode: shipmentData.cargo.serviceMode
+          })),
+          // LCL consolidation details
+          consolidation: {
+            consolidator: 'FreightLynk Consolidation',
+            masterBLNumber: 'MBL' + shipmentData.blNumber,
+            houseBLNumber: 'HBL' + shipmentData.blNumber,
+            containerNumber: shipmentData.containers[0]?.number || '',
+            sealNumber: shipmentData.containers[0]?.sealNumber || ''
+          },
           freightCharges: {
             totalFreight: shipmentData.freightCharges.totalFreight,
             currency: shipmentData.freightCharges.currency,
