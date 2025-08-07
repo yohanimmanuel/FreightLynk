@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useRef } from 'react';
-import { X } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -91,6 +90,7 @@ interface SIData {
   reference?: string;
   buyerReference?: string;
   exportDeclarationNumber?: string;
+  masterBLNumber?: string; // For FCL shipments
   
   // Party Information
   exporter: ShipperInfo;
@@ -311,9 +311,9 @@ const OceanSIFormat: React.FC<OceanSIFormatProps> = ({ data, onClose }) => {
                   <div className="col-span-6">
                     <div className="grid grid-rows-4">
                       {/* Page - 1/4 height (equal to Shipper) */}
-                      <div className="flex justify-end border-b border-gray-900 p-2">
-                        <div className="font-semibold text-xs mb-2">Page:</div>
-                        <div className="ml-2 text-xs">{data.pageNumber || '1 of 1'}</div>
+                      <div className="border-b border-gray-900 p-2">
+                        <div className="font-semibold text-xs mb-2">Master BL Number</div>
+                        <div className="ml-2 text-xs">{data.masterBLNumber || ''}</div>
                       </div>
                       {/* References Row - 1/4 height (equal to Shipper) */}
                       <div className="border-b border-gray-900">

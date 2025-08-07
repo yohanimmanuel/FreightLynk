@@ -103,6 +103,7 @@ interface AirwayBillData {
 
 interface AirwayBillFormatProps {
   data?: AirwayBillData;
+  blType?: 'hawb' | 'mawb';
   onClose?: () => void;
 }
 
@@ -125,7 +126,7 @@ function replaceUnsupportedColors(root: HTMLElement) {
   }
 }
 
-const AirwayBillFormat: React.FC<AirwayBillFormatProps> = ({ data, onClose }) => {
+const AirwayBillFormat: React.FC<AirwayBillFormatProps> = ({ data, blType = 'mawb', onClose }) => {
   const printRef = useRef<HTMLDivElement>(null);
 
   const generatePDF = async () => {
@@ -181,8 +182,8 @@ const AirwayBillFormat: React.FC<AirwayBillFormatProps> = ({ data, onClose }) =>
 
   // Default data if none provided
   const defaultData: AirwayBillData = {
-    mawbNumber: '123-12345678',
-    hawbNumber: 'HAWB-2024-001',
+    mawbNumber: 'MAWB-12345678',
+    hawbNumber: blType === 'hawb' ? 'HAWB-2024-001' : '',
     issuedBy: 'FreightLynk Airlines',
     shipper: {
       name: 'ABC Manufacturing Co.',
@@ -289,8 +290,35 @@ const AirwayBillFormat: React.FC<AirwayBillFormatProps> = ({ data, onClose }) =>
         <div className="p-4 overflow-y-auto max-h-[calc(95vh-140px)]">
           <div ref={printRef} className="bg-white max-w-5xl mx-auto text-xs font-sans text-gray-900">
             
-                         {/* Main AWB Container */}
+            {/* Main AWB Container */}
              <div className="border border-gray-900">
+              
+              {/* HAWB and MAWB Numbers - Top Section */}
+              <div className="border-b border-gray-900 p-2 bg-white">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center space-x-4">
+                    {airwayBillData.hawbNumber && airwayBillData.mawbNumber ? (
+                      // Show both for HAWB documents
+                      <>
+                        <div>
+                          <div className="text-xs font-bold text-gray-700">HAWB Number:</div>
+                          <div className="text-sm font-semibold text-gray-900">{airwayBillData.hawbNumber}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-gray-700">MAWB Number:</div>
+                          <div className="text-sm font-semibold text-gray-900">{airwayBillData.mawbNumber}</div>
+                        </div>
+                      </>
+                    ) : (
+                      // Show only MAWB for MAWB-only documents
+                      <div>
+                        <div className="text-xs font-bold text-gray-700">MAWB Number:</div>
+                        <div className="text-sm font-semibold text-gray-900">{airwayBillData.mawbNumber}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
               
               {/* Header Section - Left and Right Split */}
               <div className="flex grid grid-cols-2">
@@ -342,7 +370,9 @@ const AirwayBillFormat: React.FC<AirwayBillFormatProps> = ({ data, onClose }) =>
                                      {/* Not Negotiable - Air Waybill Header */}
                    <div className="border-b border-gray-900 p-1 text-center">
                     <div className="text-sm font-bold">Not Negotiable</div>
-                    <div className="text-lg font-bold my-1">Air Waybill</div>
+                    <div className="text-lg font-bold my-1">
+                      {blType === 'hawb' ? 'House Air Waybill' : 'Master Air Waybill'}
+                    </div>
                     <div className="text-xs mb-1">Issued By: <span className="font-semibold">{airwayBillData.issuedBy}</span></div>
                   </div>
 

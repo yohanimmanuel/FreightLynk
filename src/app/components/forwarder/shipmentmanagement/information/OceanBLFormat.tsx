@@ -8,6 +8,7 @@ interface BLData {
   bookingNumber: string;
   dateOfIssue: string;
   serviceType: 'fcl' | 'lcl'; // Add service type
+  blType: 'hbl' | 'mbl'; // Add BL type to distinguish HBL vs MBL
   
   // Parties
   shipper: {
@@ -235,7 +236,9 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
       <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Bill of Lading Preview</h2>
+          <h2 className="text-lg font-semibold text-gray-900">
+            {data.blType === 'mbl' ? 'Master Bill of Lading' : 'House Bill of Lading'} Preview
+          </h2>
           <div className="flex items-center gap-3">
             <button
               onClick={generatePDF}
@@ -300,7 +303,9 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
 
                 {/* BL Title */}
                  <div className="text-xl font-bold text-center mb-2">
-                   <div className="text-gray-900 mb-1" style={{ fontWeight: 'bold' }}>BILL OF LADING</div>
+                   <div className="text-gray-900 mb-1" style={{ fontWeight: 'bold' }}>
+                    {data.blType === 'mbl' ? 'MASTER BILL OF LADING' : 'HOUSE BILL OF LADING'}
+                  </div>
                  </div>
 
                   {/* BL Numbers and Forwarding Agent Reference */}
@@ -469,7 +474,8 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
               </div>
             </div>
 
-                         {/* Charges Table - Connected to Cargo Table */}
+              {/* Charges Table - Connected to Cargo Table (MBL Only) */}
+               {data.blType === 'mbl' && (
                <div className="border-b border-gray-900">
                 <div>
                   <div className="px-3 border-b border-gray-900 py-1">
@@ -510,6 +516,7 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
                 </div>
               </div>
             </div>
+               )}
 
             {/* Bottom Section - 3 Column Layout with Borders */}
              <div className="border-b border-gray-900 border-t-0 border-l-0 border-r-0">

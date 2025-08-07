@@ -24,14 +24,15 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
   const [showEditModal, setShowEditModal] = useState(false);
   const [showBLModal, setShowBLModal] = useState(false);
   const [showSIModal, setShowSIModal] = useState(false);
+  const [blType, setBlType] = useState<'hbl' | 'mbl' | 'hawb' | 'mawb'>('hbl');
 
 
   // Mock data - replace with actual data from API
   const shipmentData = {
-    hblNumber: 'FL-2024-001234',
+    hblNumber: 'HBLEX230300023',
     mblNumber: 'MAEU123456789',
     bookingNumber: 'BKEXFR2303003',
-    blNumber: 'HBLEX230300023',
+    buyerReference: 'BUYERREF2303003',
     portOfLoading: 'HO CHI MINH CITY, VN (VNSGN)',
     portOfDischarge: 'HOUSTON, TX, US (USHOU)',
     placeOfReceipt: 'HO CHI MINH CITY, VN (VNSGN)',
@@ -97,7 +98,7 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
     cargo: {
       commodity: 'Electronics and Machinery',
       description: 'GENERAL CARGO',
-      serviceMode: 'LCL',
+      serviceMode: 'AIR',
       freightTerms: 'FREIGHT PREPAID',
       shippingMarks: 'FCL/FCL-CY/CY',
       clause: 'SHIPPER\'S LOAD, COUNT, STOW & SEAL'
@@ -115,8 +116,24 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
     }
   };
 
-  const handleDownloadBL = () => {
+  const handleDownloadHBL = () => {
     setShowBLModal(true);
+    setBlType('hbl');
+  };
+
+  const handleDownloadMBL = () => {
+    setShowBLModal(true);
+    setBlType('mbl');
+  };
+
+  const handleDownloadHAWB = () => {
+    setShowBLModal(true);
+    setBlType('hawb');
+  };
+
+  const handleDownloadMAWB = () => {
+    setShowBLModal(true);
+    setBlType('mawb');
   };
 
   const handleDownloadSI = () => {
@@ -299,13 +316,41 @@ Total Containers: ${shipmentData.totalCargo.totalContainers}`;
           <Download className="w-4 h-4" />
           <span className="text-sm font-medium">Download SI</span>
         </button>
-        <button
-          onClick={handleDownloadBL}
-          className="flex items-center gap-2 px-4 py-2 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          <FileText className="w-4 h-4" />
-          <span className="text-sm font-medium">Download BL</span>
-        </button>
+        {shipmentData.cargo.serviceMode === 'AIR' ? (
+          <>
+            <button
+              onClick={handleDownloadHAWB}
+              className="flex items-center gap-2 px-4 py-2 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <FileText className="w-4 h-4" />
+              <span className="text-sm font-medium">Download HAWB</span>
+            </button>
+            <button
+              onClick={handleDownloadMAWB}
+              className="flex items-center gap-2 px-4 py-2 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <FileText className="w-4 h-4" />
+              <span className="text-sm font-medium">Download MAWB</span>
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={handleDownloadHBL}
+              className="flex items-center gap-2 px-4 py-2 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <FileText className="w-4 h-4" />
+              <span className="text-sm font-medium">Download HBL</span>
+            </button>
+            <button
+              onClick={handleDownloadMBL}
+              className="flex items-center gap-2 px-4 py-2 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <FileText className="w-4 h-4" />
+              <span className="text-sm font-medium">Download MBL</span>
+            </button>
+          </>
+        )}
         <button
           onClick={handleEdit}
           className="flex items-center gap-2 px-4 py-2 bg-[#007bff] text-white hover:bg-blue-700 rounded-lg transition-colors"
@@ -1354,13 +1399,17 @@ Total Containers: ${shipmentData.totalCargo.totalContainers}`;
 
     {/* BL Generation Modal */}
     {showBLModal && (
-      shipmentData.cargo.serviceMode === 'AIR' ? (
-        <AirwayBillFormat onClose={() => setShowBLModal(false)} />
-      ) : (
+      (shipmentData.cargo.serviceMode === 'AIR' && (blType === 'hawb' || blType === 'mawb')) ? (
+        <AirwayBillFormat 
+          blType={blType as 'hawb' | 'mawb'}
+          onClose={() => setShowBLModal(false)} 
+        />
+      ) : (blType === 'hbl' || blType === 'mbl') ? (
         <OceanBLFormat
         data={{
-          serviceType: 'fcl', // or 'lcl' based on shipment type
-          blNumber: shipmentData.blNumber,
+          serviceType: shipmentData.cargo.serviceMode.toLowerCase() as 'fcl' | 'lcl',
+          blType: blType as 'hbl' | 'mbl',
+          blNumber: blType === 'mbl' ? shipmentData.mblNumber : shipmentData.hblNumber,
           bookingNumber: shipmentData.bookingNumber,
           dateOfIssue: shipmentData.dateOfIssue,
           shipper: {
@@ -1418,8 +1467,8 @@ Total Containers: ${shipmentData.totalCargo.totalContainers}`;
           // LCL consolidation details
           consolidation: {
             consolidator: 'FreightLynk Consolidation',
-            masterBLNumber: 'MBL' + shipmentData.blNumber,
-            houseBLNumber: 'HBL' + shipmentData.blNumber,
+            masterBLNumber: 'MBL' + shipmentData.hblNumber,
+            houseBLNumber: 'HBL' + shipmentData.mblNumber,
             containerNumber: shipmentData.containers[0]?.number || '',
             sealNumber: shipmentData.containers[0]?.sealNumber || ''
           },
@@ -1445,18 +1494,19 @@ Total Containers: ${shipmentData.totalCargo.totalContainers}`;
         }}
         onClose={() => setShowBLModal(false)}
       />
-      )
+      ) : null
     )}
 
     {/* SI Generation Modal */}
     {showSIModal && (
       <OceanSIFormat
-        data={{
-          siNumber: shipmentData.hblNumber,
-          pageNumber: '1 of 1',
-          reference: shipmentData.bookingNumber,
-          buyerReference: shipmentData.blNumber,
-          exportDeclarationNumber: 'EXP' + shipmentData.hblNumber,
+          data={{
+            siNumber: shipmentData.cargo.serviceMode === 'FCL' ? shipmentData.mblNumber : shipmentData.hblNumber,
+            pageNumber: '1 of 1',
+            reference: shipmentData.bookingNumber,
+            buyerReference: shipmentData.buyerReference,
+            exportDeclarationNumber: 'EXP' + (shipmentData.cargo.serviceMode === 'FCL' ? shipmentData.mblNumber : shipmentData.hblNumber),
+            masterBLNumber: shipmentData.cargo.serviceMode === 'FCL' ? shipmentData.mblNumber : undefined,
           
           exporter: {
             name: shipmentData.shipper.name,
