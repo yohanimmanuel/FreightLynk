@@ -43,6 +43,47 @@ interface CargoInfo {
   measurements: string;
 }
 
+interface ContainerInfo {
+  containerNumber: string;
+  sealNumber: string;
+  containerType: string;
+  tareWeight: string;
+  vgm: string;
+  temperature?: string;
+  specialEquipment?: string;
+}
+
+interface ConsolidationInfo {
+  masterBLNumber: string;
+  houseBLNumber: string;
+  consolidator: string;
+  containerNumber: string;
+  sealNumber: string;
+}
+
+interface DocumentInfo {
+  commercialInvoice: boolean;
+  packingList: boolean;
+  certificateOfOrigin: boolean;
+  phytosanitaryCertificate: boolean;
+  otherDocuments: string;
+}
+
+interface InsuranceInfo {
+  insuranceRequired: boolean;
+  insuranceValue: string;
+  insuranceType: string;
+  claimsProcedure: string;
+}
+
+interface CustomsInfo {
+  hsCodes: string;
+  customsValue: string;
+  importLicense: string;
+  exportLicense: string;
+  dutyTaxInfo: string;
+}
+
 interface SIData {
   // Header Information
   siNumber: string;
@@ -76,8 +117,35 @@ interface SIData {
   incoterms2020: string;
   declaredValue: string;
   
+  // FCL Specific Information
+  containers?: ContainerInfo[];
+  stowageInstructions?: string;
+  equipmentRequirements?: string;
+  
+  // LCL Specific Information
+  consolidation?: ConsolidationInfo;
+  breakBulkInstructions?: string;
+  
   // Cargo Details
   cargoDetails: CargoInfo[];
+  
+  // Documentation Requirements
+  documents: DocumentInfo;
+  
+  // Insurance and Liability
+  insurance: InsuranceInfo;
+  
+  // Customs Information
+  customs: CustomsInfo;
+  
+  // Special Handling
+  temperatureControlled?: boolean;
+  temperatureRange?: string;
+  hazardousGoods?: boolean;
+  hazardousDetails?: string;
+  oversizedCargo?: boolean;
+  heavyLift?: boolean;
+  perishableGoods?: boolean;
   
   // Footer Information
   totalThisPage: string;
@@ -148,8 +216,8 @@ const OceanSIFormat: React.FC<OceanSIFormatProps> = ({ data, onClose }) => {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
 
-      const margin = 15; // px, extra whitespace
-      const maxImgWidth = pdfWidth - margin * 2;
+      const margin = 5; // px, extra whitespace
+      const maxImgWidth = pdfWidth - margin;
       const maxImgHeight = pdfHeight - margin * 2;
 
       let imgWidth = maxImgWidth;
@@ -196,7 +264,7 @@ const OceanSIFormat: React.FC<OceanSIFormatProps> = ({ data, onClose }) => {
 
         {/* SI Document Content */}
         <div className="p-4 overflow-y-auto max-h-[calc(90vh-140px)] hide-scrollbar">
-          <div ref={printRef} className="bg-white" style={{ width: '850px', margin: '0 auto' }}>
+          <div ref={printRef} className="bg-white" style={{ width: '1000px', margin: '0 auto' }}>
                          {/* Document Header */}
              <div className="border border-gray-900 p-2 mb-0">
                <div className="text-center">
@@ -209,7 +277,7 @@ const OceanSIFormat: React.FC<OceanSIFormatProps> = ({ data, onClose }) => {
                <div className="grid grid-cols-12 text-xs" style={{ color: '#111827' }}>
                  {/* Left Column - Shipper, Consignee, Notify Party */}
                  <div className="col-span-6 border-r border-gray-900">
-                   <div className="grid grid-rows-3 h-109.5">
+                   <div className="grid grid-rows-3 h-85.5">
                      {/* Shipper */}
                      <div className="border-b border-gray-900 p-2">
                        <div className="font-semibold mb-2">Shipper</div>
@@ -397,6 +465,200 @@ const OceanSIFormat: React.FC<OceanSIFormatProps> = ({ data, onClose }) => {
                  ))}
                </div>
              </div>
+             {/* FCL Specific Information */}
+             {data.typeOfShipment?.toLowerCase() === 'fcl' && data.containers && (
+               <div className="border border-gray-900 border-t-0">
+                 <div className="border-b border-gray-900 p-2">
+                   <div className="font-semibold text-xs" style={{ color: '#111827' }}>CONTAINER INFORMATION (FCL)</div>
+                 </div>
+                 <div className="grid grid-cols-7 text-xs border-b border-gray-900" style={{ color: '#111827' }}>
+                   <div className="col-span-2 border-r border-gray-900 p-2">
+                     <div className="font-semibold">Container No.</div>
+                   </div>
+                   <div className="col-span-1 border-r border-gray-900 p-2">
+                     <div className="font-semibold">Seal No.</div>
+                   </div>
+                   <div className="col-span-1 border-r border-gray-900 p-2">
+                     <div className="font-semibold">Type</div>
+                   </div>
+                   <div className="col-span-1 border-r border-gray-900 p-2">
+                     <div className="font-semibold">Tare (kg)</div>
+                   </div>
+                   <div className="col-span-1 border-r border-gray-900 p-2">
+                     <div className="font-semibold">VGM (kg)</div>
+                   </div>
+                   <div className="col-span-1 p-2">
+                     <div className="font-semibold">Temp (°C)</div>
+                   </div>
+                 </div>
+                 {data.containers.map((container, index) => (
+                   <div key={index} className="grid grid-cols-7 text-xs" style={{ color: '#111827' }}>
+                     <div className="col-span-2 p-2">
+                       <div>{container.containerNumber}</div>
+                     </div>
+                     <div className="col-span-1 p-2">
+                       <div>{container.sealNumber}</div>
+                     </div>
+                     <div className="col-span-1 p-2">
+                       <div>{container.containerType}</div>
+                     </div>
+                     <div className="col-span-1 p-2">
+                       <div>{container.tareWeight}</div>
+                     </div>
+                     <div className="col-span-1 p-2">
+                       <div>{container.vgm}</div>
+                     </div>
+                     <div className="col-span-1 p-2">
+                       <div>{container.temperature || 'N/A'}</div>
+                     </div>
+                   </div>
+                 ))}
+                 {(data.stowageInstructions || data.equipmentRequirements) && (
+                   <div className="grid grid-cols-2 text-xs" style={{ color: '#111827' }}>
+                     <div className="border-r border-gray-900 p-2">
+                       <div className="font-semibold mb-2">Stowage Instructions</div>
+                       <div className="ml-2">{data.stowageInstructions || 'N/A'}</div>
+                     </div>
+                     <div className="p-2">
+                       <div className="font-semibold mb-2">Equipment Requirements</div>
+                       <div className="ml-2">{data.equipmentRequirements || 'N/A'}</div>
+                     </div>
+                   </div>
+                 )}
+               </div>
+             )}
+
+             {/* LCL Specific Information */}
+             {data.typeOfShipment?.toLowerCase() === 'lcl' && data.consolidation && (
+               <div className="border border-gray-900 border-t-0">
+                 <div className="border-b border-gray-900 p-2">
+                   <div className="font-semibold text-xs" style={{ color: '#111827' }}>CONSOLIDATION INFORMATION (LCL)</div>
+                 </div>
+                 <div className="grid grid-cols-3 text-xs" style={{ color: '#111827' }}>
+                   <div className="p-2">
+                     <div className="font-semibold mb-2">Master BL Number</div>
+                     <div className="ml-2">{data.consolidation.masterBLNumber}</div>
+                   </div>
+                   <div className="p-2">
+                     <div className="font-semibold mb-2">House BL Number</div>
+                     <div className="ml-2">{data.consolidation.houseBLNumber}</div>
+                   </div>
+                   <div className="p-2">
+                     <div className="font-semibold mb-2">Break-Bulk Instructions</div>
+                     <div className="ml-2">{data.breakBulkInstructions || 'N/A'}</div>
+                   </div>
+                 </div>
+                 <div className="grid grid-cols-3 text-xs" style={{ color: '#111827' }}>
+                   <div className="p-2">
+                     <div className="font-semibold mb-2">Consolidator</div>
+                     <div className="ml-2">{data.consolidation.consolidator}</div>
+                   </div>
+                   <div className="p-2">
+                     <div className="font-semibold mb-2">Container Number</div>
+                     <div className="ml-2">{data.consolidation.containerNumber}</div>
+                   </div>
+                   <div className="p-2">
+                     <div className="font-semibold mb-2">Seal Number</div>
+                     <div className="ml-2">{data.consolidation.sealNumber}</div>
+                   </div>
+                 </div>
+               </div>
+             )}
+
+             {/* Documentation Requirements */}
+             <div className="border border-gray-900 border-t-0">
+               <div className="border-b border-gray-900 p-2">
+                 <div className="font-semibold text-xs" style={{ color: '#111827' }}>DOCUMENTATION REQUIREMENTS</div>
+               </div>
+               <div className="grid grid-cols-2 text-xs" style={{ color: '#111827' }}>
+                 <div className="p-2">
+                   <div className="font-semibold mb-2">Required Documents</div>
+                   <div className="ml-2">
+                     <div>☐ Commercial Invoice: {data.documents.commercialInvoice ? '☑' : '☐'}</div>
+                     <div>☐ Packing List: {data.documents.packingList ? '☑' : '☐'}</div>
+                     <div>☐ Certificate of Origin: {data.documents.certificateOfOrigin ? '☑' : '☐'}</div>
+                     <div>☐ Phytosanitary Certificate: {data.documents.phytosanitaryCertificate ? '☑' : '☐'}</div>
+                   </div>
+                 </div>
+                 <div className="p-2">
+                   <div className="font-semibold mb-2">Other Documents</div>
+                   <div className="ml-2">{data.documents.otherDocuments || 'N/A'}</div>
+                 </div>
+               </div>
+             </div>
+
+             {/* Insurance and Liability */}
+             <div className="border border-gray-900 border-t-0">
+               <div className="border-b border-gray-900 p-2">
+                 <div className="font-semibold text-xs" style={{ color: '#111827' }}>INSURANCE AND LIABILITY</div>
+               </div>
+               <div className="grid grid-cols-2 text-xs" style={{ color: '#111827' }}>
+                 <div className="p-2">
+                   <div className="font-semibold mb-2">Insurance Required</div>
+                   <div className="ml-2">{data.insurance.insuranceRequired ? 'Yes' : 'No'}</div>
+                   <div className="font-semibold mb-2 mt-2">Insurance Value</div>
+                   <div className="ml-2">{data.insurance.insuranceValue}</div>
+                 </div>
+                 <div className="p-2">
+                   <div className="font-semibold mb-2">Insurance Type</div>
+                   <div className="ml-2">{data.insurance.insuranceType}</div>
+                   <div className="font-semibold mb-2 mt-2">Claims Procedure</div>
+                   <div className="ml-2">{data.insurance.claimsProcedure}</div>
+                 </div>
+               </div>
+             </div>
+
+             {/* Customs Information */}
+             <div className="border border-gray-900 border-t-0">
+               <div className="border-b border-gray-900 p-2">
+                 <div className="font-semibold text-xs" style={{ color: '#111827' }}>CUSTOMS INFORMATION</div>
+               </div>
+               <div className="grid grid-cols-3 text-xs" style={{ color: '#111827' }}>
+                 <div className="p-2">
+                   <div className="font-semibold mb-2">HS Codes</div>
+                   <div className="ml-2">{data.customs.hsCodes}</div>
+                   <div className="font-semibold mb-2 mt-2">Customs Value</div>
+                   <div className="ml-2">{data.customs.customsValue}</div>
+                 </div>
+                 <div className="p-2">
+                   <div className="font-semibold mb-2">Import License</div>
+                   <div className="ml-2">{data.customs.importLicense || 'N/A'}</div>
+                   <div className="font-semibold mb-2 mt-2">Export License</div>
+                   <div className="ml-2">{data.customs.exportLicense || 'N/A'}</div>
+                 </div>
+                 <div className="text-xs text-gray-900 p-2">
+                  <div className="font-semibold mb-2">Duty and Tax Information</div>
+                  <div className="ml-2">{data.customs.dutyTaxInfo}</div>
+                </div>
+               </div>
+             </div>
+
+             {/* Special Handling */}
+             <div className="border border-gray-900 border-t-0">
+               <div className="border-b border-gray-900 p-2">
+                 <div className="font-semibold text-xs" style={{ color: '#111827' }}>SPECIAL HANDLING REQUIREMENTS</div>
+               </div>
+               <div className="grid grid-cols-2 text-xs" style={{ color: '#111827' }}>
+                 <div className="p-2">
+                   <div className="font-semibold mb-2">Special Cargo Types</div>
+                   <div className="ml-2">
+                     <div>☐ Temperature Controlled: {data.temperatureControlled ? '☑' : '☐'} {data.temperatureRange && `(${data.temperatureRange})`}</div>
+                     <div>☐ Hazardous Goods: {data.hazardousGoods ? '☑' : '☐'}</div>
+                     <div>☐ Oversized Cargo: {data.oversizedCargo ? '☑' : '☐'}</div>
+                     <div>☐ Heavy Lift: {data.heavyLift ? '☑' : '☐'}</div>
+                     <div>☐ Perishable Goods: {data.perishableGoods ? '☑' : '☐'}</div>
+                   </div>
+                 </div>
+                 <div className="p-2">
+                   <div className="font-semibold mb-2">Special Instructions</div>
+                   <div className="ml-2">
+                     {data.hazardousDetails && <div className="mb-2"><strong>Hazardous Details:</strong> {data.hazardousDetails}</div>}
+                     <div>{data.specialInstructions || 'N/A'}</div>
+                   </div>
+                 </div>
+               </div>
+             </div>
+
              {/* Totals Section */}
              <div className="border border-gray-900 border-t-0">
                <div className="grid grid-cols-2 text-xs" style={{ color: '#111827' }}>
@@ -455,7 +717,7 @@ const OceanSIFormat: React.FC<OceanSIFormatProps> = ({ data, onClose }) => {
                        </div>
                        <div className="p-2 flex-1">
                          <div className="font-semibold mb-2">Signature</div>
-                         <div className="ml-2 flex-1" style={{ minHeight: '150px' }}>{data.signature || ''}</div>
+                         <div className="ml-2 flex-1" style={{ minHeight: '100px' }}>{data.signature || ''}</div>
                        </div>
                      </div>
                    </div>

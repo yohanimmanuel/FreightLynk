@@ -40,6 +40,14 @@ interface AirwayBillData {
   requestedRouting: string;
   referenceNumber: string;
   optionalShippingInfo: string;
+  airportOfDeparture: string;
+  airportOfDestination: string;
+  firstCarrier: string;
+  flightDate: string;
+  carrierUseOnly: string;
+  flightDate2: string;
+  amountOfInsurance: string;
+  handlingInformation: string;
   
   // Currency and Charges
   currency: string;
@@ -52,7 +60,9 @@ interface AirwayBillData {
   goods: Array<{
     pieces: string;
     grossWeight: string;
+    weightUnit: string;
     rateClass: string;
+    commodityItemNo: string;
     chargeableWeight: string;
     rateCharge: string;
     total: string;
@@ -97,49 +107,76 @@ interface AirwayBillFormatProps {
 }
 
 function replaceUnsupportedColors(root: HTMLElement) {
-  const elements = root.querySelectorAll('*');
-  elements.forEach((element) => {
-    const style = window.getComputedStyle(element);
-    if (style.backgroundColor === 'rgb(249, 250, 251)') {
-      (element as HTMLElement).style.backgroundColor = '#ffffff';
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, null);
+  let el = walker.currentNode as Element | null;
+  while (el) {
+    const style = window.getComputedStyle(el);
+    // Only replace if the color is in an unsupported format
+    if (style.color && /(oklch|lch|lab|color-mix)/.test(style.color)) {
+      (el as HTMLElement).style.color = '#111111';
     }
-  });
+    if (style.backgroundColor && /(oklch|lch|lab|color-mix)/.test(style.backgroundColor)) {
+      (el as HTMLElement).style.backgroundColor = '#ffffff';
+    }
+    if (style.borderColor && /(oklch|lch|lab|color-mix)/.test(style.borderColor)) {
+      (el as HTMLElement).style.borderColor = '#111111';
+    }
+    el = walker.nextNode() as Element | null;
+  }
 }
 
 const AirwayBillFormat: React.FC<AirwayBillFormatProps> = ({ data, onClose }) => {
   const printRef = useRef<HTMLDivElement>(null);
 
   const generatePDF = async () => {
-    if (!printRef.current) return;
+    try {
+      const element = printRef.current;
+      if (!element) {
+        alert('Air Waybill content not found');
+        return;
+      }
 
-    const element = printRef.current;
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff',
-    });
+      // Replace all unsupported colors before html2canvas
+      replaceUnsupportedColors(element);
 
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgWidth = 210;
-    const pageHeight = 295;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    let heightLeft = imgHeight;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: 'a4',
+      });
+      const imgProperties = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
 
-    let position = 0;
+      const margin = 15; // px, extra whitespace
+      const maxImgWidth = pdfWidth - margin * 2;
+      const maxImgHeight = pdfHeight - margin * 2;
 
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
+      let imgWidth = maxImgWidth;
+      let imgHeight = (imgProperties.height * imgWidth) / imgProperties.width;
 
-    while (heightLeft >= 0) {
-      position = heightLeft - imgHeight;
-      pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+      if (imgHeight > maxImgHeight) {
+        imgHeight = maxImgHeight;
+        imgWidth = (imgProperties.width * imgHeight) / imgProperties.height;
+      }
+
+      const x = (pdfWidth - imgWidth) / 2;
+      const y = (pdfHeight - imgHeight) / 2;
+
+      pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
+      pdf.save(`AWB-${airwayBillData.mawbNumber}.pdf`);
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Error generating PDF: ${errorMessage}`);
     }
-
-    pdf.save('airway-bill.pdf');
   };
 
   // Default data if none provided
@@ -172,6 +209,14 @@ const AirwayBillFormat: React.FC<AirwayBillFormatProps> = ({ data, onClose }) =>
     requestedRouting: 'SGN-IAH',
     referenceNumber: 'REF-2024-001',
     optionalShippingInfo: 'HANDLE WITH CARE',
+    airportOfDeparture: 'TAN SON NHAT INTERNATIONAL AIRPORT (SGN)',
+    airportOfDestination: 'GEORGE BUSH INTERCONTINENTAL AIRPORT (IAH)',
+    firstCarrier: 'FreightLynk Airlines',
+    flightDate: '2024-12-20',
+    carrierUseOnly: 'FL001',
+    flightDate2: '2024-12-20',
+    amountOfInsurance: '50,000.00',
+    handlingInformation: 'FRAGILE - HANDLE WITH CARE - THIS SIDE UP',
     currency: 'USD',
     chgsCode: 'PPD',
     declaredValueCarriage: '50,000.00',
@@ -181,7 +226,9 @@ const AirwayBillFormat: React.FC<AirwayBillFormatProps> = ({ data, onClose }) =>
       {
         pieces: '100',
         grossWeight: '500.0',
+        weightUnit: 'kg',
         rateClass: 'G',
+        commodityItemNo: '1234567890',
         chargeableWeight: '500.0',
         rateCharge: '5.50',
         total: '2,750.00',
@@ -242,17 +289,17 @@ const AirwayBillFormat: React.FC<AirwayBillFormatProps> = ({ data, onClose }) =>
         <div className="p-4 overflow-y-auto max-h-[calc(95vh-140px)]">
           <div ref={printRef} className="bg-white max-w-5xl mx-auto text-xs font-sans text-gray-900">
             
-            {/* Main AWB Container */}
-            <div className="border border-gray-400">
+                         {/* Main AWB Container */}
+             <div className="border border-gray-900">
               
               {/* Header Section - Left and Right Split */}
-              <div className="flex">
+              <div className="flex grid grid-cols-2">
                 
-                {/* Left Column */}
-                <div className="w-96 border-r border-gray-400">
+                                 {/* Left Column */}
+                 <div className="col-span-1 border-r border-gray-900">
                   
-                  {/* Shipper's Name and Address */}
-                  <div className="border-b border-gray-400 p-1 h-28">
+                                     {/* Shipper's Name and Address */}
+                   <div className="border-b border-gray-900 p-1 h-30">
                     <div className="text-xs font-bold mb-1">Shipper's Name and Address</div>
                     <div className="text-xs leading-tight">
                       <div className="font-medium">{airwayBillData.shipper.name}</div>
@@ -260,8 +307,8 @@ const AirwayBillFormat: React.FC<AirwayBillFormatProps> = ({ data, onClose }) =>
                     </div>
                   </div>
 
-                  {/* Consignee's Name and Address */}
-                  <div className="border-b border-gray-400 p-1 h-28">
+                                     {/* Consignee's Name and Address */}
+                   <div className="border-b border-gray-900 p-1 h-30">
                     <div className="text-xs font-bold mb-1">Consignee's Name and Address</div>
                     <div className="text-xs leading-tight">
                       <div className="font-medium">{airwayBillData.consignee.name}</div>
@@ -269,376 +316,442 @@ const AirwayBillFormat: React.FC<AirwayBillFormatProps> = ({ data, onClose }) =>
                     </div>
                   </div>
 
-                  {/* Issuing Carrier's Agent Name and City */}
-                  <div className="border-b border-gray-400 p-1 h-28">
+                                     {/* Issuing Carrier's Agent Name and City */}
+                   <div className="border-b border-gray-900 p-1 h-30">
                     <div className="text-xs font-bold mb-1">Issuing Carrier's Agent Name and City</div>
                     <div className="text-xs">{airwayBillData.agent.name}</div>
                   </div>
 
-                  {/* Agent's IATA Code and Account No. */}
-                  <div className="border-b border-gray-400 flex h-10">
-                    <div className="w-48 border-r border-gray-400 p-1">
-                      <div className="text-xs font-bold mb-1">Agent's IATA Code</div>
+                                     {/* Agent's IATA Code and Account No. */}
+                   <div className="flex">
+                     <div className="w-48 border-r border-gray-900 p-1">
+                      <div className="text-xs font-bold">Agent's IATA Code</div>
                       <div className="text-xs">{airwayBillData.agent.iataCode}</div>
                     </div>
-                    <div className="w-48 p-1">
-                      <div className="text-xs font-bold mb-1">Account No.</div>
+                    <div className="w-48 p-1 mb-2">
+                      <div className="text-xs font-bold">Account No.</div>
                       <div className="text-xs">{airwayBillData.agent.accountNumber}</div>
-                    </div>
-                  </div>
-
-                  {/* Airport of Departure */}
-                  <div className="border-b border-gray-400 p-1 h-10">
-                    <div className="text-xs font-bold mb-1">Airport of Departure (Addr. of First Carrier) and Requested Routing</div>
-                    <div className="text-xs">{airwayBillData.airportDeparture}</div>
-                  </div>
-
-                  {/* Routing Row - To, By First Carrier, to, by, to, by */}
-                  <div className="border-b border-gray-400 flex h-10">
-                    <div className="w-8 border-r border-gray-400 p-1">
-                      <div className="text-xs font-bold">To</div>
-                    </div>
-                    <div className="w-48 border-r border-gray-400 p-1">
-                      <div className="text-xs font-bold">By First Carrier</div>
-                    </div>
-                    <div className="w-8 border-r border-gray-400 p-1">
-                      <div className="text-xs font-bold">to</div>
-                    </div>
-                    <div className="w-7 border-r border-gray-400 p-1">
-                      <div className="text-xs font-bold">by</div>
-                    </div>
-                    <div className="w-8 border-r border-gray-400 p-1">
-                      <div className="text-xs font-bold">to</div>
-                    </div>
-                    <div className="w-7 p-1">
-                      <div className="text-xs font-bold">by</div>
-                    </div>
-                  </div>
-
-                  {/* Airport of Destination and Flight Date */}
-                  <div className="border-b border-gray-400 flex h-10">
-                    <div className="w-48 border-r border-gray-400 p-1">
-                      <div className="text-xs font-bold mb-1">Airport of Destination</div>
-                      <div className="text-xs">{airwayBillData.airportDestination}</div>
-                    </div>
-                    <div className="w-24 border-r border-gray-400 p-1 relative">
-                      <div className="text-xs font-bold mb-1">Flight Date</div>
-                      <div className="absolute top-6 left-14 right-0 text-center text-xs bg-white border border-gray-400 px-1">For Carrier Use Only</div>
-                    </div>
-                    <div className="w-24 p-1 text-right">
-                      <div className="text-xs font-bold mb-1">Flight Date</div>
                     </div>
                   </div>
 
                 </div>
 
                 {/* Right Column */}
-                <div className="flex-1">
+                <div className="flex-1 col-span-1">
                   
-                  {/* Not Negotiable - Air Waybill Header */}
-                  <div className="border-b border-gray-400 p-1 h-20 text-center">
+                                     {/* Not Negotiable - Air Waybill Header */}
+                   <div className="border-b border-gray-900 p-1 text-center">
                     <div className="text-sm font-bold">Not Negotiable</div>
                     <div className="text-lg font-bold my-1">Air Waybill</div>
                     <div className="text-xs mb-1">Issued By: <span className="font-semibold">{airwayBillData.issuedBy}</span></div>
                   </div>
 
-                  {/* Copies Statement */}
-                  <div className="border-b border-gray-400 p-1 h-8 text-center">
-                    <div className="text-xs leading-8">
+                                     {/* Copies Statement */}
+                   <div className="border-b border-gray-900 p-2 text-center">
+                    <div className="text-xs">
                       Copies 1, 2 and 3 of this Air Waybill are originals and have the same validity
                     </div>
                   </div>
 
-                  {/* Terms and Conditions */}
-                  <div className="border-b border-gray-400 p-1 h-28 text-xs leading-3 text-justify">
-                    It is agreed that the goods described herein are accepted in apparent good order and condition (except as noted) for carriage SUBJECT TO THE CONDITIONS OF CONTRACT ON THE REVERSE HEREOF, ALL GOODS MAY BE CARRIED BY ANY OTHER MEANS INCLUDING ROAD OR ANY OTHER CARRIER UNLESS SPECIFIC CONTRARY INSTRUCTIONS ARE GIVEN HEREON BY THE SHIPPER, AND SHIPPER AGREES THAT THE SHIPMENT MAY BE CARRIED VIA INTERMEDIATE STOPPING PLACES WHICH THE CARRIER DEEMS APPROPRIATE THE SHIPPER'S ATTENTION IS DRAWN TO THE NOTICE CONCERNING CARRIER'S LIMITATION OF LIABILITY. Shipper may increase such limitation of liability by declaring a higher value for carriage and paying a supplemental charge if required.
+                                     {/* Terms and Conditions */}
+                   <div className="border-b border-gray-900 p-1 text-xs text-justify">
+                    <div className="mb-2"> It is agreed that the goods described herein are accepted in apparent good order and condition (except as noted) for carriage SUBJECT TO THE CONDITIONS OF CONTRACT ON THE REVERSE HEREOF, ALL GOODS MAY BE CARRIED BY ANY OTHER MEANS INCLUDING ROAD OR ANY OTHER CARRIER UNLESS SPECIFIC CONTRARY INSTRUCTIONS ARE GIVEN HEREON BY THE SHIPPER, AND SHIPPER AGREES THAT THE SHIPMENT MAY BE CARRIED VIA INTERMEDIATE STOPPING PLACES WHICH THE CARRIER DEEMS APPROPRIATE THE SHIPPER'S ATTENTION IS DRAWN TO THE NOTICE CONCERNING CARRIER'S LIMITATION OF LIABILITY. Shipper may increase such limitation of liability by declaring a higher value for carriage and paying a supplemental charge if required.</div>
                   </div>
 
-                  {/* Accounting Information */}
-                  <div className="border-b border-gray-400 p-1 h-38">
+                                     {/* Accounting Information */}
+                   <div className="p-1">
                     <div className="text-xs font-bold mb-1">Accounting Information:</div>
                     <div className="text-xs">{airwayBillData.agent.accountingInfo}</div>
                   </div>
 
+                </div>
+                {/* End Right Column */}
+                
+              </div>
+              {/* End Header Section */}
+
+                             {/* Airport of Departure and Reference Number Row */}
+                 <div className="border-b border-gray-900 flex">
+                   {/* Airport of Departure Section */}
+                   <div className="border-t border-gray-900 w-1/2 border-r border-gray-900 p-1">
+                    <div className="text-xs font-semibold">Airport of Departure (Addr. of First Carrier) and Requested Routing</div>
+                    <div className="text-xs flex items-center">
+                      {airwayBillData.airportOfDeparture}
+                    </div>
+                  </div>
                   {/* Reference Number and Optional Shipping */}
-                  <div className="border-b border-black grid grid-cols-3 h-8">
-                    <div className="border-r border-black p-2 relative">
-                      <div className="text-xs font-bold mb-1">Reference Number</div>
-                      <div className="absolute top-3 left-24 right-0 text-center text-xs bg-white">Optional Shipping Information</div>
-                      <div className="border border-black p-1 text-xs h-4">
+                  <div className="border-t border-gray-900 w-1/2 flex">
+                      <div className="w-1/3 border-r border-gray-900 p-1">
+                      <div className="text-xs font-semibold">Reference Number</div>
+                      <div className="text-xs flex items-center">
                         {airwayBillData.referenceNumber}
                       </div>
                     </div>
-                    <div className="border-r border-black p-2">
-                      <div className="border border-black p-1 text-xs h-4 mt-3">
+                    <div className="w-2/3 p-1 mb-2">
+                      <div className="text-xs font-semibold text-center">Optional Shipping Information</div>
+                      <div className="text-xs flex items-center justify-center">
                         {airwayBillData.optionalShippingInfo}
                       </div>
                     </div>
-                    <div className="p-2">
-                      <div className="border border-black p-1 text-xs h-4 mt-3"></div>
-                    </div>
                   </div>
-
-                  {/* Currency and Charges Row */}
-                  <div className="border-b border-black grid grid-cols-12 h-9">
-                    <div className="border-r border-black p-1 col-span-2">
-                      <div className="text-xs font-bold">Currency</div>
-                      <div className="border border-black p-1 text-xs h-4">
-                        {airwayBillData.currency}
-                      </div>
-                    </div>
-                    <div className="border-r border-black p-1 col-span-1">
-                      <div className="text-xs font-bold text-center">CHGS Code</div>
-                      <div className="border border-black p-1 text-xs h-4 text-center">
-                        {airwayBillData.chgsCode}
-                      </div>
-                    </div>
-                    <div className="border-r border-black col-span-2">
-                      <div className="border-b border-black text-center p-1">
-                        <div className="text-xs font-bold">WT/VAL</div>
-                      </div>
-                      <div className="grid grid-cols-2 h-6">
-                        <div className="border-r border-black text-center">
-                          <div className="text-xs font-bold">PPD</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-xs font-bold">COLL</div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="border-r border-black col-span-2">
-                      <div className="border-b border-black text-center p-1">
-                        <div className="text-xs font-bold">Other</div>
-                      </div>
-                      <div className="grid grid-cols-2 h-6">
-                        <div className="border-r border-black text-center">
-                          <div className="text-xs font-bold">PPD</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-xs font-bold">COLL</div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="border-r border-black p-1 col-span-2">
-                      <div className="text-xs font-bold">Declared Value for Carriage</div>
-                      <div className="border border-black p-1 text-xs h-4 mt-1">
-                        {airwayBillData.declaredValueCarriage}
-                      </div>
-                    </div>
-                    <div className="p-1 col-span-2">
-                      <div className="text-xs font-bold">Declared Value for Customs</div>
-                      <div className="border border-black p-1 text-xs h-4 mt-1">
-                        {airwayBillData.declaredValueCustoms}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Amount of Insurance */}
-                  <div className="border-b border-black grid grid-cols-4 h-8">
-                    <div className="border-r border-black p-2">
-                      <div className="text-xs font-bold text-center">Amount of Insurance</div>
-                      <div className="border border-black p-1 text-xs h-4 mt-1">
-                        {airwayBillData.amountInsurance}
-                      </div>
-                    </div>
-                    <div className="p-2 col-span-3 text-xs leading-tight text-justify">
-                      INSURANCE - If carrier offers insurance, and such insurance is requested in accordance with the conditions thereof, indicate amount to be insured in figures in box marked "Amount of Insurance."
-                    </div>
-                  </div>
-
                 </div>
-              </div>
 
-              {/* Handling Information */}
-              <div className="border-b border-black p-2 h-12 relative">
-                <div className="text-xs font-bold">Handling Information</div>
-                <div className="absolute top-6 right-4 border border-black p-2 bg-white">
-                  <div className="text-xs font-bold">SCI</div>
+                                 {/* To/By/To/By and Currency/CHGS Row */}
+                 <div className="border-b border-gray-900 flex h-20">
+                   {/* Left side - To/By routing */}
+                   <div className="w-1/2 border-r border-gray-900 flex">
+                     <div className="w-1/12 border-r border-gray-900 p-1 text-center">
+                      <div className="text-xs font-semibold">To</div>
+                    </div>
+                                         <div className="w-4/12 border-r border-gray-900 p-1">
+                       <div className="text-xs font-semibold">By First Carrier</div>
+                       <div className="text-xs">{airwayBillData.firstCarrier}</div>
+                     </div>
+                     <div className="w-1/12 border-r border-gray-900 p-1 text-center">
+                       <div className="text-xs font-semibold">to</div>
+                     </div>
+                     <div className="w-2/12 border-r border-gray-900 p-1">
+                       <div className="text-xs font-semibold">by</div>
+                     </div>
+                     <div className="w-1/12 border-r border-gray-900 p-1 text-center">
+                       <div className="text-xs font-semibold">to</div>
+                     </div>
+                     <div className="w-3/12 p-1">
+                       <div className="text-xs font-semibold">by</div>
+                     </div>
+                   </div>
+                   {/* Right side - Currency and CHGS */}
+                   <div className="w-1/2 flex">
+                     <div className="w-1/6 border-r border-gray-900 p-1">
+                      <div className="text-xs font-semibold">Currency</div>
+                      <div className="text-xs">{airwayBillData.currency}</div>
+                    </div>
+                     <div className="w-1/6 border-r border-gray-900 p-1 text-center">
+                       <div className="text-xs font-semibold">CHGS Code</div>
+                       <div className="text-xs">{airwayBillData.chgsCode}</div>
+                     </div>
+                     <div className="w-1/6 border-r border-gray-900 p-1 text-center">
+                       <div className="text-xs font-semibold">WT/VAL</div>
+                       <div className="flex text-xs">
+                         <div className="w-1/2 text-center border-r border-gray-900">PPD</div>
+                         <div className="w-1/2 text-center">COLL</div>
+                       </div>
+                     </div>
+                     <div className="w-1/6 border-r border-gray-900 p-1 text-center">
+                       <div className="text-xs font-semibold">Other</div>
+                       <div className="flex text-xs">
+                         <div className="w-1/2 text-center border-r border-gray-900">PPD</div>
+                         <div className="w-1/2 text-center">COLL</div>
+                       </div>
+                     </div>
+                    <div className="w-1/3 p-1">
+                      <div className="text-xs font-semibold">Declared Value for Carriage</div>
+                      <div className="text-xs">{airwayBillData.declaredValueCarriage}</div>
+                    </div>
+                  </div>
                 </div>
-              </div>
+
+                    {/* Airport of Destination and Flight Info Row */}
+                 <div className="border-b border-gray-900 flex grid grid-cols-6">
+                   {/* Airport of Destination */}
+                   <div className="col-span-1 border-r border-gray-900 p-1">
+                    <div className="text-xs font-semibold">Airport of Destination</div>
+                    <div className="text-xs h-12 flex items-center">
+                      {airwayBillData.airportOfDestination}
+                    </div>
+                  </div>
+                                     {/* Flight Date */}
+                   <div className="col-span-1 border-r border-gray-900 p-1">
+                     <div className="text-xs font-semibold">Flight Date</div>
+                     <div className="text-xs h-12 flex items-center">
+                       {airwayBillData.flightDate}
+                     </div>
+                   </div>
+                   {/* For Carrier Use Only */}
+                   <div className="col-span-1 border-r border-gray-900 p-1">
+                     <div className="text-xs font-semibold">For Carrier Use Only</div>
+                     <div className="text-xs h-12">
+                       {airwayBillData.carrierUseOnly}
+                     </div>
+                   </div>
+                   {/* Flight Date (second) */}
+                   <div className="col-span-1 border-r border-gray-900 p-1">
+                     <div className="text-xs font-semibold">Flight Date</div>
+                     <div className="text-xs h-12 flex items-center">
+                       {airwayBillData.flightDate2}
+                     </div>
+                   </div>
+                   {/* Amount of Insurance */}
+                   <div className="col-span-1 border-r border-gray-900 p-1">
+                    <div className="text-xs font-semibold">Amount of Insurance (if carrier offers insurance)</div>
+                    <div className="text-xs h-12 flex items-center">
+                      {airwayBillData.amountOfInsurance}
+                    </div>
+                  </div>
+                  {/* Declared Value for Customs */}
+                  <div className="col-span-1 p-1">
+                    <div className="text-xs font-semibold">Declared Value for Customs</div>
+                    <div className="text-xs h-12 flex items-center">
+                      {airwayBillData.declaredValueCustoms}
+                    </div>
+                  </div>
+                </div>
+
+                 {/* Handling Information Row */}
+                 <div className="border-b border-gray-900">
+                  <div className="p-1">
+                    <div className="text-xs font-semibold mb-1">Handling Information (SCI)</div>
+                    <div className="text-xs h-12">
+                      {airwayBillData.handlingInformation}
+                    </div>
+                  </div>
+                </div>
 
               {/* Goods Table Header */}
-              <div className="grid grid-cols-12 border-b border-black">
-                <div className="col-span-2 grid grid-cols-3 border-r border-black">
-                  <div className="border-r border-black p-1 col-span-1">
-                    <div className="text-xs font-bold">No. of Pieces RCP</div>
+              <div className="grid grid-cols-22">
+                <div className="col-span-2 border-r border-black">
+                  <div className="text-xs font-bold w-20 p-1">No. of Pieces RCP</div>
+                </div>
+                <div className="border-r border-black p-1 col-span-2">
+                    <div className="text-xs font-bold mb-2">Gross Weight</div>
+                </div>
+                <div className="border-r border-black p-1 text-center col-span-1">
+                    <div className="text-xs font-bold mb-2">kg/lb</div>
                   </div>
-                  <div className="border-r border-black p-1 col-span-2">
-                    <div className="text-xs font-bold">Gross Weight</div>
-                  </div>
-                  <div className="border-r border-black p-1 text-center">
-                    <div className="text-xs font-bold">kg<br/>lb</div>
-                  </div>
+                <div className="col-span-3 border-r border-black p-1">
+                  <div className="text-xs font-bold mb-2">Rate Class & Commodity No.</div>
                 </div>
-                <div className="col-span-1 border-r border-black p-1">
-                  <div className="text-xs font-bold">Rate Class</div>
-                  <div className="border-t border-black mt-2 text-xs font-bold">Commodity Item No.</div>
+                <div className="col-span-2 border-r border-black p-1">
+                  <div className="text-xs font-bold mb-2">Chargeable Weight</div>
                 </div>
-                <div className="col-span-1 border-r border-black p-1">
-                  <div className="text-xs font-bold">Chargeable Weight</div>
+                <div className="col-span-2 border-r border-black p-1">
+                  <div className="text-xs font-bold mb-2">Rate / Charge</div>
                 </div>
-                <div className="col-span-1 border-r border-black p-1">
-                  <div className="text-xs font-bold">Rate / Charge</div>
+                <div className="col-span-3 border-r border-black p-1">
+                  <div className="text-xs font-bold mb-2">Total</div>
                 </div>
-                <div className="col-span-1 border-r border-black p-1">
-                  <div className="text-xs font-bold">Total</div>
-                </div>
-                <div className="col-span-6 p-1">
-                  <div className="text-xs font-bold">Nature and Quantity of Goods (inc. Dimensions or Volume)</div>
+                <div className="col-span-5 p-1 w-80">
+                  <div className="text-xs font-bold mb-2">Nature and Quantity of Goods (inc. Dimensions or Volume)</div>
                 </div>
               </div>
 
               {/* Goods Data */}
-              <div className="grid grid-cols-12 h-48">
-                <div className="col-span-2 grid grid-cols-3 border-r border-black">
-                  <div className="border-r border-black p-1">
+              <div className="grid grid-cols-22 h-90 border-t border-black">
+                <div className="col-span-2 p-1 border-r border-black">
                     {airwayBillData.goods.map((good, index) => (
                       <div key={index} className="text-xs mb-1">{good.pieces}</div>
                     ))}
-                  </div>
-                  <div className="border-r border-black p-1 col-span-2">
+                </div>
+                <div className="border-r border-black p-1 col-span-2">
                     {airwayBillData.goods.map((good, index) => (
                       <div key={index} className="text-xs mb-1">{good.grossWeight}</div>
                     ))}
-                  </div>
-                  <div className="border-r border-black"></div>
                 </div>
-                <div className="col-span-1 border-r border-black p-1">
+                <div className="border-r border-black p-1 col-span-1">
                   {airwayBillData.goods.map((good, index) => (
-                    <div key={index} className="text-xs mb-1">{good.rateClass}</div>
+                    <div key={index} className="text-xs mb-1">{good.weightUnit}</div>
                   ))}
                 </div>
-                <div className="col-span-1 border-r border-black p-1">
+                <div className="col-span-3 border-r border-black p-1">
+                  {airwayBillData.goods.map((good, index) => (
+                    <div key={index} className="text-xs mb-1">({good.rateClass}) {good.commodityItemNo}</div>
+                  ))}
+                </div>
+                <div className="col-span-2 border-r border-black p-1">
                   {airwayBillData.goods.map((good, index) => (
                     <div key={index} className="text-xs mb-1">{good.chargeableWeight}</div>
                   ))}
                 </div>
-                <div className="col-span-1 border-r border-black p-1">
+                <div className="col-span-2 border-r border-black p-1">
                   {airwayBillData.goods.map((good, index) => (
                     <div key={index} className="text-xs mb-1">{good.rateCharge}</div>
                   ))}
                 </div>
-                <div className="col-span-1 border-r border-black p-1">
+                <div className="col-span-3 border-r border-black p-1">
                   {airwayBillData.goods.map((good, index) => (
                     <div key={index} className="text-xs mb-1">{good.total}</div>
                   ))}
                 </div>
-                <div className="col-span-6 p-1">
+                <div className="col-span-5 p-1">
                   {airwayBillData.goods.map((good, index) => (
                     <div key={index} className="text-xs mb-1">{good.description}</div>
                   ))}
                 </div>
               </div>
 
-              {/* Bottom Section with Charges */}
-              <div className="grid grid-cols-5">
-                
-                {/* Charges Table */}
-                <div className="col-span-2 border-r border-black">
-                  <table className="w-full border-collapse">
-                    <tbody>
-                      <tr className="border-b border-black">
-                        <td className="border-r border-black p-1 text-xs font-bold">Prepaid</td>
-                        <td className="border-r border-black p-1 text-xs font-bold w-24">Weight Charge</td>
-                        <td className="p-1 text-xs font-bold">Collect</td>
-                      </tr>
-                      <tr className="border-b border-black">
-                        <td className="border-r border-black p-1 text-xs h-5">{airwayBillData.prepaid.weightCharge}</td>
-                        <td className="border-r border-black p-1 text-xs h-5"></td>
-                        <td className="p-1 text-xs h-5">{airwayBillData.collect.weightCharge}</td>
-                      </tr>
-                      <tr className="border-b border-black">
-                        <td className="border-r border-black p-1 text-xs"></td>
-                        <td className="border-r border-black p-1 text-xs font-bold">Valuation Charge</td>
-                        <td className="p-1 text-xs"></td>
-                      </tr>
-                      <tr className="border-b border-black">
-                        <td className="border-r border-black p-1 text-xs h-5">{airwayBillData.prepaid.valuationCharge}</td>
-                        <td className="border-r border-black p-1 text-xs h-5"></td>
-                        <td className="p-1 text-xs h-5">{airwayBillData.collect.valuationCharge}</td>
-                      </tr>
-                      <tr className="border-b border-black">
-                        <td className="border-r border-black p-1 text-xs"></td>
-                        <td className="border-r border-black p-1 text-xs font-bold">Tax</td>
-                        <td className="p-1 text-xs"></td>
-                      </tr>
-                      <tr className="border-b border-black">
-                        <td className="border-r border-black p-1 text-xs h-5">{airwayBillData.prepaid.tax}</td>
-                        <td className="border-r border-black p-1 text-xs h-5"></td>
-                        <td className="p-1 text-xs h-5">{airwayBillData.collect.tax}</td>
-                      </tr>
-                      <tr className="border-b border-black">
-                        <td className="border-r border-black p-1 text-xs font-bold">Total Prepaid</td>
-                        <td className="border-r border-black p-1 text-xs"></td>
-                        <td className="p-1 text-xs font-bold">Total Collect</td>
-                      </tr>
-                      <tr>
-                        <td className="border-r border-black p-1 text-xs font-bold h-5">{airwayBillData.prepaid.totalPrepaid}</td>
-                        <td className="border-r border-black p-1 text-xs h-5"></td>
-                        <td className="p-1 text-xs font-bold h-5">{airwayBillData.collect.totalCollect}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Right Section - Other Charges and Signatures */}
-                <div className="col-span-3">
-                  
-                  {/* Other Charges */}
-                  <div className="border-b border-black border-l border-black p-2 h-20">
-                    <div className="text-xs font-bold">Other Charges</div>
-                  </div>
-
-                  {/* Shipper Declaration */}
-                  <div className="border-b border-dashed border-l border-black p-2 h-20 text-xs leading-tight">
-                    <div>
-                      Shipper certifies that the particulars on the face hereof are correct and that insofar as any part of the consignment contains dangerous goods, such part is properly described by name and is in proper condition for carriage by air according to the applicable Dangerous Goods Regulations.
+              {/* Bottom Section - Charges and Certification */}
+               <div className="flex grid grid-cols-13 border-t border-gray-900">
+                 
+                 {/* Left Column - Charges Table */}
+                 <div className="col-span-5 border-r border-gray-900">
+                   
+                    {/* Charges Header Row */}
+                    <div className="grid grid-cols-2 border-b border-gray-900 flex">
+                      <div className="col-span-1 border-r border-gray-900 p-1 text-center">
+                        <div className="text-xs font-semibold mb-2">Prepaid</div>
+                      </div>
+                      <div className="col-span-1 p-1 text-center">
+                        <div className="text-xs font-semibold mb-2">Collect</div>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Signature Section */}
-                  <div className="border-b border-black border-l border-black p-2 h-3 text-center">
-                    <div className="text-xs">Signature of Shipper or his Agent</div>
-                  </div>
-
-                  {/* Shipper Signature Box */}
-                  <div className="border-b border-dashed border-l border-black p-2 h-10">
-                    <div className="text-xs">{airwayBillData.shipperSignature}</div>
-                  </div>
-
-                  {/* Execution Details Header */}
-                  <div className="border-b border-black border-l border-black p-2 h-3 grid grid-cols-3 text-center">
-                    <div className="text-xs">Executed on (date)</div>
-                    <div className="text-xs">at (place)</div>
-                    <div className="text-xs">Signature of Issuing Carrier or its Agent</div>
-                  </div>
-
-                  {/* Execution Details Values */}
-                  <div className="grid grid-cols-3 border-l border-black">
-                    <div className="border-r border-black border-b border-black p-2 h-8">
-                      <div className="text-xs">{airwayBillData.executedDate}</div>
+                    {/* Weight Charge Row */}
+                    <div className="border-b border-gray-900 flex h-12">
+                      <div className="w-1/2 border-r border-gray-900 p-1">
+                        <div className="text-xs font-semibold">Weight Charge</div>
+                        <div className="text-xs">{airwayBillData.prepaid.weightCharge}</div>
+                      </div>
+                      <div className="w-1/2 p-1">
+                        <div className="text-xs font-semibold">Weight Charge</div>
+                        <div className="text-xs">{airwayBillData.collect.weightCharge}</div>
+                      </div>
                     </div>
-                    <div className="border-r border-black border-b border-black p-2 h-8">
-                      <div className="text-xs">{airwayBillData.executedPlace}</div>
+
+                                       {/* Valuation Charge Row */}
+                    <div className="border-b border-gray-900 flex h-12">
+                      <div className="w-1/2 border-r border-gray-900 p-1">
+                        <div className="text-xs font-semibold">Valuation Charge</div>
+                        <div className="text-xs">{airwayBillData.prepaid.valuationCharge}</div>
+                      </div>
+                      <div className="w-1/2 p-1">
+                        <div className="text-xs font-semibold">Valuation Charge</div>
+                        <div className="text-xs">{airwayBillData.collect.valuationCharge}</div>
+                      </div>
                     </div>
-                    <div className="border-b border-black p-2 h-8">
-                      <div className="text-xs">{airwayBillData.carrierSignature}</div>
+
+                                       {/* Tax Row */}
+                    <div className="border-b border-gray-900 flex h-12">
+                      <div className="w-1/2 border-r border-gray-900 p-1">
+                        <div className="text-xs font-semibold">Tax</div>
+                        <div className="text-xs">{airwayBillData.prepaid.tax}</div>
+                      </div>
+                      <div className="w-1/2 p-1">
+                        <div className="text-xs font-semibold">Tax</div>
+                        <div className="text-xs">{airwayBillData.collect.tax}</div>
+                      </div>
                     </div>
+
+                                         {/* Total Other Charges Due Agent Row */}
+                     <div className="border-b border-gray-900 flex h-12">
+                       <div className="w-1/2 border-r border-gray-900 p-1">
+                         <div className="text-xs font-semibold">Total Other Charges Due Agent</div>
+                         <div className="text-xs">{airwayBillData.prepaid.totalOtherChargesAgent}</div>
+                       </div>
+                       <div className="w-1/2 p-1">
+                         <div className="text-xs font-semibold">Total Other Charges Due Agent</div>
+                         <div className="text-xs">{airwayBillData.collect.totalOtherChargesAgent}</div>
+                       </div>
+                     </div>
+
+                                         {/* Total Other Charges Due Carrier Row */}
+                     <div className="border-b-4 border-gray-900 flex h-12">
+                       <div className="w-1/2 border-r border-gray-900 p-1">
+                         <div className="text-xs font-semibold">Total Other Charges Due Carrier</div>
+                         <div className="text-xs">{airwayBillData.prepaid.totalOtherChargesCarrier}</div>
+                       </div>
+                       <div className="w-1/2 p-1">
+                         <div className="text-xs font-semibold">Total Other Charges Due Carrier</div>
+                         <div className="text-xs">{airwayBillData.collect.totalOtherChargesCarrier}</div>
+                       </div>
+                     </div>
+
+                    {/* Total Prepaid/Collect Row */}
+                     <div className="border-b border-gray-900 flex h-21">
+                       <div className="w-1/2 border-r border-gray-900 p-1">
+                         <div className="text-xs font-semibold">Total Prepaid</div>
+                         <div className="text-xs font-semibold">{airwayBillData.prepaid.totalPrepaid}</div>
+                       </div>
+                       <div className="w-1/2 p-1">
+                         <div className="text-xs font-semibold">Total Collect</div>
+                         <div className="text-xs font-semibold">{airwayBillData.collect.totalCollect}</div>
+                       </div>
+                     </div>
+
+                    {/* Currency Conversion Rates Row */}
+                     <div className="border-b-4 border-gray-900 flex h-20">
+                       <div className="w-1/2 border-r border-gray-900 p-1">
+                         <div className="text-xs font-semibold">Currency Conversion Rates</div>
+                         <div className="text-xs">{airwayBillData.currencyConversionRates}</div>
+                       </div>
+                       <div className="w-1/2 p-1">
+                         <div className="text-xs font-semibold">CC Charges in Dest. Currency</div>
+                         <div className="text-xs">{airwayBillData.ccChargesDestCurrency}</div>
+                       </div>
+                     </div>
+
+                      {/* For Carrier's Use and Charges at Destination Row */}
+                     <div className="flex h-21">
+                       <div className="w-1/2 border-r border-gray-900 p-1">
+                         <div className="text-xs font-semibold">For Carrier's Use only at Destination</div>
+                         <div className="text-xs"></div>
+                       </div>
+                       <div className="w-1/2 p-1">
+                         <div className="text-xs font-semibold">Charges at Destination</div>
+                         <div className="text-xs">{airwayBillData.chargesAtDestination}</div>
+                       </div>
+                     </div>
+
                   </div>
 
-                  {/* Total Collect Charges */}
-                  <div className="w-1/3 border-l border-black">
-                    <div className="border-t-2 border-black border-r border-black p-2 h-3 text-center">
-                      <div className="text-xs font-bold">Total Collect Charges</div>
-                    </div>
-                    <div className="border-r border-black border-b border-black p-2 h-5">
-                      <div className="text-xs">{airwayBillData.totalCollectCharges}</div>
-                    </div>
-                  </div>
+                    {/* Right Column - Certification and Signatures */}
+                   <div className="col-span-8">
+                     
+                      {/* Other Charges */}
+                      <div className="border-b border-gray-900 p-2 h-30">
+                       <div className="text-xs font-semibold">Other Charges</div>
+                     </div>
 
-                </div>
+                     {/* Shipper Certification */}
+                     <div className="p-2 text-xs leading-tight mb-15">
+                       <div>
+                         Shipper certifies that the particulars on the face hereof are correct and that insofar as any part of the consignment contains dangerous goods, such part is properly described by name and is in proper condition for carriage by air according to the applicable Dangerous Goods Regulations.
+                       </div>
+                     </div>
 
-              </div>
+                      {/* Shipper Signature */}
+                      <div className="border-b border-gray-900 p-2 items-center text-center">
+                       <div className="text-xs">____________________________________________________________________________________________</div>
+                       <div className="text-xs">Signature of Shipper or his Agent</div>
+                     </div>
+
+                     {/* Execution Details Row */}
+                     <div>
+                       <div className="flex justify-center grid grid-cols-3 -mb-4 mt-21">
+                          <div className="col-span-1 p-1">
+                            <div className="text-xs">{airwayBillData.executedDate}</div>
+                          </div>  
+                          <div className="col-span-1 p-1">
+                            <div className="text-xs">{airwayBillData.executedPlace}</div>
+                          </div>  
+                          <div className="col-span-1 p-1">
+                            <div className="text-xs">{airwayBillData.shipperSignature}</div>
+                          </div>  
+                       </div>                     
+                          <div className="p-2 text-center">____________________________________________________________________________________________</div>
+                       </div>
+                     
+                                           {/* Execution Details */}
+                      <div className="grid grid-cols-5 border-b-4 border-gray-900 flex -mt-2">
+                       <div className="col-span-1 p-1 mb-1">
+                         <div className="text-xs">Executed on (date)</div>
+                       </div>
+                       <div className="flex justify-center col-span-2 p-1">
+                         <div className="text-xs mb-1">At place</div>
+                       </div>
+                       <div className="flex justify-end col-span-2 p-1">
+                         <div className="text-xs mb-1">Signature of Issuing Carrier or its Agent</div>
+                       </div>
+                     </div>
+                     
+
+                     {/* Total Collect Charges */}
+                     <div className="p-2">
+                       <div className="text-xs font-semibold">Total Collect Charges</div>
+                       <div className="text-xs">{airwayBillData.totalCollectCharges}</div>
+                     </div> 
+                   </div>
+
+               </div>
 
             </div>
 

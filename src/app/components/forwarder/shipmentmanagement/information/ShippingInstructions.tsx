@@ -97,7 +97,7 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
     cargo: {
       commodity: 'Electronics and Machinery',
       description: 'GENERAL CARGO',
-      serviceMode: 'AIR',
+      serviceMode: 'LCL',
       freightTerms: 'FREIGHT PREPAID',
       shippingMarks: 'FCL/FCL-CY/CY',
       clause: 'SHIPPER\'S LOAD, COUNT, STOW & SEAL'
@@ -1495,6 +1495,29 @@ Total Containers: ${shipmentData.totalCargo.totalContainers}`;
           incoterms2020: shipmentData.freightCharges.incoterm,
           declaredValue: 'As per Commercial Invoice',
           
+          // FCL Specific Information
+          containers: shipmentData.cargo.serviceMode === 'FCL' ? shipmentData.containers.map(container => ({
+            containerNumber: container.number,
+            sealNumber: container.sealNumber,
+            containerType: container.type,
+            tareWeight: container.tare,
+            vgm: container.vgm,
+            temperature: '', // Not available in current data structure
+            specialEquipment: '' // Not available in current data structure
+          })) : undefined,
+          stowageInstructions: '', // Not available in current data structure
+          equipmentRequirements: '', // Not available in current data structure
+          
+          // LCL Specific Information
+          consolidation: shipmentData.cargo.serviceMode === 'LCL' ? {
+            masterBLNumber: shipmentData.mblNumber,
+            houseBLNumber: shipmentData.hblNumber,
+            consolidator: 'FreightLynk Consolidation',
+            containerNumber: shipmentData.containers[0]?.number || '',
+            sealNumber: shipmentData.containers[0]?.sealNumber || ''
+          } : undefined,
+          breakBulkInstructions: '', // Not available in current data structure
+          
           cargoDetails: shipmentData.containers.map(container => ({
             marks: container.marks,
             kind: container.packageType,
@@ -1503,6 +1526,41 @@ Total Containers: ${shipmentData.totalCargo.totalContainers}`;
             grossWeight: container.grossWeight,
             measurements: container.measurement
           })),
+          
+          // Documentation Requirements
+          documents: {
+            commercialInvoice: true,
+            packingList: true,
+            certificateOfOrigin: false, // Not available in current data structure
+            phytosanitaryCertificate: false, // Not available in current data structure
+            otherDocuments: '' // Not available in current data structure
+          },
+          
+          // Insurance and Liability
+          insurance: {
+            insuranceRequired: false, // Not available in current data structure
+            insuranceValue: 'As per Commercial Invoice',
+            insuranceType: 'All Risks',
+            claimsProcedure: 'Standard claims procedure applies'
+          },
+          
+          // Customs Information
+          customs: {
+            hsCodes: 'To be provided', // Not available in current data structure
+            customsValue: 'As per Commercial Invoice',
+            importLicense: '', // Not available in current data structure
+            exportLicense: '', // Not available in current data structure
+            dutyTaxInfo: 'To be determined at destination'
+          },
+          
+          // Special Handling
+          temperatureControlled: false, // Not available in current data structure
+          temperatureRange: '', // Not available in current data structure
+          hazardousGoods: false, // Not available in current data structure
+          hazardousDetails: '', // Not available in current data structure
+          oversizedCargo: false, // Not available in current data structure
+          heavyLift: false, // Not available in current data structure
+          perishableGoods: false, // Not available in current data structure
           
           totalThisPage: shipmentData.totalCargo.totalPackages,
           consignmentTotal: `${shipmentData.totalCargo.totalGrossWeight} / ${shipmentData.totalCargo.totalMeasurement}`,
