@@ -428,10 +428,10 @@ const OceanSIFormat: React.FC<OceanSIFormatProps> = ({ data, onClose }) => {
                    <div className="font-semibold">Marks and Numbers</div>
                  </div>
                  <div className="col-span-2 border-r border-gray-900 p-2">
-                   <div className="font-semibold">Kind & No of Packages</div>
+                   <div className="font-semibold">No of Container/Packages</div>
                  </div>
                  <div className="col-span-4 border-r border-gray-900 p-2">
-                   <div className="font-semibold">Description of Goods</div>
+                   <div className="font-semibold">Kinds & Description of Goods</div>
                  </div>
                  <div className="col-span-2 border-r border-gray-900 p-2">
                    <div className="font-semibold">Gross Weight (kg)</div>

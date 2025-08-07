@@ -180,89 +180,25 @@ const AirwayBillFormat: React.FC<AirwayBillFormatProps> = ({ data, blType = 'maw
     }
   };
 
-  // Default data if none provided
-  const defaultData: AirwayBillData = {
-    mawbNumber: 'MAWB-12345678',
-    hawbNumber: blType === 'hawb' ? 'HAWB-2024-001' : '',
-    issuedBy: 'FreightLynk Airlines',
-    shipper: {
-      name: 'ABC Manufacturing Co.',
-      address: '123 Industrial Park, Ho Chi Minh City, Vietnam',
-      phone: '+84 28 1234 5678',
-      email: 'shipper@abc.com',
-      account: 'ACC001'
-    },
-    consignee: {
-      name: 'XYZ Importers LLC',
-      address: '456 Business District, Houston, TX 77001, USA',
-      phone: '+1 713 987 6543',
-      email: 'consignee@xyz.com',
-      account: 'ACC002'
-    },
-    agent: {
-      name: 'FreightLynk Agent',
-      iataCode: 'FLK001',
-      accountNumber: 'AG001',
-      accountingInfo: 'FREIGHT PREPAID'
-    },
-    airportDeparture: 'TAN SON NHAT INTERNATIONAL AIRPORT (SGN)',
-    airportDestination: 'GEORGE BUSH INTERCONTINENTAL AIRPORT (IAH)',
-    requestedRouting: 'SGN-IAH',
-    referenceNumber: 'REF-2024-001',
-    optionalShippingInfo: 'HANDLE WITH CARE',
-    airportOfDeparture: 'TAN SON NHAT INTERNATIONAL AIRPORT (SGN)',
-    airportOfDestination: 'GEORGE BUSH INTERCONTINENTAL AIRPORT (IAH)',
-    firstCarrier: 'FreightLynk Airlines',
-    flightDate: '2024-12-20',
-    carrierUseOnly: 'FL001',
-    flightDate2: '2024-12-20',
-    amountOfInsurance: '50,000.00',
-    handlingInformation: 'FRAGILE - HANDLE WITH CARE - THIS SIDE UP',
-    currency: 'USD',
-    chgsCode: 'PPD',
-    declaredValueCarriage: '50,000.00',
-    declaredValueCustoms: '50,000.00',
-    amountInsurance: '50,000.00',
-    goods: [
-      {
-        pieces: '100',
-        grossWeight: '500.0',
-        weightUnit: 'kg',
-        rateClass: 'G',
-        commodityItemNo: '1234567890',
-        chargeableWeight: '500.0',
-        rateCharge: '5.50',
-        total: '2,750.00',
-        description: 'ELECTRONICS AND MACHINERY'
-      }
-    ],
-    prepaid: {
-      weightCharge: '2,750.00',
-      valuationCharge: '0.00',
-      tax: '275.00',
-      totalOtherChargesAgent: '150.00',
-      totalOtherChargesCarrier: '100.00',
-      totalPrepaid: '3,275.00'
-    },
-    collect: {
-      weightCharge: '0.00',
-      valuationCharge: '0.00',
-      tax: '0.00',
-      totalOtherChargesAgent: '0.00',
-      totalOtherChargesCarrier: '0.00',
-      totalCollect: '0.00'
-    },
-    currencyConversionRates: '1.00',
-    ccChargesDestCurrency: '0.00',
-    chargesAtDestination: '0.00',
-    totalCollectCharges: '0.00',
-    executedDate: '2024-05-12',
-    executedPlace: 'Ho Chi Minh City',
-    shipperSignature: 'ABC Manufacturing Co.',
-    carrierSignature: 'FreightLynk Airlines'
-  };
+  // Component requires data to be passed from parent
+  if (!data) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg shadow-xl p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">No Data Available</h2>
+          <p className="text-gray-600 mb-4">Airway bill data must be provided from the parent component.</p>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-  const airwayBillData = data || defaultData;
+  const airwayBillData = data;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
