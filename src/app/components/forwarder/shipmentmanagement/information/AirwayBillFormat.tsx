@@ -234,8 +234,8 @@ const AirwayBillFormat: React.FC<AirwayBillFormatProps> = ({ data, blType = 'maw
               <div className="border-b border-gray-900 p-2 bg-white">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center space-x-4">
-                    {airwayBillData.hawbNumber && airwayBillData.mawbNumber ? (
-                      // Show both for HAWB documents
+                    {blType === 'hawb' ? (
+                      // Show both HAWB and MAWB for HAWB documents
                       <>
                         <div>
                           <div className="text-xs font-bold text-gray-700">HAWB Number:</div>
@@ -247,7 +247,7 @@ const AirwayBillFormat: React.FC<AirwayBillFormatProps> = ({ data, blType = 'maw
                         </div>
                       </>
                     ) : (
-                      // Show only MAWB for MAWB-only documents
+                      // Show only MAWB for MAWB documents
                       <div>
                         <div className="text-xs font-bold text-gray-700">MAWB Number:</div>
                         <div className="text-sm font-semibold text-gray-900">{airwayBillData.mawbNumber}</div>

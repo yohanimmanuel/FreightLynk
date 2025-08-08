@@ -92,7 +92,6 @@ interface BLData {
   placeOfIssue: string;
   signatureBy: string;
   cargo: {
-    commodity: string;
     description: string;
     serviceMode: string;
     freightTerms: string;
@@ -416,7 +415,6 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
                                     <td className="p-4 text-gray-900 align-top" style={{ minHeight: '100px', height: 'auto', width: '40%' }}>
                                       <div className="text-xs leading-normal break-words mb-2">{container.type}</div>
                                       <div className="text-xs leading-normal break-words mb-2">{container.description}</div>
-                                      <div className="text-xs leading-normal break-words mb-2">{data.cargo.commodity}</div>
                                       <div className="text-xs leading-normal break-words">{data.cargo.serviceMode}</div>
                                     </td>
                                    <td className="p-4 text-gray-900 align-top text-xs" style={{ minHeight: '100px', height: 'auto', width: '12%' }}>{container.weight}</td>
@@ -437,8 +435,6 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
                                     <td className="p-4 text-gray-900 align-top text-xs" style={{ minHeight: '100px', height: 'auto', width: '15%' }}>{cargo.packages}</td>
                                     <td className="p-4 text-gray-900 align-top" style={{ minHeight: '100px', height: 'auto', width: '40%' }}>
                                       <div className="text-xs leading-normal break-words mb-2">{cargo.description}</div>
-                                      <div className="text-xs leading-normal break-words mb-2">{cargo.commodity}</div>
-                                      <div className="text-xs leading-normal break-words">{cargo.serviceMode}</div>
                                     </td>
                                    <td className="p-4 text-gray-900 align-top text-xs" style={{ minHeight: '100px', height: 'auto', width: '12%' }}>{cargo.weight}</td>
                                    <td className="p-4 text-gray-900 align-top text-xs" style={{ minHeight: '100px', height: 'auto', width: '13%' }}>{cargo.volume}</td>

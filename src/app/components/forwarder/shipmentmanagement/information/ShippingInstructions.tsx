@@ -105,7 +105,6 @@ interface FCLShipmentData extends BaseShipmentData {
     description: string;
   }>;
   cargo: {
-    commodity: string;
     description: string;
     freightTerms: string;
     shippingMarks: string;
@@ -145,7 +144,6 @@ interface LCLShipmentData extends BaseShipmentData {
     chargeableWeight: string;
   }>;
   cargo: {
-    commodity: string;
     description: string;
     freightTerms: string;
     shippingMarks: string;
@@ -187,7 +185,6 @@ interface AIRShipmentData extends BaseShipmentData {
     specialEquipment: string;
   }>;
   cargo: {
-    commodity: string;
     description: string;
     freightTerms: string;
     shippingMarks: string;
@@ -310,7 +307,7 @@ const getFCLMockData = (): FCLShipmentData => ({
         vgm: '28,800',
         temperature: '20°C',
         marks: 'FCL/FCL-CY/CY',
-        description: 'GENERAL CARGO'
+        description: 'Electronics and Machinery'
   }],
   
     freightCharges: {
@@ -333,7 +330,6 @@ const getFCLMockData = (): FCLShipmentData => ({
   creditInfo: 'NO',
   
     cargo: {
-      commodity: 'Electronics and Machinery',
       description: 'GENERAL CARGO',
       freightTerms: 'FREIGHT PREPAID',
       shippingMarks: 'FCL/FCL-CY/CY',
@@ -444,7 +440,6 @@ const getLCLMockData = (): LCLShipmentData => ({
     creditInfo: 'NO',
   
   cargo: {
-    commodity: 'Electronics and Machinery',
     description: 'GENERAL CARGO',
     freightTerms: 'FREIGHT PREPAID',
     shippingMarks: 'LCL/LCL-CFS/CFS',
@@ -536,7 +531,6 @@ const getAIRMockData = (): AIRShipmentData => ({
   creditInfo: 'NO',
   
   cargo: {
-    commodity: 'Electronics and Machinery',
     description: 'GENERAL CARGO',
     freightTerms: 'FREIGHT PREPAID',
     shippingMarks: 'AIR/AIR-AWB/AWB',
@@ -641,7 +635,6 @@ Direct MBL: ${shipmentData.blDetails.directMbl}
 Signature By: ${shipmentData.blDetails.signatureBy}
 
 CARGO INFORMATION:
-Commodity: ${shipmentData.cargo.commodity}
 Description: ${shipmentData.cargo.description}
 Service Mode: ${shipmentData.serviceMode}
 Freight Terms: ${shipmentData.cargo.freightTerms}
@@ -2075,10 +2068,10 @@ ULD ${index + 1}:
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AWB Number</th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Package Type</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Packages Qty</th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gross Weight (kg)</th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Volume (cbm)</th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chargeable Weight (kg)</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Packages</th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Temperature</th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Special Equipment</th>
@@ -2140,6 +2133,18 @@ ULD ${index + 1}:
                           <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
                             <input
                               type="text"
+                              value={uld.packages}
+                              onChange={(e) => {
+                                const newUlds = [...(editData as AIRShipmentData).ulds];
+                                newUlds[index] = { ...uld, packages: e.target.value };
+                                setEditData(prev => ({ ...prev, ulds: newUlds } as AIRShipmentData));
+                              }}
+                              className="w-full p-1 border border-gray-300 rounded text-gray-900 text-xs"
+                            />
+                          </td>
+                          <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
+                            <input
+                              type="text"
                               value={uld.grossWeight}
                               onChange={(e) => {
                                 const newUlds = [...(editData as AIRShipmentData).ulds];
@@ -2168,18 +2173,6 @@ ULD ${index + 1}:
                               onChange={(e) => {
                                 const newUlds = [...(editData as AIRShipmentData).ulds];
                                 newUlds[index] = { ...uld, chargeableWeight: e.target.value };
-                                setEditData(prev => ({ ...prev, ulds: newUlds } as AIRShipmentData));
-                              }}
-                              className="w-full p-1 border border-gray-300 rounded text-gray-900 text-xs"
-                            />
-                          </td>
-                          <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
-                            <input
-                              type="text"
-                              value={uld.packages}
-                              onChange={(e) => {
-                                const newUlds = [...(editData as AIRShipmentData).ulds];
-                                newUlds[index] = { ...uld, packages: e.target.value };
                                 setEditData(prev => ({ ...prev, ulds: newUlds } as AIRShipmentData));
                               }}
                               className="w-full p-1 border border-gray-300 rounded text-gray-900 text-xs"
@@ -2594,18 +2587,6 @@ ULD ${index + 1}:
                     />
                     </div>
                     <div>
-                    <label className="block text-gray-500 mb-1 text-xs">Commodity</label>
-                    <input
-                        type="text"
-                        value={editData.cargo.commodity}
-                        onChange={(e) => setEditData(prev => ({ 
-                        ...prev, 
-                        cargo: { ...prev.cargo, commodity: e.target.value }
-                        }))}
-                        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
-                    />
-                    </div>
-                    <div>
                     <label className="block text-gray-500 mb-1 text-xs">Shipment Type</label>
                     <input
                         type="text"
@@ -2879,7 +2860,7 @@ ULD ${index + 1}:
             description: cargo.description,
             weight: cargo.grossWeight,
             volume: cargo.measurement,
-            commodity: shipmentData.cargo.commodity,
+            commodity: shipmentData.cargo.description,
             serviceMode: shipmentData.serviceMode
           })) : [],
           // LCL consolidation details
@@ -2903,7 +2884,6 @@ ULD ${index + 1}:
           placeOfIssue: shipmentData.placeOfIssue,
           signatureBy: shipmentData.blDetails.signatureBy,
           cargo: {
-            commodity: shipmentData.cargo.commodity,
             description: shipmentData.cargo.description,
             serviceMode: shipmentData.serviceMode,
             freightTerms: shipmentData.cargo.freightTerms,
@@ -3004,43 +2984,6 @@ ULD ${index + 1}:
               total: (parseFloat(uld.chargeableWeight) * 5.50).toFixed(2) // Calculate total based on chargeable weight
             })),
             
-            // Documentation Requirements
-            documents: {
-              commercialInvoice: true,
-              packingList: true,
-              certificateOfOrigin: false, // Not available in current data structure
-              phytosanitaryCertificate: false, // Not available in current data structure
-              otherDocuments: '' // Not available in current data structure
-            },
-            
-            // Insurance and Liability
-            insurance: {
-              insuranceRequired: false, // Not available in current data structure
-              insuranceValue: 'As per Commercial Invoice',
-              insuranceType: 'All Risks',
-              claimsProcedure: 'Standard claims procedure applies'
-            },
-            
-            // Customs Information
-            customs: {
-              hsCodes: 'To be provided', // Not available in current data structure
-              customsValue: 'As per Commercial Invoice',
-              importLicense: '', // Not available in current data structure
-              exportLicense: '', // Not available in current data structure
-              dutyTaxInfo: 'To be determined at destination'
-            },
-            
-            // Special Handling
-            temperatureControlled: false, // Not available in current data structure
-            temperatureRange: '', // Not available in current data structure
-            hazardousGoods: false, // Not available in current data structure
-            hazardousDetails: '', // Not available in current data structure
-            oversizedCargo: false, // Not available in current data structure
-            heavyLift: false, // Not available in current data structure
-            perishableGoods: false, // Not available in current data structure
-            liveAnimals: false, // Not available in current data structure
-            valuableCargo: false, // Not available in current data structure
-            
             totalThisPage: shipmentData.totalCargo.totalPackages,
             consignmentTotal: `${shipmentData.totalCargo.totalGrossWeight} / ${shipmentData.totalCargo.totalMeasurement}`,
             dangerousGoods: shipmentData.dangerousGoods,
@@ -3139,41 +3082,6 @@ ULD ${index + 1}:
             grossWeight: cargo.grossWeight,
             measurements: cargo.measurement
           })),
-          
-          // Documentation Requirements
-          documents: {
-            commercialInvoice: true,
-            packingList: true,
-            certificateOfOrigin: false, // Not available in current data structure
-            phytosanitaryCertificate: false, // Not available in current data structure
-            otherDocuments: '' // Not available in current data structure
-          },
-          
-          // Insurance and Liability
-          insurance: {
-            insuranceRequired: false, // Not available in current data structure
-            insuranceValue: 'As per Commercial Invoice',
-            insuranceType: 'All Risks',
-            claimsProcedure: 'Standard claims procedure applies'
-          },
-          
-          // Customs Information
-          customs: {
-            hsCodes: 'To be provided', // Not available in current data structure
-            customsValue: 'As per Commercial Invoice',
-            importLicense: '', // Not available in current data structure
-            exportLicense: '', // Not available in current data structure
-            dutyTaxInfo: 'To be determined at destination'
-          },
-          
-          // Special Handling
-          temperatureControlled: false, // Not available in current data structure
-          temperatureRange: '', // Not available in current data structure
-          hazardousGoods: false, // Not available in current data structure
-          hazardousDetails: '', // Not available in current data structure
-          oversizedCargo: false, // Not available in current data structure
-          heavyLift: false, // Not available in current data structure
-          perishableGoods: false, // Not available in current data structure
           
           totalThisPage: shipmentData.totalCargo.totalPackages,
           consignmentTotal: `${shipmentData.totalCargo.totalGrossWeight} / ${shipmentData.totalCargo.totalMeasurement}`,

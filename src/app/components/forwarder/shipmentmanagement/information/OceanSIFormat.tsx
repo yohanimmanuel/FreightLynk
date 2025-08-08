@@ -26,13 +26,6 @@ interface NotifyPartyInfo {
   country?: string;
 }
 
-interface VesselInfo {
-  name: string;
-  voyageNumber: string;
-  feederVessel?: string;
-  feederVoyage?: string;
-}
-
 interface CargoInfo {
   marks: string;
   kind: string;
@@ -60,28 +53,6 @@ interface ConsolidationInfo {
   sealNumber: string;
 }
 
-interface DocumentInfo {
-  commercialInvoice: boolean;
-  packingList: boolean;
-  certificateOfOrigin: boolean;
-  phytosanitaryCertificate: boolean;
-  otherDocuments: string;
-}
-
-interface InsuranceInfo {
-  insuranceRequired: boolean;
-  insuranceValue: string;
-  insuranceType: string;
-  claimsProcedure: string;
-}
-
-interface CustomsInfo {
-  hsCodes: string;
-  customsValue: string;
-  importLicense: string;
-  exportLicense: string;
-  dutyTaxInfo: string;
-}
 
 interface SIData {
   // Header Information
@@ -128,24 +99,6 @@ interface SIData {
   
   // Cargo Details
   cargoDetails: CargoInfo[];
-  
-  // Documentation Requirements
-  documents: DocumentInfo;
-  
-  // Insurance and Liability
-  insurance: InsuranceInfo;
-  
-  // Customs Information
-  customs: CustomsInfo;
-  
-  // Special Handling
-  temperatureControlled?: boolean;
-  temperatureRange?: string;
-  hazardousGoods?: boolean;
-  hazardousDetails?: string;
-  oversizedCargo?: boolean;
-  heavyLift?: boolean;
-  perishableGoods?: boolean;
   
   // Footer Information
   totalThisPage: string;
@@ -610,77 +563,7 @@ const OceanSIFormat: React.FC<OceanSIFormatProps> = ({ data, onClose }) => {
                </div>
              )}
 
-             {/* Insurance and Liability */}
-             <div className="border border-gray-900 border-t-0">
-               <div className="border-b border-gray-900 p-2">
-                 <div className="font-semibold text-xs" style={{ color: '#111827' }}>INSURANCE AND LIABILITY</div>
-               </div>
-               <div className="grid grid-cols-2 text-xs" style={{ color: '#111827' }}>
-                 <div className="p-2">
-                   <div className="font-semibold mb-2">Insurance Required</div>
-                   <div className="ml-2">{data.insurance.insuranceRequired ? 'Yes' : 'No'}</div>
-                   <div className="font-semibold mb-2 mt-2">Insurance Value</div>
-                   <div className="ml-2">{data.insurance.insuranceValue}</div>
-                 </div>
-                 <div className="p-2">
-                   <div className="font-semibold mb-2">Insurance Type</div>
-                   <div className="ml-2">{data.insurance.insuranceType}</div>
-                   <div className="font-semibold mb-2 mt-2">Claims Procedure</div>
-                   <div className="ml-2">{data.insurance.claimsProcedure}</div>
-                 </div>
-               </div>
-             </div>
 
-             {/* Customs Information */}
-             <div className="border border-gray-900 border-t-0">
-               <div className="border-b border-gray-900 p-2">
-                 <div className="font-semibold text-xs" style={{ color: '#111827' }}>CUSTOMS INFORMATION</div>
-               </div>
-               <div className="grid grid-cols-3 text-xs" style={{ color: '#111827' }}>
-                 <div className="p-2">
-                   <div className="font-semibold mb-2">HS Codes</div>
-                   <div className="ml-2">{data.customs.hsCodes}</div>
-                   <div className="font-semibold mb-2 mt-2">Customs Value</div>
-                   <div className="ml-2">{data.customs.customsValue}</div>
-                 </div>
-                 <div className="p-2">
-                   <div className="font-semibold mb-2">Import License</div>
-                   <div className="ml-2">{data.customs.importLicense || 'N/A'}</div>
-                   <div className="font-semibold mb-2 mt-2">Export License</div>
-                   <div className="ml-2">{data.customs.exportLicense || 'N/A'}</div>
-                 </div>
-                 <div className="text-xs text-gray-900 p-2">
-                  <div className="font-semibold mb-2">Duty and Tax Information</div>
-                  <div className="ml-2">{data.customs.dutyTaxInfo}</div>
-                </div>
-               </div>
-             </div>
-
-             {/* Special Handling */}
-             <div className="border border-gray-900 border-t-0">
-               <div className="border-b border-gray-900 p-2">
-                 <div className="font-semibold text-xs" style={{ color: '#111827' }}>SPECIAL HANDLING REQUIREMENTS</div>
-               </div>
-               <div className="grid grid-cols-2 text-xs" style={{ color: '#111827' }}>
-                 <div className="p-2">
-                   <div className="font-semibold mb-2">Special Cargo Types</div>
-                   <div className="ml-2">
-                     <div>☐ Temperature Controlled: {data.temperatureControlled ? '☑' : '☐'} {data.temperatureRange && `(${data.temperatureRange})`}</div>
-                     <div>☐ Hazardous Goods: {data.hazardousGoods ? '☑' : '☐'}</div>
-                     <div>☐ Oversized Cargo: {data.oversizedCargo ? '☑' : '☐'}</div>
-                     <div>☐ Heavy Lift: {data.heavyLift ? '☑' : '☐'}</div>
-                     <div>☐ Perishable Goods: {data.perishableGoods ? '☑' : '☐'}</div>
-                   </div>
-                 </div>
-                 <div className="p-2">
-                   <div className="font-semibold mb-2">Special Instructions</div>
-                   <div className="ml-2">
-                     {data.hazardousDetails && <div className="mb-2"><strong>Hazardous Details:</strong> {data.hazardousDetails}</div>}
-                     <div>{data.specialInstructions || 'N/A'}</div>
-                   </div>
-                 </div>
-               </div>
-             </div>
 
              {/* Totals Section */}
              <div className="border border-gray-900 border-t-0">
