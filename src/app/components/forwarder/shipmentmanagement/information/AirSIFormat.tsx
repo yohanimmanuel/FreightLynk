@@ -464,26 +464,26 @@ const AirSIFormat: React.FC<AirSIFormatProps> = ({ data, onClose }) => {
               {/* Cargo Details Rows */}
               <div style={{ height: '300px' }}>
                 {data.cargoDetails?.map((cargo, index) => (
-                  <div key={index} className="grid grid-cols-22 text-xs border-t border-gray-900" style={{ color: '#111827' }}>
-                    <div className="col-span-2 p-1 border-r border-gray-900">
+                  <div key={index} className="grid grid-cols-22 text-xs" style={{ color: '#111827' }}>
+                    <div className="col-span-2 p-1">
                       <div className="text-xs">{cargo.packages}</div>
                     </div>
-                    <div className="col-span-2 p-1 border-r border-gray-900">
+                    <div className="col-span-2 p-1">
                       <div className="text-xs">{cargo.grossWeight}</div>
                     </div>
-                    <div className="col-span-1 p-1 border-r border-gray-900 text-center">
+                    <div className="col-span-1 p-1 text-center">
                       <div className="text-xs">kg</div>
                     </div>
-                    <div className="col-span-3 p-1 border-r border-gray-900">
+                    <div className="col-span-3 p-1">
                       <div className="text-xs">({cargo.rateClass || 'N'}) {cargo.commodityItemNo || 'N/A'}</div>
                     </div>
-                    <div className="col-span-2 p-1 border-r border-gray-900">
+                    <div className="col-span-2 p-1">
                       <div className="text-xs">{cargo.chargeableWeight}</div>
                     </div>
-                    <div className="col-span-2 p-1 border-r border-gray-900">
+                    <div className="col-span-2 p-1">
                       <div className="text-xs">{cargo.rateCharge || 'N/A'}</div>
                     </div>
-                    <div className="col-span-3 p-1 border-r border-gray-900">
+                    <div className="col-span-3 p-1">
                       <div className="text-xs">{cargo.total || 'N/A'}</div>
                     </div>
                     <div className="col-span-5 p-1">
@@ -500,56 +500,56 @@ const AirSIFormat: React.FC<AirSIFormatProps> = ({ data, onClose }) => {
                 <div className="border-b border-gray-900 p-2">
                   <div className="font-semibold text-xs" style={{ color: '#111827' }}>ULD INFORMATION</div>
                 </div>
-                <div className="grid grid-cols-12 text-xs border-b border-gray-900" style={{ color: '#111827' }}>
-                  <div className="col-span-2 border-r border-gray-900 p-2">
+                <div className="grid grid-cols-20 text-xs border-b border-gray-900" style={{ color: '#111827' }}>
+                  <div className="col-span-3 border-r border-gray-900 p-2">
                     <div className="font-semibold">ULD No.</div>
                   </div>
-                  <div className="col-span-2 border-r border-gray-900 p-2">
+                  <div className="col-span-3 border-r border-gray-900 p-2">
                     <div className="font-semibold">HAWB No.</div>
                   </div>
-                  <div className="col-span-1 border-r border-gray-900 p-2">
+                  <div className="col-span-2 border-r border-gray-900 p-2">
                     <div className="font-semibold">Type</div>
                   </div>
-                  <div className="col-span-2 border-r border-gray-900 p-2">
+                  <div className="col-span-3 border-r border-gray-900 p-2">
                     <div className="font-semibold">Description</div>
                   </div>
-                  <div className="col-span-1 border-r border-gray-900 p-2">
+                  <div className="col-span-2 border-r border-gray-900 p-2">
                     <div className="font-semibold">Pkgs</div>
                   </div>
-                  <div className="col-span-1 border-r border-gray-900 p-2">
+                  <div className="col-span-2 border-r border-gray-900 p-2">
                     <div className="font-semibold">Gross (kg)</div>
                   </div>
-                  <div className="col-span-1 border-r border-gray-900 p-2">
+                  <div className="col-span-2 border-r border-gray-900 p-2">
                     <div className="font-semibold">Volume (cbm)</div>
                   </div>
-                  <div className="col-span-1 p-2">
+                  <div className="w-50 col-span-2 p-2">
                     <div className="font-semibold">Chargeable (kg)</div>
                   </div>
                 </div>
                 {data.ulds.map((uld, index) => (
-                  <div key={index} className="grid grid-cols-12 text-xs" style={{ color: '#111827' }}>
-                    <div className="col-span-2 p-2">
+                  <div key={index} className="grid grid-cols-20 text-xs" style={{ color: '#111827' }}>
+                    <div className="col-span-3 p-2">
                       <div>{uld.uldNumber}</div>
                     </div>
-                    <div className="col-span-2 p-2">
+                    <div className="col-span-3 p-2">
                       <div>{uld.awbNumber}</div>
                     </div>
-                    <div className="col-span-1 p-2">
+                    <div className="col-span-2 p-2">
                       <div>{uld.uldType}</div>
                     </div>
-                    <div className="col-span-2 p-2">
+                    <div className="col-span-3 p-2">
                       <div>{uld.description || 'N/A'}</div>
                     </div>
-                    <div className="col-span-1 p-2">
+                    <div className="col-span-2 p-2">
                       <div>{uld.packages || 'N/A'}</div>
                     </div>
-                    <div className="col-span-1 p-2">
+                    <div className="col-span-2 p-2">
                       <div>{uld.grossWeight || 'N/A'}</div>
                     </div>
-                    <div className="col-span-1 p-2">
+                    <div className="col-span-2 p-2">
                       <div>{uld.volume || 'N/A'}</div>
                     </div>
-                    <div className="col-span-1 p-2">
+                    <div className="col-span-2 p-2">
                       <div>{uld.chargeableWeight}</div>
                     </div>
                   </div>
@@ -578,28 +578,6 @@ const AirSIFormat: React.FC<AirSIFormatProps> = ({ data, onClose }) => {
                 )}
               </div>
             )}
-
-            {/* Documentation Requirements */}
-            <div className="border border-gray-900 border-t-0">
-              <div className="border-b border-gray-900 p-2">
-                <div className="font-semibold text-xs" style={{ color: '#111827' }}>DOCUMENTATION REQUIREMENTS</div>
-              </div>
-              <div className="grid grid-cols-2 text-xs" style={{ color: '#111827' }}>
-                <div className="p-2">
-                  <div className="font-semibold mb-2">Required Documents</div>
-                  <div className="ml-2">
-                    <div>☐ Commercial Invoice: {data.documents.commercialInvoice ? '☑' : '☐'}</div>
-                    <div>☐ Packing List: {data.documents.packingList ? '☑' : '☐'}</div>
-                    <div>☐ Certificate of Origin: {data.documents.certificateOfOrigin ? '☑' : '☐'}</div>
-                    <div>☐ Phytosanitary Certificate: {data.documents.phytosanitaryCertificate ? '☑' : '☐'}</div>
-                  </div>
-                </div>
-                <div className="p-2">
-                  <div className="font-semibold mb-2">Other Documents</div>
-                  <div className="ml-2">{data.documents.otherDocuments || 'N/A'}</div>
-                </div>
-              </div>
-            </div>
 
             {/* Insurance and Liability */}
             <div className="border border-gray-900 border-t-0">

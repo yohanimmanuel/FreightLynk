@@ -67,6 +67,7 @@ interface AirwayBillData {
     rateCharge: string;
     total: string;
     description: string;
+    measurements: string;
   }>;
   
   // Charges Summary
@@ -540,7 +541,7 @@ const AirwayBillFormat: React.FC<AirwayBillFormatProps> = ({ data, blType = 'maw
                 </div>
                 <div className="col-span-5 p-1">
                   {airwayBillData.goods.map((good, index) => (
-                    <div key={index} className="text-xs mb-1">{good.description}</div>
+                    <div key={index} className="text-xs mb-1">{good.description} {good.measurements && `(${good.measurements} cbm)`}</div>
                   ))}
                 </div>
               </div>

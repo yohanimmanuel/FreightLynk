@@ -116,7 +116,7 @@ const ShipmentDetails: React.FC<ShipmentDetailsProps> = ({ shipmentId }) => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           {activeDashboard === 'home' && (
             <>
               {/* Main Tabs - Only show for Home dashboard */}
@@ -163,7 +163,7 @@ const ShipmentDetails: React.FC<ShipmentDetailsProps> = ({ shipmentId }) => {
                   </div>           
 
                   {/* Sub-tab Content */}
-                  <div className="p-4">
+                  <div className="p-4 min-w-0">
                     {activeSubTab === 'order' && (
                       <Orders shipmentId={shipmentId} />
                     )}
@@ -173,7 +173,9 @@ const ShipmentDetails: React.FC<ShipmentDetailsProps> = ({ shipmentId }) => {
                     )}
 
                     {activeSubTab === 'shipping-instruction' && (
-                      <ShippingInstructions shipmentId={shipmentId} />
+                      <div className="min-w-0">
+                        <ShippingInstructions shipmentId={shipmentId} />
+                      </div>
                     )}
 
                     {activeSubTab === 'customs' && (

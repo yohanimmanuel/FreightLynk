@@ -100,6 +100,7 @@ interface FCLShipmentData extends BaseShipmentData {
     packageType: string;
     tare: string;
     vgm: string;
+    temperature: string;
     marks: string;
     description: string;
   }>;
@@ -299,7 +300,7 @@ const getFCLMockData = (): FCLShipmentData => ({
   containers: [{
         number: 'ABCD1234567',
         type: '40HC',
-    quantity: '1',
+        quantity: '1',
         sealNumber: 'SEAL001',
         grossWeight: '25,000',
         measurement: '67.5',
@@ -307,6 +308,7 @@ const getFCLMockData = (): FCLShipmentData => ({
         packageType: 'CTNS',
         tare: '3,800',
         vgm: '28,800',
+        temperature: '20°C',
         marks: 'FCL/FCL-CY/CY',
         description: 'GENERAL CARGO'
   }],
@@ -589,8 +591,6 @@ const getMockDataByServiceMode = (serviceMode: 'FCL' | 'LCL' | 'AIR'): ShipmentD
     setShowSIModal(true);
   };
 
-
-
   const handleCopyData = () => {
     let formattedData = '';
 
@@ -828,7 +828,7 @@ ULD ${index + 1}:
   ), [editData]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full">
       {/* Service Mode Selector */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2">
@@ -1028,90 +1028,46 @@ ULD ${index + 1}:
          </div>
       </div>
 
-      {/* Second Row - Container/ULD Details Table */}
+            {/* Second Row - Container/Cargo Details Tables */}
+      {/* FCL Container Details Table */}
       {fieldConfig.showContainerDetails && shipmentData.serviceMode === 'FCL' && (
-      <div className="bg-white border border-gray-200 rounded-lg p-4">
-        <h3 className="text-md font-semibold text-gray-900 mb-4">Container Details</h3>
-        <div className="overflow-x-auto border border-gray-200 rounded-lg">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Container No.</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Seal No.</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gross Weight</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Measurement (CBM)</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tare</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Package Type</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No of Pkgs</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">VGM</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Note</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-                {(shipmentData as FCLShipmentData).containers.map((container, index) => (
-                <tr key={index}>
-                  <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{index + 1}</td>
-                  <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{container.type}</td>
-                    <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{container.quantity}</td>
-                  <td className="px-4 py-4 whitespace-nowrap text-xs font-mono text-gray-900">{container.number}</td>
-                  <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{container.sealNumber}</td>
-                  <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{container.grossWeight} KGS</td>
-                  <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{container.measurement}</td>
-                  <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{container.tare} KGS</td>
-                   <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{container.packageType}</td>
-                   <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{container.packages}</td>
-                   <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{container.vgm} KGS</td>
-                   <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900">{container.marks}</td>
-                   <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900">Method 1</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      )}
-
-      {/* ULD Details Table for Air Freight */}
-      {fieldConfig.showULDInfo && shipmentData.serviceMode === 'AIR' && (
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <h3 className="text-md font-semibold text-gray-900 mb-4">ULD Details</h3>
-          <div className="overflow-x-auto border border-gray-200 rounded-lg">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ULD No.</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HAWB No.</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description of Goods</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Package Type</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No of Pkgs</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gross Weight (kg)</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Volume (cbm)</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chargeable Weight (kg)</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Temperature</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Special Equipment</th>
+        <div className="bg-white border border-gray-200 rounded-lg p-4 min-w-0">
+          <h3 className="text-md font-semibold text-gray-900 mb-4">Container Details</h3>
+          <div className="w-full overflow-x-auto rounded-lg">
+            <table className="w-full min-w-max table-auto border border-gray-200">
+              <thead>
+                <tr className="border-b border-gray-200 bg-gray-50">
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">No</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">Type</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">Quantity</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">Container No.</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">Seal No.</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">Gross Weight</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">Measurement</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">Tare</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">Package Type</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">No of Pkgs</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">VGM</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">Temperature</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">Note</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {(shipmentData as AIRShipmentData).ulds.map((uld, index) => (
-                  <tr key={index}>
-                    <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{index + 1}</td>
-                    <td className="px-4 py-4 whitespace-nowrap text-xs font-mono text-gray-900">{uld.number}</td>
-                    <td className="px-4 py-4 whitespace-nowrap text-xs font-mono text-gray-900">{uld.awbNumber}</td>
-                    <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{uld.type}</td>
-                    <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{uld.description}</td>
-                    <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{uld.packageType}</td>
-                    <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{uld.packages}</td>
-                    <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{uld.grossWeight}</td>
-                    <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{uld.volume}</td>
-                    <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{uld.chargeableWeight}</td>
-                    <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{uld.temperature}</td>
-                    <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{uld.specialEquipment}</td>
+              <tbody>
+                {(shipmentData as FCLShipmentData).containers.map((container, index) => (
+                  <tr key={index} className="border-b border-gray-100">
+                    <td className="py-4 px-4 text-xs text-gray-900">{index + 1}</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{container.type}</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{container.quantity}</td>
+                    <td className="py-4 px-4 text-xs font-mono text-gray-900">{container.number}</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{container.sealNumber}</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{container.grossWeight} KGS</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{container.measurement}</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{container.tare} KGS</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{container.packageType}</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{container.packages}</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{container.vgm} KGS</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{container.temperature}</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{container.marks}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1119,52 +1075,97 @@ ULD ${index + 1}:
           </div>
         </div>
       )}
-      
-       {/* LCL Cargo Details Table */}
-        {fieldConfig.showLCLCargoDetails && shipmentData.serviceMode === 'LCL' && (
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <h3 className="text-md font-semibold text-gray-900 mb-4">LCL Cargo Details</h3>
-            <div className="overflow-x-auto border border-gray-200 rounded-lg">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Marks & Numbers</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description of Goods</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Package Type</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No of Pkgs</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gross Weight (kg)</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Measurement (cbm)</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chargeable Weight (kg)</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {(shipmentData as LCLShipmentData).lclCargoDetails.map((cargo, index) => (
-                    <tr key={index}>
-                      <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{index + 1}</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{cargo.marks}</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{cargo.description}</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{cargo.packageType}</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{cargo.packages}</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{cargo.grossWeight}</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{cargo.measurement}</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-900">{cargo.chargeableWeight}</td>
-                    </tr>
-                  )) || (
-                    <tr>
-                      <td colSpan={10} className="px-4 py-4 text-center text-xs text-gray-500">
-                        No LCL cargo details available
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
 
-      {/* Third Row - Freight & Charges and Additional Information */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* AIR ULD Details Table */}
+      {fieldConfig.showULDInfo && shipmentData.serviceMode === 'AIR' && (
+        <div className="bg-white border border-gray-200 rounded-lg p-4 min-w-0">
+          <h3 className="text-md font-semibold text-gray-900 mb-4">ULD Details</h3>
+          <div className="w-full overflow-x-auto rounded-lg">
+            <table className="w-full min-w-max table-auto border border-gray-200">
+              <thead>
+                <tr className="border-b border-gray-200 bg-gray-50">
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">No</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">ULD No.</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">HAWB No.</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">Type</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">Description of Goods</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">Package Type</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">No of Pkgs</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">Gross Weight (kg)</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">Volume (cbm)</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">Chargeable Weight (kg)</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">Temperature</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">Special Equipment</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(shipmentData as AIRShipmentData).ulds.map((uld, index) => (
+                  <tr key={index} className="border-b border-gray-100">
+                    <td className="py-4 px-4 text-xs text-gray-900">{index + 1}</td>
+                    <td className="py-4 px-4 text-xs font-mono text-gray-900">{uld.number}</td>
+                    <td className="py-4 px-4 text-xs font-mono text-gray-900">{uld.awbNumber}</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{uld.type}</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{uld.description}</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{uld.packageType}</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{uld.packages}</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{uld.grossWeight}</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{uld.volume}</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{uld.chargeableWeight}</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{uld.temperature}</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{uld.specialEquipment}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* LCL Cargo Details Table */}
+      {fieldConfig.showLCLCargoDetails && shipmentData.serviceMode === 'LCL' && (
+        <div className="bg-white border border-gray-200 rounded-lg p-4 min-w-0">
+          <h3 className="text-md font-semibold text-gray-900 mb-4">LCL Cargo Details</h3>
+          <div className="w-full overflow-x-auto rounded-lg">
+            <table className="w-full min-w-max table-auto border border-gray-200">
+              <thead>
+                <tr className="border-b border-gray-200 bg-gray-50">
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">No</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">Marks & Numbers</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">Description of Goods</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">Package Type</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">No of Pkgs</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">Gross Weight (kg)</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">Measurement (cbm)</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2 px-4">Chargeable Weight (kg)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(shipmentData as LCLShipmentData).lclCargoDetails.map((cargo, index) => (
+                  <tr key={index} className="border-b border-gray-100">
+                    <td className="py-4 px-4 text-xs text-gray-900">{index + 1}</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{cargo.marks}</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{cargo.description}</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{cargo.packageType}</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{cargo.packages}</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{cargo.grossWeight}</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{cargo.measurement}</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{cargo.chargeableWeight}</td>
+                  </tr>
+                )) || (
+                  <tr>
+                    <td colSpan={8} className="text-center text-xs text-gray-500 py-4">
+                      No LCL cargo details available
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+       {/* Third Row - Freight & Charges and Additional Information */}
+       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Vessel/Aircraft Information */}
         {(fieldConfig.showVesselInfo || fieldConfig.showAircraftInfo) && (
           <div className="bg-white border border-gray-200 rounded-lg p-4">
@@ -1362,7 +1363,7 @@ ULD ${index + 1}:
         </div>
 
         {/* Content */}
-        <div className="p-4 overflow-y-auto max-h-[calc(90vh-140px)]">
+        <div className="p-4 overflow-y-auto max-h-[calc(90vh-140px)] hide-scrollbar">
             <div className="space-y-4">
             {/* General Information */}
             <div className="bg-white border border-gray-200 rounded-lg p-4">
@@ -1672,7 +1673,7 @@ ULD ${index + 1}:
                 onClick={() => {
                   const newContainer = {
                     number: '',
-                        quantity: '',
+                    quantity: '',
                     type: '',
                     sealNumber: '',
                     grossWeight: '',
@@ -1681,6 +1682,7 @@ ULD ${index + 1}:
                     packageType: '',
                     tare: '',
                     vgm: '',
+                    temperature: '',
                     marks: '',
                     description: ''
                   };
@@ -1696,7 +1698,7 @@ ULD ${index + 1}:
               </button>
             </div>
             <div className="overflow-x-auto border border-gray-200 rounded-lg">
-                <table className="min-w-full divide-y divide-gray-200">
+                <table className="w-full min-w-max table-auto border border-gray-200">
                     <thead className="bg-gray-50">
                     <tr>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
@@ -1709,7 +1711,8 @@ ULD ${index + 1}:
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tare</th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Package Type</th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No of Pkgs</th>
-                                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">VGM</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">VGM</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Temperature</th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Note</th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                       </tr>
@@ -1838,14 +1841,26 @@ ULD ${index + 1}:
                             className="w-full p-1 border border-gray-300 rounded text-gray-900 text-xs"
                             />
                         </td>
-                                                <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
-                          <input
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
+                            <input
+                            type="text"
+                            value={container.temperature}
+                            onChange={(e) => {
+                                const newContainers = [...(editData as FCLShipmentData).containers];
+                                newContainers[index] = { ...container, temperature: e.target.value };
+                                setEditData(prev => ({ ...prev, containers: newContainers } as FCLShipmentData));
+                            }}
+                            className="w-full p-1 border border-gray-300 rounded text-gray-900 text-xs"
+                          />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
+                            <input
                             type="text"
                             value={container.marks}
                             onChange={(e) => {
-                              const newContainers = [...(editData as FCLShipmentData).containers];
-                              newContainers[index] = { ...container, marks: e.target.value };
-                              setEditData(prev => ({ ...prev, containers: newContainers } as FCLShipmentData));
+                                const newContainers = [...(editData as FCLShipmentData).containers];
+                                newContainers[index] = { ...container, marks: e.target.value };
+                                setEditData(prev => ({ ...prev, containers: newContainers } as FCLShipmentData));
                             }}
                             className="w-full p-1 border border-gray-300 rounded text-gray-900 text-xs"
                           />
@@ -1872,7 +1887,7 @@ ULD ${index + 1}:
 
             {/* LCL Cargo Details Table */}
             {editData.serviceMode === 'LCL' && (
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <div className="bg-white border border-gray-200 rounded-lg p-4 min-w-0">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-md font-semibold text-gray-900">LCL Cargo Details</h3>
                   <button
@@ -1898,7 +1913,7 @@ ULD ${index + 1}:
                   </button>
                 </div>
                 <div className="overflow-x-auto border border-gray-200 rounded-lg">
-                  <table className="min-w-full divide-y divide-gray-200">
+                  <table className="w-full min-w-max table-auto border border-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
@@ -2022,7 +2037,7 @@ ULD ${index + 1}:
 
             {/* AIR ULD Details Table */}
             {editData.serviceMode === 'AIR' && (
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <div className="bg-white border border-gray-200 rounded-lg p-4 min-w-0">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-md font-semibold text-gray-900">AIR ULD Details</h3>
                   <button
@@ -2052,7 +2067,7 @@ ULD ${index + 1}:
                   </button>
                 </div>
                 <div className="overflow-x-auto border border-gray-200 rounded-lg">
-                  <table className="min-w-full divide-y divide-gray-200">
+                  <table className="w-full min-w-max table-auto border border-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
@@ -2776,7 +2791,8 @@ ULD ${index + 1}:
               chargeableWeight: uld.chargeableWeight,
               rateCharge: '5.50',
               total: '2,750.00',
-              description: uld.description
+              description: uld.description,
+              measurements: uld.volume
             })),
             prepaid: {
               weightCharge: '2,750.00',
@@ -2852,7 +2868,7 @@ ULD ${index + 1}:
             vgm: container.vgm,
             marks: container.marks,
             description: container.description,
-            packages: container.packages,
+            packages: container.quantity,
             weight: container.grossWeight,
             volume: container.measurement
           })) : [],
@@ -2951,12 +2967,15 @@ ULD ${index + 1}:
             // ULD Specific Information (Equivalent to FCL)
             ulds: (shipmentData as AIRShipmentData).ulds.map(uld => ({
               uldNumber: uld.number,
-              awbNumber: (shipmentData as AIRShipmentData).hawbNumber, // Use HAWB for air shipments (customer's waybill)
+              awbNumber: uld.awbNumber, // Use the actual AWB number from ULD data
               uldType: uld.type,
-              tareWeight: uld.grossWeight,
+              description: uld.description,
+              packages: uld.packages,
+              grossWeight: uld.grossWeight,
+              volume: uld.volume,
               chargeableWeight: uld.chargeableWeight,
-              temperature: '', // Not available in current data structure
-              specialEquipment: '' // Not available in current data structure
+              temperature: uld.temperature || 'N/A',
+              specialEquipment: uld.specialEquipment || 'N/A'
             })),
             positioningInstructions: '', // Not available in current data structure
             equipmentRequirements: '', // Not available in current data structure
@@ -2978,7 +2997,11 @@ ULD ${index + 1}:
               description: uld.description,
               grossWeight: uld.grossWeight,
               chargeableWeight: uld.chargeableWeight,
-              measurements: uld.volume
+              measurements: uld.volume,
+              rateClass: 'G', // General cargo class for air freight
+              commodityItemNo: uld.awbNumber, // Use AWB number as commodity item number
+              rateCharge: (parseFloat(uld.chargeableWeight) > 0 ? (2750.00 / parseFloat(uld.chargeableWeight)).toFixed(2) : '5.50'), // Calculate rate based on weight
+              total: (parseFloat(uld.chargeableWeight) * 5.50).toFixed(2) // Calculate total based on chargeable weight
             })),
             
             // Documentation Requirements
@@ -3085,7 +3108,7 @@ ULD ${index + 1}:
             containerType: container.type,
             tareWeight: container.tare,
             vgm: container.vgm,
-            temperature: '', // Not available in current data structure
+            temperature: container.temperature, // Not available in current data structure
             specialEquipment: '' // Not available in current data structure
           })) : undefined,
           stowageInstructions: '', // Not available in current data structure

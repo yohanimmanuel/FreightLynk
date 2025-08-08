@@ -421,50 +421,95 @@ const OceanSIFormat: React.FC<OceanSIFormatProps> = ({ data, onClose }) => {
                      </div>
                    </div>
 
-            {/* Cargo Details Table */}
-             <div className="border border-gray-900 border-t-0">
-               <div className="grid grid-cols-12 text-xs border-b border-gray-900" style={{ color: '#111827' }}>
-                 <div className="col-span-2 border-r border-gray-900 p-2">
-                   <div className="font-semibold">Marks and Numbers</div>
-                 </div>
-                 <div className="col-span-2 border-r border-gray-900 p-2">
-                   <div className="font-semibold">No of Container/Packages</div>
-                 </div>
-                 <div className="col-span-4 border-r border-gray-900 p-2">
-                   <div className="font-semibold">Kinds & Description of Goods</div>
-                 </div>
-                 <div className="col-span-2 border-r border-gray-900 p-2">
-                   <div className="font-semibold">Gross Weight (kg)</div>
-                 </div>
-                 <div className="col-span-2 p-2">
-                   <div className="font-semibold">Measurements (m³)</div>
-                 </div>
-               </div>
-               
-               {/* Cargo Details Rows */}
-               <div style={{ height: '300px' }}>
-                 {data.cargoDetails?.map((cargo, index) => (
-                   <div key={index} className="grid grid-cols-12 text-xs" style={{ color: '#111827' }}>
-                     <div className="col-span-2 p-2">
-                       <div>{cargo.marks}</div>
-                     </div>
-                     <div className="col-span-2 p-2">
-                       <div>{cargo.kind}</div>
-                       <div>{cargo.packages}</div>
-                     </div>
-                     <div className="col-span-4 p-2">
-                       <div>{cargo.description}</div>
-                     </div>
-                     <div className="col-span-2 p-2">
-                       <div>{cargo.grossWeight}</div>
-                     </div>
-                     <div className="col-span-2 p-2">
-                       <div>{cargo.measurements}</div>
-                     </div>
-                   </div>
-                 ))}
-               </div>
-             </div>
+            {/* Cargo Details Table - Different structure for FCL and LCL */}
+            {data.typeOfShipment?.toLowerCase() === 'fcl' ? (
+              /* FCL Cargo Table - Similar to BL Format */
+              <div className="border border-gray-900 border-t-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs" style={{ height: '300px' }}>
+                    <thead>
+                      <tr>
+                        <th className="p-2 text-left text-gray-900" style={{ width: '13%', whiteSpace: 'nowrap' }}>Marks & Numbers</th>
+                        <th className="p-2 text-left text-gray-900" style={{ width: '25%', whiteSpace: 'nowrap' }}>No. of Container or Packages</th>
+                        <th className="p-2 text-left text-gray-900" style={{ width: '30%', whiteSpace: 'nowrap' }}>Kind of Packages: Description of Goods</th>
+                        <th className="p-2 text-left text-gray-900" style={{ width: '18%', whiteSpace: 'nowrap' }}>Gross Weight (KGS)</th>
+                        <th className="p-2 text-left text-gray-900" style={{ width: '20%', whiteSpace: 'nowrap' }}>Measurement (CBM)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.containers?.map((container, index) => (
+                        <tr key={index}>
+                          <td className="p-4 text-gray-900 align-top" style={{ minHeight: '100px', height: 'auto', width: '20%' }}>
+                            <div className="text-xs leading-normal break-words mb-2">{container.containerNumber}</div>
+                            <div className="text-xs leading-normal break-words mb-2">{container.sealNumber}</div>
+                            <div className="text-xs leading-normal break-words">{data.cargoDetails?.[0]?.marks || ''}</div>
+                          </td>
+                          <td className="p-4 text-gray-900 align-top text-xs" style={{ minHeight: '100px', height: 'auto', width: '15%' }}>
+                            <div>{data.cargoDetails?.[0]?.packages || '1'}</div>
+                          </td>
+                          <td className="p-4 text-gray-900 align-top" style={{ minHeight: '100px', height: 'auto', width: '40%' }}>
+                            <div className="text-xs leading-normal break-words mb-2">{container.containerType}</div>
+                            <div className="text-xs leading-normal break-words mb-2">{data.cargoDetails?.[0]?.description || ''}</div>
+                            <div className="text-xs leading-normal break-words mb-2">FCL</div>
+                          </td>
+                          <td className="p-4 text-gray-900 align-top text-xs" style={{ minHeight: '100px', height: 'auto', width: '12%' }}>
+                            <div>{data.cargoDetails?.[0]?.grossWeight || ''}</div>
+                          </td>
+                          <td className="p-4 text-gray-900 align-top text-xs" style={{ minHeight: '100px', height: 'auto', width: '13%' }}>
+                            <div>{data.cargoDetails?.[0]?.measurements || ''}</div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              /* LCL Cargo Table - Original Structure */
+              <div className="border border-gray-900 border-t-0">
+                <div className="grid grid-cols-12 text-xs border-b border-gray-900" style={{ color: '#111827' }}>
+                  <div className="col-span-2 border-r border-gray-900 p-2">
+                    <div className="font-semibold">Marks and Numbers</div>
+                  </div>
+                  <div className="col-span-2 border-r border-gray-900 p-2">
+                    <div className="font-semibold">No of Container/Packages</div>
+                  </div>
+                  <div className="col-span-4 border-r border-gray-900 p-2">
+                    <div className="font-semibold">Kinds & Description of Goods</div>
+                  </div>
+                  <div className="col-span-2 border-r border-gray-900 p-2">
+                    <div className="font-semibold">Gross Weight (kg)</div>
+                  </div>
+                  <div className="col-span-2 p-2">
+                    <div className="font-semibold">Measurements (m³)</div>
+                  </div>
+                </div>
+                
+                {/* Cargo Details Rows */}
+                <div style={{ height: '300px' }}>
+                  {data.cargoDetails?.map((cargo, index) => (
+                    <div key={index} className="grid grid-cols-12 text-xs" style={{ color: '#111827' }}>
+                      <div className="col-span-2 p-2">
+                        <div>{cargo.marks}</div>
+                      </div>
+                      <div className="col-span-2 p-2">
+                        <div>{cargo.kind}</div>
+                        <div>{cargo.packages}</div>
+                      </div>
+                      <div className="col-span-4 p-2">
+                        <div>{cargo.description}</div>
+                      </div>
+                      <div className="col-span-2 p-2">
+                        <div>{cargo.grossWeight}</div>
+                      </div>
+                      <div className="col-span-2 p-2">
+                        <div>{cargo.measurements}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
              {/* FCL Specific Information */}
              {data.typeOfShipment?.toLowerCase() === 'fcl' && data.containers && (
                <div className="border border-gray-900 border-t-0">
@@ -564,28 +609,6 @@ const OceanSIFormat: React.FC<OceanSIFormatProps> = ({ data, onClose }) => {
                  </div>
                </div>
              )}
-
-             {/* Documentation Requirements */}
-             <div className="border border-gray-900 border-t-0">
-               <div className="border-b border-gray-900 p-2">
-                 <div className="font-semibold text-xs" style={{ color: '#111827' }}>DOCUMENTATION REQUIREMENTS</div>
-               </div>
-               <div className="grid grid-cols-2 text-xs" style={{ color: '#111827' }}>
-                 <div className="p-2">
-                   <div className="font-semibold mb-2">Required Documents</div>
-                   <div className="ml-2">
-                     <div>☐ Commercial Invoice: {data.documents.commercialInvoice ? '☑' : '☐'}</div>
-                     <div>☐ Packing List: {data.documents.packingList ? '☑' : '☐'}</div>
-                     <div>☐ Certificate of Origin: {data.documents.certificateOfOrigin ? '☑' : '☐'}</div>
-                     <div>☐ Phytosanitary Certificate: {data.documents.phytosanitaryCertificate ? '☑' : '☐'}</div>
-                   </div>
-                 </div>
-                 <div className="p-2">
-                   <div className="font-semibold mb-2">Other Documents</div>
-                   <div className="ml-2">{data.documents.otherDocuments || 'N/A'}</div>
-                 </div>
-               </div>
-             </div>
 
              {/* Insurance and Liability */}
              <div className="border border-gray-900 border-t-0">

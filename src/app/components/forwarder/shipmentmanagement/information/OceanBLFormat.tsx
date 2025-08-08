@@ -257,7 +257,7 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
 
         {/* BL Content */}
         <div className="p-4 overflow-y-auto max-h-[calc(90vh-140px)] hide-scrollbar">
-          <div ref={printRef} className="bg-white border border-gray-900 max-w-4xl mx-auto">
+          <div ref={printRef} className="bg-white border border-gray-900 max-w-5xl mx-auto">
                                    {/* Header Section - Freightek Format */}
                        <div className="border-b border-gray-900 border-t-0 border-l-0 border-r-0">
               <div className="grid grid-cols-2">
@@ -397,11 +397,11 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
                 <table className="w-full text-xs border-t border-gray-900" style={{ height: '430px' }}>
                   <thead>
                     <tr>
-                      <th className="p-2 text-left text-gray-900" style={{ width: '20%' }}>Marks & Numbers</th>
-                      <th className="p-2 text-left text-gray-900" style={{ width: '15%' }}>No. of Container or Packages</th>
-                      <th className="p-2 text-left text-gray-900" style={{ width: '40%' }}>Kind of Packages: Description of Goods</th>
-                      <th className="p-2 text-left text-gray-900" style={{ width: '12%' }}>Gross Weight (KGS)</th>
-                      <th className="p-2 text-left text-gray-900" style={{ width: '13%' }}>Measurement (CBM)</th>
+                      <th className="p-2 text-left text-gray-900" style={{ width: '13%', whiteSpace: 'nowrap' }}>Marks & Numbers</th>
+                      <th className="p-2 text-left text-gray-900" style={{ width: '25%', whiteSpace: 'nowrap' }}>No. of Container or Packages</th>
+                      <th className="p-2 text-left text-gray-900" style={{ width: '30%', whiteSpace: 'nowrap' }}>Kind of Packages: Description of Goods</th>
+                      <th className="p-2 text-left text-gray-900" style={{ width: '18%', whiteSpace: 'nowrap' }}>Gross Weight (KGS)</th>
+                      <th className="p-2 text-left text-gray-900" style={{ width: '20%', whiteSpace: 'nowrap' }}>Measurement (CBM)</th>
                     </tr>
                   </thead>
                   <tbody>
