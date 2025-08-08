@@ -103,6 +103,9 @@ interface FCLShipmentData extends BaseShipmentData {
     temperature: string;
     marks: string;
     description: string;
+    commercialInvoiceNo?: string;
+    lcNumber?: string;
+    hsCode?: string;
   }>;
   cargo: {
     description: string;
@@ -307,7 +310,10 @@ const getFCLMockData = (): FCLShipmentData => ({
         vgm: '28,800',
         temperature: '20°C',
         marks: 'FCL/FCL-CY/CY',
-        description: 'Electronics and Machinery'
+        description: 'Electronics and Machinery',
+        commercialInvoiceNo: 'INV-2024-001',
+        lcNumber: 'LC-2024-001',
+        hsCode: '8517.13.00'
   }],
   
     freightCharges: {
@@ -1060,7 +1066,7 @@ ULD ${index + 1}:
                     <td className="py-4 px-4 text-xs text-gray-900">{container.packages}</td>
                     <td className="py-4 px-4 text-xs text-gray-900">{container.vgm} KGS</td>
                     <td className="py-4 px-4 text-xs text-gray-900">{container.temperature}</td>
-                    <td className="py-4 px-4 text-xs text-gray-900">{container.marks}</td>
+                    <td className="py-4 px-4 text-xs text-gray-900">{shipmentData.totalCargo.totalContainers}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1248,6 +1254,12 @@ ULD ${index + 1}:
               <span className="text-gray-500">Payment Terms:</span>
               <span className="text-gray-900">{shipmentData.freightCharges.paymentTerms}</span>
             </div>
+            {shipmentData.serviceMode === 'FCL' && (shipmentData as FCLShipmentData).containers[0]?.lcNumber && (
+                     <div className="flex items-center justify-between">
+                       <span className="text-gray-500">L/C Number:</span>
+                       <span className="text-gray-900">{(shipmentData as FCLShipmentData).containers[0].lcNumber}</span>
+                     </div>
+                   )}
              <div className="flex items-center justify-between">
                <span className="text-gray-500">Payable At:</span>
                <span className="text-gray-900">{shipmentData.freightCharges.payableAt}</span>
@@ -1302,6 +1314,12 @@ ULD ${index + 1}:
                      <span className="text-gray-500">Document Instructions:</span>
                      <span className="text-gray-900">{shipmentData.documentInstructions}</span>
                    </div>
+                   {shipmentData.serviceMode === 'FCL' && (shipmentData as FCLShipmentData).containers[0]?.commercialInvoiceNo && (
+                     <div className="flex items-center justify-between">
+                       <span className="text-gray-500">Commercial Invoice No:</span>
+                       <span className="text-gray-900">{(shipmentData as FCLShipmentData).containers[0].commercialInvoiceNo}</span>
+                     </div>
+                   )}
                  </div>
                 
                 {/* Right Column */}
@@ -1330,10 +1348,16 @@ ULD ${index + 1}:
                      <span className="text-gray-500">Dangerous Goods:</span>
                      <span className="text-gray-900">{shipmentData.dangerousGoods}</span>
                    </div>
-            <div className="flex items-center justify-between">
+                               <div className="flex items-center justify-between">
                      <span className="text-gray-500">Credit Information:</span>
                      <span className="text-gray-900">{shipmentData.creditInfo}</span>
-             </div>
+                   </div>
+                   {shipmentData.serviceMode === 'FCL' && (shipmentData as FCLShipmentData).containers[0]?.hsCode && (
+                     <div className="flex items-center justify-between">
+                       <span className="text-gray-500">HS Code:</span>
+                       <span className="text-gray-900">{(shipmentData as FCLShipmentData).containers[0].hsCode}</span>
+                     </div>
+                   )}
             </div>
         </div>
       </div>
@@ -1849,11 +1873,10 @@ ULD ${index + 1}:
                         <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
                             <input
                             type="text"
-                            value={container.marks}
+                            value={editData.totalCargo.totalContainers}
                             onChange={(e) => {
-                                const newContainers = [...(editData as FCLShipmentData).containers];
-                                newContainers[index] = { ...container, marks: e.target.value };
-                                setEditData(prev => ({ ...prev, containers: newContainers } as FCLShipmentData));
+                                const newTotalCargo = { ...editData.totalCargo, totalContainers: e.target.value };
+                                setEditData(prev => ({ ...prev, totalCargo: newTotalCargo } as FCLShipmentData));
                             }}
                             className="w-full p-1 border border-gray-300 rounded text-gray-900 text-xs"
                           />
@@ -2609,6 +2632,32 @@ ULD ${index + 1}:
                         <option value="YES">YES</option>
                     </select>
                     </div>
+                                         <div>
+                       <label className="block text-gray-500 mb-1 text-xs">Commercial Invoice No</label>
+                       <input
+                         type="text"
+                         value={(editData as FCLShipmentData).containers[0]?.commercialInvoiceNo || ''}
+                         onChange={(e) => {
+                           const newContainers = [...(editData as FCLShipmentData).containers];
+                           newContainers[0] = { ...newContainers[0], commercialInvoiceNo: e.target.value };
+                           setEditData(prev => ({ ...prev, containers: newContainers } as FCLShipmentData));
+                         }}
+                         className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                       />
+                     </div>
+                     <div>
+                       <label className="block text-gray-500 mb-1 text-xs">HS Code</label>
+                       <input
+                         type="text"
+                         value={(editData as FCLShipmentData).containers[0]?.hsCode || ''}
+                         onChange={(e) => {
+                           const newContainers = [...(editData as FCLShipmentData).containers];
+                           newContainers[0] = { ...newContainers[0], hsCode: e.target.value };
+                           setEditData(prev => ({ ...prev, containers: newContainers } as FCLShipmentData));
+                         }}
+                         className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                       />
+                     </div>
                 </div>
                 </div>
                 </div>
@@ -2629,6 +2678,19 @@ ULD ${index + 1}:
                         className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
                     />
                     </div>
+                                         <div>
+                       <label className="block text-gray-500 mb-1 text-xs">L/C Number</label>
+                       <input
+                         type="text"
+                         value={(editData as FCLShipmentData).containers[0]?.lcNumber || ''}
+                         onChange={(e) => {
+                           const newContainers = [...(editData as FCLShipmentData).containers];
+                           newContainers[0] = { ...newContainers[0], lcNumber: e.target.value };
+                           setEditData(prev => ({ ...prev, containers: newContainers } as FCLShipmentData));
+                         }}
+                         className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
+                       />
+                     </div>
                     <div>
                     <label className="block text-gray-500 mb-1 text-xs">Payable At</label>
                     <input
@@ -2851,7 +2913,10 @@ ULD ${index + 1}:
             description: container.description,
             packages: container.quantity,
             weight: container.grossWeight,
-            volume: container.measurement
+            volume: container.measurement,
+            commercialInvoiceNo: container.commercialInvoiceNo,
+            lcNumber: container.lcNumber,
+            hsCode: container.hsCode
           })) : [],
           // For LCL shipments - use LCL cargo details
           lclCargo: shipmentData.serviceMode === 'LCL' ? (shipmentData as LCLShipmentData).lclCargoDetails.map(cargo => ({

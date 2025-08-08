@@ -539,11 +539,11 @@ const AirwayBillFormat: React.FC<AirwayBillFormatProps> = ({ data, blType = 'maw
                     <div key={index} className="text-xs mb-1">{good.total}</div>
                   ))}
                 </div>
-                <div className="col-span-5 p-1">
-                  {airwayBillData.goods.map((good, index) => (
-                    <div key={index} className="text-xs mb-1">{good.description} {good.measurements && `(${good.measurements} cbm)`}</div>
-                  ))}
-                </div>
+                                 <div className="col-span-5 p-1">
+                   {airwayBillData.goods.map((good, index) => (
+                     <div key={index} className="text-xs mb-1">{good.description} {good.measurements && `(${good.measurements} cbm)`}</div>
+                   ))}
+                 </div>
               </div>
 
               {/* Bottom Section - Charges and Certification */}

@@ -55,6 +55,9 @@ interface BLData {
     packages: string;
     weight: string;
     volume: string;
+    commercialInvoiceNo?: string;
+    lcNumber?: string;
+    hsCode?: string;
   }>;
   
   // Cargo Details - LCL
@@ -415,7 +418,16 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
                                     <td className="p-4 text-gray-900 align-top" style={{ minHeight: '100px', height: 'auto', width: '40%' }}>
                                       <div className="text-xs leading-normal break-words mb-2">{container.type}</div>
                                       <div className="text-xs leading-normal break-words mb-2">{container.description}</div>
-                                      <div className="text-xs leading-normal break-words">{data.cargo.serviceMode}</div>
+                                      <div className="text-xs leading-normal break-words mb-2">{data.cargo.serviceMode}</div>
+                                      {container.commercialInvoiceNo && (
+                                        <div className="text-xs leading-normal break-words mb-1">Commercial Invoice No: {container.commercialInvoiceNo}</div>
+                                      )}
+                                      {container.lcNumber && (
+                                        <div className="text-xs leading-normal break-words mb-1">L/C Number: {container.lcNumber}</div>
+                                      )}
+                                      {container.hsCode && (
+                                        <div className="text-xs leading-normal break-words">HS Code: {container.hsCode}</div>
+                                      )}
                                     </td>
                                    <td className="p-4 text-gray-900 align-top text-xs" style={{ minHeight: '100px', height: 'auto', width: '12%' }}>{container.weight}</td>
                                    <td className="p-4 text-gray-900 align-top text-xs" style={{ minHeight: '100px', height: 'auto', width: '13%' }}>{container.volume}</td>
