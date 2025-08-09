@@ -13,8 +13,6 @@ interface AirwayBillData {
     name: string;
     address: string;
     phone: string;
-    email: string;
-    account: string;
   };
   
   // Consignee Information
@@ -22,8 +20,6 @@ interface AirwayBillData {
     name: string;
     address: string;
     phone: string;
-    email: string;
-    account: string;
   };
   
   // Agent Information
@@ -104,7 +100,7 @@ interface AirwayBillData {
 
 interface AirwayBillFormatProps {
   data?: AirwayBillData;
-  blType?: 'hawb' | 'mawb';
+  blType?: 'hawb';
   onClose?: () => void;
 }
 
@@ -127,7 +123,7 @@ function replaceUnsupportedColors(root: HTMLElement) {
   }
 }
 
-const AirwayBillFormat: React.FC<AirwayBillFormatProps> = ({ data, blType = 'mawb', onClose }) => {
+const AirwayBillFormat: React.FC<AirwayBillFormatProps> = ({ data, blType = 'hawb', onClose }) => {
   const printRef = useRef<HTMLDivElement>(null);
 
   const generatePDF = async () => {
@@ -234,25 +230,17 @@ const AirwayBillFormat: React.FC<AirwayBillFormatProps> = ({ data, blType = 'maw
               <div className="border-b border-gray-900 p-2 bg-white">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center space-x-4">
-                    {blType === 'hawb' ? (
-                      // Show both HAWB and MAWB for HAWB documents
-                      <>
-                        <div>
-                          <div className="text-xs font-bold text-gray-700">HAWB Number:</div>
-                          <div className="text-sm font-semibold text-gray-900">{airwayBillData.hawbNumber}</div>
-                        </div>
-                        <div>
-                          <div className="text-xs font-bold text-gray-700">MAWB Number:</div>
-                          <div className="text-sm font-semibold text-gray-900">{airwayBillData.mawbNumber}</div>
-                        </div>
-                      </>
-                    ) : (
-                      // Show only MAWB for MAWB documents
+                    {/* Show both HAWB and MAWB for HAWB documents */}
+                    <>
+                      <div>
+                        <div className="text-xs font-bold text-gray-700">HAWB Number:</div>
+                        <div className="text-sm font-semibold text-gray-900">{airwayBillData.hawbNumber}</div>
+                      </div>
                       <div>
                         <div className="text-xs font-bold text-gray-700">MAWB Number:</div>
                         <div className="text-sm font-semibold text-gray-900">{airwayBillData.mawbNumber}</div>
                       </div>
-                    )}
+                    </>
                   </div>
                 </div>
               </div>

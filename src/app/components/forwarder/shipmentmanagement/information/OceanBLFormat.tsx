@@ -8,7 +8,7 @@ interface BLData {
   bookingNumber: string;
   dateOfIssue: string;
   serviceType: 'fcl' | 'lcl'; // Add service type
-  blType: 'hbl' | 'mbl'; // Add BL type to distinguish HBL vs MBL
+  blType: 'hbl'; // Forwarders generate HBL documents
   
   // Parties
   shipper: {
@@ -239,7 +239,7 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">
-            {data.blType === 'mbl' ? 'Master Bill of Lading' : 'House Bill of Lading'} Preview
+            House Bill of Lading Preview
           </h2>
           <div className="flex items-center gap-3">
             <button
@@ -306,7 +306,7 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
                 {/* BL Title */}
                  <div className="text-xl font-bold text-center mb-2">
                    <div className="text-gray-900 mb-1" style={{ fontWeight: 'bold' }}>
-                    {data.blType === 'mbl' ? 'MASTER BILL OF LADING' : 'HOUSE BILL OF LADING'}
+                    HOUSE BILL OF LADING
                   </div>
                  </div>
 
@@ -482,11 +482,11 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
               </div>
             </div>
 
-              {/* Charges Table - Connected to Cargo Table (MBL Only) */}
-               {data.blType === 'mbl' && (
-               <div className="border-b border-gray-900">
+              {/* Charges Table - Connected to Cargo Table */}
+               {data.blType === 'hbl' && (
+               <div>
                 <div>
-                  <div className="px-3 border-b border-gray-900 py-1">
+                  <div className="px-3 border-b border-gray-900 py-1 h-80">
                     <div className="text-gray-900 font-bold" style={{ fontWeight: 'bold' }}> CHARGES </div>
                     <div>
                       <span className="text-xs text-gray-900">Total No. Container or Packages (in words):</span>
@@ -498,30 +498,6 @@ const BLFormat: React.FC<BLFormatProps> = ({ data, onClose }) => {
                       </span>
                     </div>
                   </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs charges-table">
-                    <thead className="border-b border-gray-900">
-                      <tr>
-                        <th className="border-r border-gray-900 p-2 text-left text-gray-900">Unit</th>
-                        <th className="border-r border-gray-900 p-2 text-left text-gray-900">Rate</th>
-                        <th className="border-r border-gray-900 p-2 text-left text-gray-900">Currency</th>
-                        <th className="border-r border-gray-900 p-2 text-left text-gray-900">Prepaid</th>
-                        <th className="border-r border-gray-900 p-2 text-left text-gray-900">Collect</th>
-                        <th className="p-2 text-left text-gray-900">Ex. Rate</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr className="h-25">
-                        <td className="border-r border-gray-900 p-4 text-gray-900">FREIGHT PREPAID</td>
-                        <td className="border-r border-gray-900 p-4 text-gray-900">AS AGREED</td>
-                        <td className="border-r border-gray-900 p-4 text-gray-900">{data.freightCharges.totalPrepaid}</td>
-                        <td className="border-r border-gray-900 p-4 text-gray-900">AS AGREED</td>
-                        <td className="border-r border-gray-900 p-4 text-gray-900"></td>
-                        <td className="p-2 text-gray-900"></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
               </div>
             </div>
                )}

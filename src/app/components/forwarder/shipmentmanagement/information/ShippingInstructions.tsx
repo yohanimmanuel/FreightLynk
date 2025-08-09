@@ -28,6 +28,7 @@ interface BaseShipmentData {
   etd: string;
   eta: string;
   shippedOnBoardDate: string;
+  issuedBy: string;
   dateOfIssue: string;
   placeOfIssue: string;
   placeOfReceipt: string;
@@ -217,7 +218,7 @@ const getServiceModeConfig = (serviceMode: 'FCL' | 'LCL' | 'AIR') => {
         showConsolidationInfo: false,
         showLCLCargoDetails: false,
         documentType: 'ocean' as const,
-        blTypes: ['hbl', 'mbl'] as const
+        blTypes: ['hbl'] as const
       };
     case 'LCL':
       return {
@@ -230,7 +231,7 @@ const getServiceModeConfig = (serviceMode: 'FCL' | 'LCL' | 'AIR') => {
         showConsolidationInfo: true,
         showLCLCargoDetails: true,
         documentType: 'ocean' as const,
-        blTypes: ['hbl', 'mbl'] as const
+        blTypes: ['hbl'] as const
       };
     case 'AIR':
       return {
@@ -253,7 +254,7 @@ const ShippingInstructions: React.FC<ShippingInstructionsProps> = ({ shipmentId 
   const [showEditModal, setShowEditModal] = useState(false);
   const [showBLModal, setShowBLModal] = useState(false);
   const [showSIModal, setShowSIModal] = useState(false);
-  const [blType, setBlType] = useState<'hbl' | 'mbl' | 'hawb' | 'mawb'>('hbl');
+  const [blType, setBlType] = useState<'hbl' | 'hawb'>('hbl');
 
   // Mock data for different service modes
 const getFCLMockData = (): FCLShipmentData => ({
@@ -263,6 +264,7 @@ const getFCLMockData = (): FCLShipmentData => ({
     etd: '2024-05-12T07:00:00',
     eta: '2024-06-22T00:00:00',
     shippedOnBoardDate: '2024-05-12T07:00:00',
+    issuedBy: 'FreightLynk',
     dateOfIssue: '2024-05-12T10:00:00',
     placeOfIssue: 'HO CHI MINH CITY, VN (VNSGN)',
   placeOfReceipt: 'HO CHI MINH CITY, VN (VNSGN)',
@@ -357,6 +359,7 @@ const getLCLMockData = (): LCLShipmentData => ({
   etd: '2024-05-12T07:00:00',
   eta: '2024-06-22T00:00:00',
   shippedOnBoardDate: '2024-05-12T07:00:00',
+  issuedBy: 'FreightLynk',
   dateOfIssue: '2024-05-12T10:00:00',
   placeOfIssue: 'HO CHI MINH CITY, VN (VNSGN)',
   placeOfReceipt: 'HO CHI MINH CITY, VN (VNSGN)',
@@ -392,7 +395,7 @@ const getLCLMockData = (): LCLShipmentData => ({
   },
   
   consolidation: {
-    consolidator: 'FreightLynk Consolidation',
+    consolidator: 'ABC Company Consolidation',
     containerNumber: 'ABCD1234568'
   },
   
@@ -467,6 +470,7 @@ const getAIRMockData = (): AIRShipmentData => ({
   etd: '2024-05-12T07:00:00',
   eta: '2024-06-22T00:00:00',
   shippedOnBoardDate: '2024-05-12T07:00:00',
+  issuedBy: 'FreightLynk',
   dateOfIssue: '2024-05-12T10:00:00',
   placeOfIssue: 'HO CHI MINH CITY, VN (VNSGN)',
   placeOfReceipt: 'HO CHI MINH CITY, VN (VNSGN)',
@@ -499,7 +503,7 @@ const getAIRMockData = (): AIRShipmentData => ({
   },
   
   consolidation: {
-    consolidator: 'FreightLynk Consolidation',
+    consolidator: 'MiniCraft Consolidation',
     uldNumber: 'AKE12345AB'
   },
   
@@ -572,19 +576,9 @@ const getMockDataByServiceMode = (serviceMode: 'FCL' | 'LCL' | 'AIR'): ShipmentD
     setBlType('hbl');
   };
 
-  const handleDownloadMBL = () => {
-    setShowBLModal(true);
-    setBlType('mbl');
-  };
-
   const handleDownloadHAWB = () => {
     setShowBLModal(true);
     setBlType('hawb');
-  };
-
-  const handleDownloadMAWB = () => {
-    setShowBLModal(true);
-    setBlType('mawb');
   };
 
   const handleDownloadSI = () => {
@@ -606,6 +600,7 @@ Final Destination: ${shipmentData.finalDestination}
 ETD: ${new Date(shipmentData.etd).toLocaleDateString()}
 ETA: ${new Date(shipmentData.eta).toLocaleDateString()}
 Shipped on Board: ${new Date(shipmentData.shippedOnBoardDate).toLocaleDateString()}
+Issued By: ${shipmentData.issuedBy}
 Date of Issue: ${new Date(shipmentData.dateOfIssue).toLocaleDateString()}
 Place of Issue: ${shipmentData.placeOfIssue}
 
@@ -783,49 +778,6 @@ ULD ${index + 1}:
     setShowEditModal(false);
   };
 
-  const renderInput = useCallback((field: string, label: string, type = 'text', placeholder = '') => (
-    <div key={field}>
-      <label className="block text-gray-500 mb-1 text-xs">{label}</label>
-      <input
-        type={type}
-        value={type === 'datetime-local' ? (editData as any)[field]?.replace(' ', 'T') || '' : (editData as any)[field] || ''}
-        onChange={(e) => {
-          const value = type === 'datetime-local' ? e.target.value.replace('T', ' ') : e.target.value;
-          setEditData(prev => ({ ...prev, [field]: value }));
-        }}
-        placeholder={placeholder}
-        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
-      />
-    </div>
-  ), [editData]);
-
-  const renderTextarea = useCallback((field: string, label: string, rows = 3) => (
-    <div key={field}>
-      <label className="block text-gray-500 mb-1 text-xs">{label}</label>
-      <textarea
-        value={(editData as any)[field] || ''}
-        onChange={(e) => setEditData(prev => ({ ...prev, [field]: e.target.value }))}
-        rows={rows}
-        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
-      />
-    </div>
-  ), [editData]);
-
-  const renderSelect = useCallback((field: string, label: string, options: string[]) => (
-    <div key={field}>
-      <label className="block text-gray-500 mb-1 text-xs">{label}</label>
-      <select
-        value={(editData as any)[field] || ''}
-        onChange={(e) => setEditData(prev => ({ ...prev, [field]: e.target.value }))}
-        className="w-full p-2 border border-gray-300 rounded text-gray-900 text-xs"
-      >
-        {options.map(option => (
-          <option key={option} value={option}>{option}</option>
-        ))}
-      </select>
-    </div>
-  ), [editData]);
-
   return (
     <div className="space-y-4 w-full">
       {/* Service Mode Selector */}
@@ -869,13 +821,6 @@ ULD ${index + 1}:
               <FileText className="w-4 h-4" />
               <span className="text-sm font-medium">Download HAWB</span>
             </button>
-            <button
-              onClick={handleDownloadMAWB}
-              className="flex items-center gap-2 px-4 py-2 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <FileText className="w-4 h-4" />
-              <span className="text-sm font-medium">Download MAWB</span>
-            </button>
           </>
         ) : (
           <>
@@ -885,13 +830,6 @@ ULD ${index + 1}:
             >
               <FileText className="w-4 h-4" />
               <span className="text-sm font-medium">Download HBL</span>
-            </button>
-            <button
-              onClick={handleDownloadMBL}
-              className="flex items-center gap-2 px-4 py-2 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <FileText className="w-4 h-4" />
-              <span className="text-sm font-medium">Download MBL</span>
             </button>
           </>
         )}
@@ -975,6 +913,10 @@ ULD ${index + 1}:
                <div className="flex items-center justify-between">
                  <span className="text-gray-500">Shipped on Board:</span>
                  <span className="text-gray-900">{new Date(shipmentData.shippedOnBoardDate).toLocaleDateString()}</span>
+               </div>
+               <div className="flex items-center justify-between">
+                 <span className="text-gray-500">Issued By:</span>
+                 <span className="text-gray-900">{shipmentData.issuedBy}</span>
                </div>
                <div className="flex items-center justify-between">
                  <span className="text-gray-500">Date of Issue:</span>
@@ -2632,7 +2574,7 @@ ULD ${index + 1}:
                         <option value="YES">YES</option>
                     </select>
                     </div>
-                                         <div>
+                      <div>
                        <label className="block text-gray-500 mb-1 text-xs">Commercial Invoice No</label>
                        <input
                          type="text"
@@ -2781,25 +2723,21 @@ ULD ${index + 1}:
 
     {/* BL Generation Modal */}
     {showBLModal && (
-      (shipmentData.serviceMode === 'AIR' && (blType === 'hawb' || blType === 'mawb')) ? (
+      (shipmentData.serviceMode === 'AIR' && blType === 'hawb') ? (
         <AirwayBillFormat 
           data={{
-            mawbNumber: blType === 'mawb' ? (shipmentData as AIRShipmentData).mawbNumber : 'MAWB12345678',
-            hawbNumber: blType === 'hawb' ? (shipmentData as AIRShipmentData).hawbNumber : 'HAWB123456789',
-            issuedBy: 'FreightLynk Airlines',
+            mawbNumber: (shipmentData as AIRShipmentData).mawbNumber,
+            hawbNumber: (shipmentData as AIRShipmentData).hawbNumber,
+            issuedBy: shipmentData.issuedBy,
             shipper: {
               name: shipmentData.shipper.name,
               address: shipmentData.shipper.address,
               phone: shipmentData.shipper.contact,
-              email: 'shipper@abc.com',
-              account: 'ACC001'
             },
             consignee: {
               name: shipmentData.consignee.name,
               address: shipmentData.consignee.address,
               phone: shipmentData.consignee.contact,
-              email: 'consignee@xyz.com',
-              account: 'ACC002'
             },
             agent: {
               name: 'FreightLynk Agent',
@@ -2862,15 +2800,15 @@ ULD ${index + 1}:
             shipperSignature: shipmentData.shipper.name,
             carrierSignature: 'FreightLynk Airlines'
           }}
-          blType={blType as 'hawb' | 'mawb'}
+          blType={blType as 'hawb'}
           onClose={() => setShowBLModal(false)} 
         />
-      ) : (blType === 'hbl' || blType === 'mbl') ? (
+      ) : (blType === 'hbl') ? (
         <OceanBLFormat
         data={{
           serviceType: shipmentData.serviceMode.toLowerCase() as 'fcl' | 'lcl',
-          blType: blType as 'hbl' | 'mbl',
-          blNumber: blType === 'mbl' ? (shipmentData as FCLShipmentData | LCLShipmentData).mblNumber : (shipmentData as FCLShipmentData | LCLShipmentData).hblNumber,
+          blType: blType as 'hbl',
+          blNumber: (shipmentData as FCLShipmentData | LCLShipmentData).hblNumber,
           bookingNumber: shipmentData.bookingNumber,
           dateOfIssue: shipmentData.dateOfIssue,
           shipper: {
@@ -2928,14 +2866,14 @@ ULD ${index + 1}:
             commodity: shipmentData.cargo.description,
             serviceMode: shipmentData.serviceMode
           })) : [],
-          // LCL consolidation details
-          consolidation: {
-            consolidator: 'FreightLynk Consolidation',
-            masterBLNumber: 'MBL' + (shipmentData as FCLShipmentData | LCLShipmentData).hblNumber,
-            houseBLNumber: 'HBL' + (shipmentData as FCLShipmentData | LCLShipmentData).mblNumber,
-            containerNumber: shipmentData.serviceMode === 'FCL' ? ((shipmentData as FCLShipmentData).containers[0]?.number || '') : ((shipmentData as LCLShipmentData).consolidation.containerNumber || ''),
-            sealNumber: shipmentData.serviceMode === 'FCL' ? ((shipmentData as FCLShipmentData).containers[0]?.sealNumber || '') : ''
-          },
+               // LCL consolidation details
+            consolidation: {
+              consolidator: shipmentData.serviceMode === 'LCL' ? (shipmentData as LCLShipmentData).consolidation?.consolidator || 'FreightLynk' : 'FreightLynk',
+              masterBLNumber: 'MBL' + (shipmentData as FCLShipmentData | LCLShipmentData).mblNumber,
+              houseBLNumber: 'HBL' + (shipmentData as FCLShipmentData | LCLShipmentData).hblNumber,
+              containerNumber: shipmentData.serviceMode === 'FCL' ? ((shipmentData as FCLShipmentData).containers[0]?.number || '') : ((shipmentData as LCLShipmentData).consolidation?.containerNumber || ''),
+              sealNumber: shipmentData.serviceMode === 'FCL' ? ((shipmentData as FCLShipmentData).containers[0]?.sealNumber || '') : ''
+            },
           freightCharges: {
             
             paymentTerms: shipmentData.freightCharges.paymentTerms,
@@ -3029,7 +2967,7 @@ ULD ${index + 1}:
             consolidation: {
               masterAWBNumber: (shipmentData as AIRShipmentData).mawbNumber, // MAWB (airline's waybill)
               houseAWBNumber: (shipmentData as AIRShipmentData).hawbNumber, // HAWB (forwarder's waybill)
-              consolidator: 'FreightLynk Consolidation',
+              consolidator: (shipmentData as AIRShipmentData).consolidation?.consolidator || 'FreightLynk',
               uldNumber: (shipmentData as AIRShipmentData).ulds[0]?.number || '',
               awbNumber: (shipmentData as AIRShipmentData).hawbNumber // HAWB for the specific shipment
             },
@@ -3126,8 +3064,8 @@ ULD ${index + 1}:
           consolidation: shipmentData.serviceMode === 'LCL' ? {
             masterBLNumber: (shipmentData as LCLShipmentData).mblNumber,
             houseBLNumber: (shipmentData as LCLShipmentData).hblNumber,
-            consolidator: 'FreightLynk Consolidation',
-            containerNumber: (shipmentData as LCLShipmentData).consolidation.containerNumber || '',
+            consolidator: (shipmentData as LCLShipmentData).consolidation?.consolidator || '',
+            containerNumber: (shipmentData as LCLShipmentData).consolidation?.containerNumber || '',
             sealNumber: ''
           } : undefined,
           breakBulkInstructions: '', // Not available in current data structure
